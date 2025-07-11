@@ -1,0 +1,17 @@
+{
+  "model": "graphSAGE",
+  "layers": 3,
+  "hidden": 256,
+  "learning rate": 0.01,
+  "dropout": 0.1,
+  "weight decay": 1e-5,
+  "loss": "CrossEntropy",
+  "epochs": 2000,
+  "data": "aisec-small",
+  "labels": 27,
+  "features": "cut",
+  "shuffle": "False",
+  "preload": "True",
+  "root-nodes": 3000,
+  "walk-length": 2
+}
