@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
+  <meta lastmodifieddate="2025-08-18">
+    <creator>NetworkX 3.1</creator>
+  </meta>
+  <graph defaultedgetype="directed" mode="static" name="">
+    <nodes>
+      <node id="INPUT_A" label="INPUT_A" />
+      <node id="OUTPUT_Z" label="OUTPUT_Z" />
+      <node id="BUFX2_1" label="BUFX2_1" />
+    </nodes>
+    <edges>
+      <edge source="INPUT_A" target="BUFX2_1" id="0" />
+      <edge source="BUFX2_1" target="OUTPUT_Z" id="1" />
+    </edges>
+  </graph>
+</gexf>

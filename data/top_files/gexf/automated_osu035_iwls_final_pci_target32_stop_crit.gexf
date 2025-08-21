@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
+  <meta lastmodifieddate="2025-08-18">
+    <creator>NetworkX 3.1</creator>
+  </meta>
+  <graph defaultedgetype="directed" mode="static" name="">
+    <nodes>
+      <node id="INPUT_pci_frame_in" label="INPUT_pci_frame_in" />
+      <node id="INPUT_pci_irdy_in" label="INPUT_pci_irdy_in" />
+      <node id="OUTPUT_pci_stop_out" label="OUTPUT_pci_stop_out" />
+      <node id="INPUT_stop_w" label="INPUT_stop_w" />
+      <node id="INPUT_stop_w_frm" label="INPUT_stop_w_frm" />
+      <node id="INPUT_stop_w_frm_irdy" label="INPUT_stop_w_frm_irdy" />
+      <node id="AOI21X1_1" label="AOI21X1_1" />
+      <node id="INVX1_1" label="INVX1_1" />
+      <node id="INVX1_2" label="INVX1_2" />
+      <node id="NOR2X1_1" label="NOR2X1_1" />
+      <node id="OAI21X1_1" label="OAI21X1_1" />
+    </nodes>
+    <edges>
+      <edge source="INPUT_pci_frame_in" target="NOR2X1_1" id="0" />
+      <edge source="INPUT_pci_frame_in" target="OAI21X1_1" id="1" />
+      <edge source="INPUT_pci_irdy_in" target="NOR2X1_1" id="2" />
+      <edge source="INPUT_stop_w" target="INVX1_2" id="3" />
+      <edge source="INPUT_stop_w_frm" target="INVX1_1" id="4" />
+      <edge source="INPUT_stop_w_frm_irdy" target="AOI21X1_1" id="5" />
+      <edge source="AOI21X1_1" target="OUTPUT_pci_stop_out" id="6" />
+      <edge source="INVX1_1" target="OAI21X1_1" id="7" />
+      <edge source="INVX1_2" target="OAI21X1_1" id="8" />
+      <edge source="NOR2X1_1" target="AOI21X1_1" id="9" />
+      <edge source="OAI21X1_1" target="AOI21X1_1" id="10" />
+    </edges>
+  </graph>
+</gexf>

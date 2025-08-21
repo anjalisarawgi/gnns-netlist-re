@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
+  <meta lastmodifieddate="2025-08-18">
+    <creator>NetworkX 3.1</creator>
+  </meta>
+  <graph defaultedgetype="directed" mode="static" name="">
+    <nodes>
+      <node id="OUTPUT_LHPOUT" label="OUTPUT_LHPOUT" />
+      <node id="OUTPUT_LOUT" label="OUTPUT_LOUT" />
+      <node id="OUTPUT_RHPOUT" label="OUTPUT_RHPOUT" />
+      <node id="OUTPUT_ROUT" label="OUTPUT_ROUT" />
+      <node id="OUTPUT_VCM" label="OUTPUT_VCM" />
+      <node id="OUTPUT_VREFN" label="OUTPUT_VREFN" />
+      <node id="OUTPUT_VREFP" label="OUTPUT_VREFP" />
+      <node id="OUTPUT_adY1_L" label="OUTPUT_adY1_L" />
+      <node id="OUTPUT_adY1_R" label="OUTPUT_adY1_R" />
+      <node id="OUTPUT_adY2_L" label="OUTPUT_adY2_L" />
+      <node id="OUTPUT_adY2_R" label="OUTPUT_adY2_R" />
+      <node id="BUFX2_1" label="BUFX2_1" />
+      <node id="BUFX2_10" label="BUFX2_10" />
+      <node id="BUFX2_11" label="BUFX2_11" />
+      <node id="BUFX2_2" label="BUFX2_2" />
+      <node id="BUFX2_3" label="BUFX2_3" />
+      <node id="BUFX2_4" label="BUFX2_4" />
+      <node id="BUFX2_5" label="BUFX2_5" />
+      <node id="BUFX2_6" label="BUFX2_6" />
+      <node id="BUFX2_7" label="BUFX2_7" />
+      <node id="BUFX2_8" label="BUFX2_8" />
+      <node id="BUFX2_9" label="BUFX2_9" />
+    </nodes>
+    <edges>
+      <edge source="BUFX2_1" target="OUTPUT_LHPOUT" id="0" />
+      <edge source="BUFX2_10" target="OUTPUT_adY2_L" id="1" />
+      <edge source="BUFX2_11" target="OUTPUT_adY2_R" id="2" />
+      <edge source="BUFX2_2" target="OUTPUT_LOUT" id="3" />
+      <edge source="BUFX2_3" target="OUTPUT_RHPOUT" id="4" />
+      <edge source="BUFX2_4" target="OUTPUT_ROUT" id="5" />
+      <edge source="BUFX2_5" target="OUTPUT_VCM" id="6" />
+      <edge source="BUFX2_6" target="OUTPUT_VREFN" id="7" />
+      <edge source="BUFX2_7" target="OUTPUT_VREFP" id="8" />
+      <edge source="BUFX2_8" target="OUTPUT_adY1_L" id="9" />
+      <edge source="BUFX2_9" target="OUTPUT_adY1_R" id="10" />
+    </edges>
+  </graph>
+</gexf>

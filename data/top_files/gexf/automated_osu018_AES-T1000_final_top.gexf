@@ -1,0 +1,97 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd" version="1.2">
+  <meta lastmodifieddate="2025-08-18">
+    <creator>NetworkX 3.1</creator>
+  </meta>
+  <graph defaultedgetype="directed" mode="static" name="">
+    <nodes>
+      <node id="INPUT_\i[0]" label="INPUT_\i[0]" />
+      <node id="INPUT_\i[1]" label="INPUT_\i[1]" />
+      <node id="INPUT_\i[2]" label="INPUT_\i[2]" />
+      <node id="INPUT_\i[3]" label="INPUT_\i[3]" />
+      <node id="INPUT_\i[4]" label="INPUT_\i[4]" />
+      <node id="INPUT_\i[5]" label="INPUT_\i[5]" />
+      <node id="INPUT_\i[6]" label="INPUT_\i[6]" />
+      <node id="INPUT_\i[7]" label="INPUT_\i[7]" />
+      <node id="OUTPUT_\o[0]" label="OUTPUT_\o[0]" />
+      <node id="OUTPUT_\o[1]" label="OUTPUT_\o[1]" />
+      <node id="OUTPUT_\o[2]" label="OUTPUT_\o[2]" />
+      <node id="OUTPUT_\o[3]" label="OUTPUT_\o[3]" />
+      <node id="OUTPUT_\o[4]" label="OUTPUT_\o[4]" />
+      <node id="OUTPUT_\o[5]" label="OUTPUT_\o[5]" />
+      <node id="OUTPUT_\o[6]" label="OUTPUT_\o[6]" />
+      <node id="OUTPUT_\o[7]" label="OUTPUT_\o[7]" />
+      <node id="BUFX2_1" label="BUFX2_1" />
+      <node id="BUFX2_2" label="BUFX2_2" />
+      <node id="BUFX2_3" label="BUFX2_3" />
+      <node id="BUFX2_4" label="BUFX2_4" />
+      <node id="BUFX2_5" label="BUFX2_5" />
+      <node id="BUFX2_6" label="BUFX2_6" />
+      <node id="BUFX2_7" label="BUFX2_7" />
+      <node id="BUFX2_8" label="BUFX2_8" />
+      <node id="XNOR2X1_1" label="XNOR2X1_1" />
+      <node id="XNOR2X1_10" label="XNOR2X1_10" />
+      <node id="XNOR2X1_11" label="XNOR2X1_11" />
+      <node id="XNOR2X1_2" label="XNOR2X1_2" />
+      <node id="XNOR2X1_3" label="XNOR2X1_3" />
+      <node id="XNOR2X1_4" label="XNOR2X1_4" />
+      <node id="XNOR2X1_5" label="XNOR2X1_5" />
+      <node id="XNOR2X1_6" label="XNOR2X1_6" />
+      <node id="XNOR2X1_7" label="XNOR2X1_7" />
+      <node id="XNOR2X1_8" label="XNOR2X1_8" />
+      <node id="XNOR2X1_9" label="XNOR2X1_9" />
+      <node id="XOR2X1_1" label="XOR2X1_1" />
+      <node id="XOR2X1_2" label="XOR2X1_2" />
+      <node id="XOR2X1_3" label="XOR2X1_3" />
+      <node id="XOR2X1_4" label="XOR2X1_4" />
+    </nodes>
+    <edges>
+      <edge source="INPUT_\i[0]" target="XNOR2X1_10" id="0" />
+      <edge source="INPUT_\i[1]" target="XOR2X1_1" id="1" />
+      <edge source="INPUT_\i[2]" target="XNOR2X1_3" id="2" />
+      <edge source="INPUT_\i[2]" target="XNOR2X1_5" id="3" />
+      <edge source="INPUT_\i[2]" target="XOR2X1_3" id="4" />
+      <edge source="INPUT_\i[3]" target="XNOR2X1_5" id="5" />
+      <edge source="INPUT_\i[3]" target="XNOR2X1_8" id="6" />
+      <edge source="INPUT_\i[3]" target="XOR2X1_2" id="7" />
+      <edge source="INPUT_\i[4]" target="XNOR2X1_10" id="8" />
+      <edge source="INPUT_\i[4]" target="XNOR2X1_7" id="9" />
+      <edge source="INPUT_\i[4]" target="XNOR2X1_8" id="10" />
+      <edge source="INPUT_\i[4]" target="XOR2X1_3" id="11" />
+      <edge source="INPUT_\i[5]" target="XNOR2X1_9" id="12" />
+      <edge source="INPUT_\i[5]" target="XOR2X1_1" id="13" />
+      <edge source="INPUT_\i[5]" target="XOR2X1_4" id="14" />
+      <edge source="INPUT_\i[6]" target="XNOR2X1_1" id="15" />
+      <edge source="INPUT_\i[6]" target="XOR2X1_4" id="16" />
+      <edge source="INPUT_\i[7]" target="XNOR2X1_1" id="17" />
+      <edge source="INPUT_\i[7]" target="XOR2X1_2" id="18" />
+      <edge source="BUFX2_1" target="OUTPUT_\o[0]" id="19" />
+      <edge source="BUFX2_2" target="OUTPUT_\o[1]" id="20" />
+      <edge source="BUFX2_3" target="OUTPUT_\o[2]" id="21" />
+      <edge source="BUFX2_4" target="OUTPUT_\o[3]" id="22" />
+      <edge source="BUFX2_5" target="OUTPUT_\o[4]" id="23" />
+      <edge source="BUFX2_6" target="OUTPUT_\o[5]" id="24" />
+      <edge source="BUFX2_7" target="OUTPUT_\o[6]" id="25" />
+      <edge source="BUFX2_8" target="OUTPUT_\o[7]" id="26" />
+      <edge source="XNOR2X1_1" target="XNOR2X1_2" id="27" />
+      <edge source="XNOR2X1_1" target="XNOR2X1_3" id="28" />
+      <edge source="XNOR2X1_1" target="XNOR2X1_4" id="29" />
+      <edge source="XNOR2X1_10" target="XNOR2X1_11" id="30" />
+      <edge source="XNOR2X1_11" target="BUFX2_7" id="31" />
+      <edge source="XNOR2X1_2" target="BUFX2_8" id="32" />
+      <edge source="XNOR2X1_3" target="BUFX2_1" id="33" />
+      <edge source="XNOR2X1_4" target="BUFX2_3" id="34" />
+      <edge source="XNOR2X1_5" target="XNOR2X1_6" id="35" />
+      <edge source="XNOR2X1_5" target="XNOR2X1_7" id="36" />
+      <edge source="XNOR2X1_6" target="BUFX2_4" id="37" />
+      <edge source="XNOR2X1_7" target="BUFX2_5" id="38" />
+      <edge source="XNOR2X1_8" target="XNOR2X1_9" id="39" />
+      <edge source="XNOR2X1_9" target="BUFX2_6" id="40" />
+      <edge source="XOR2X1_1" target="XNOR2X1_2" id="41" />
+      <edge source="XOR2X1_2" target="BUFX2_2" id="42" />
+      <edge source="XOR2X1_3" target="XNOR2X1_4" id="43" />
+      <edge source="XOR2X1_4" target="XNOR2X1_11" id="44" />
+      <edge source="XOR2X1_4" target="XNOR2X1_6" id="45" />
+    </edges>
+  </graph>
+</gexf>
