@@ -1,5 +1,5 @@
 import torch 
-from dataset_processing import normalize_features, load_GNNRE_full, load_GNNRE_gmls, load_GNN_aes_core_gmls
+from preprocessing import normalize_features, load_GNNRE_full, load_GNNRE_gmls, load_GNN_aes_core_gmls
 from torch_geometric.loader import DataLoader, GraphSAINTRandomWalkSampler    
 import torch
 from torch_geometric.data import Data
