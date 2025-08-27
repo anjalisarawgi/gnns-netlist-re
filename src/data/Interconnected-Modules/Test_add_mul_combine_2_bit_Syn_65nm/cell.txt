@@ -1,9 +1,0 @@
-0 \adder_1/U3 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-7 \multiplier_1/U2 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-3 \multiplier_1/U6 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-5 \multiplier_1/U4 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-2 \adder_1/U1 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-4 \multiplier_1/U5 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-1 \adder_1/U2 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-6 \multiplier_1/U3 from file Test_add_mul_combine_2_bit_Syn_65nm.v
-8 \multiplier_1/U1 from file Test_add_mul_combine_2_bit_Syn_65nm.v

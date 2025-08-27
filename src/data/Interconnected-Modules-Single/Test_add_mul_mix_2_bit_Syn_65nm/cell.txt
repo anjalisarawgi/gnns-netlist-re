@@ -1,0 +1,12 @@
+8 \multiplier_1/U4 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+9 \multiplier_1/U3 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+11 \multiplier_1/U1 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+7 \multiplier_1/U5 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+2 \adder_1/U1 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+1 \adder_1/U2 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+3 \adder_2/U3 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+0 \adder_1/U3 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+4 \adder_2/U2 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+6 \multiplier_1/U6 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+5 \adder_2/U1 from file Test_add_mul_mix_2_bit_Syn_65nm.v
+10 \multiplier_1/U2 from file Test_add_mul_mix_2_bit_Syn_65nm.v

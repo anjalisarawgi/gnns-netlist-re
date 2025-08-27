@@ -69,34 +69,34 @@ def run_training(data, train_loader, in_dim, out_dim):
 
 from torch_geometric.data import Batch
 if __name__ == "__main__":
-    # data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
-    # train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
-    # val_data = data 
-    # test_data = data
+    data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
+    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
+    val_data = data 
+    test_data = data
 
-    # in_dim = data.num_features
-    # out_dim = len(torch.unique(data.y))
-    # print("Input dimension:", in_dim)
-    # print("Output dimension:", out_dim)
-    # run_training(data, train_loader, in_dim, out_dim)
-    # print("Training complete.")
-
-
-    # gml (GNNRE)
-    data =load_GNNRE_gmls("data/Interconnected-Modules/")
-    full_data = Batch.from_data_list(data)
-    train_loader = GraphSAINTRandomWalkSampler(full_data, batch_size=3000, walk_length=2, shuffle=True, sample_coverage=50)
-
-    
-    val_data = full_data 
-    test_data = full_data
-
-    in_dim = full_data.num_features
-    out_dim = len(torch.unique(full_data.y))
+    in_dim = data.num_features
+    out_dim = len(torch.unique(data.y))
     print("Input dimension:", in_dim)
     print("Output dimension:", out_dim)
-    run_training(full_data, train_loader, in_dim, out_dim)
+    run_training(data, train_loader, in_dim, out_dim)
     print("Training complete.")
+
+
+    # # gml (GNNRE)
+    # data =load_GNNRE_gmls("data/Interconnected-Modules/")
+    # full_data = Batch.from_data_list(data)
+    # train_loader = GraphSAINTRandomWalkSampler(full_data, batch_size=3000, walk_length=2, shuffle=True, sample_coverage=50)
+
+    
+    # val_data = full_data 
+    # test_data = full_data
+
+    # in_dim = full_data.num_features
+    # out_dim = len(torch.unique(full_data.y))
+    # print("Input dimension:", in_dim)
+    # print("Output dimension:", out_dim)
+    # run_training(full_data, train_loader, in_dim, out_dim)
+    # print("Training complete.")
 
     # # gml (AES)
     # data = load_GNN_aes_core_gmls("data/aes_core/")

@@ -1,3 +1,0 @@
-1 \adder_1/U1 from file Train_add_mul_1_bit_Syn_65nm.v
-2 \multiplier_1/U1 from file Train_add_mul_1_bit_Syn_65nm.v
-0 U2 from file Train_add_mul_1_bit_Syn_65nm.v
