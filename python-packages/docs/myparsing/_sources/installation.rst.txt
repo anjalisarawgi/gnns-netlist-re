@@ -1,0 +1,24 @@
+============
+Installation
+============
+
+Preliminary
+-----------
+
+For installing on the student lab computers start with the Preparation Steps in Parsing Example before continuing with the installation.
+
+Download
+--------
+
+The primary way of installation is by downloading the release wheel. Go to the |release-page|_ and download the latest ``tueisec_myparsing.whl``. 
+
+Install
+-------
+
+You can then install using (upgeade pip and install wheel if needed)
+
+.. code-block:: bash
+
+    pip install --upgrade pip # only if needed
+    pip install wheel # only if needed
+    pip install tueisec_myparsing-<version>-py2.py3-none-any.whl

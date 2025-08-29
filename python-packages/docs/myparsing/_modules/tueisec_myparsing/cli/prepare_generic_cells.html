@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.cli.prepare_generic_cells &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.cli.prepare_generic_cells</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;prepare generic verilog gates to a format that parser understands.</span>
+
+<span class="sd">This executable needs the liberty and associated generic cell files.</span>
+<span class="sd">There is a working default included in this package, which will be used by default.</span>
+
+<span class="sd">For parsing later, use eg.:</span>
+
+<span class="sd">```</span>
+<span class="sd">run_write_adjlist -l path/to/tueisec_myparsing/generic_cells/generic_cells.lib --sia false ...</span>
+<span class="sd">```</span>
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: Synopsys:</span>
+
+<span class="sd">    usage: prepare_generic_cells [-h]</span>
+<span class="sd">                             [--logger {info,debug,warning,error,critical}]</span>
+<span class="sd">                             [-o] [-t TECH_FOLDER] [-d DEST_PATH] [-f]</span>
+<span class="sd">                             design [design ...]</span>
+
+<span class="sd">    Synthesize files in an existing qflow folder structure.</span>
+
+<span class="sd">    positional arguments:</span>
+<span class="sd">    design                Design file paths that should be prepped.</span>
+
+<span class="sd">    optional arguments:</span>
+<span class="sd">    -h, --help            show this help message and exit</span>
+<span class="sd">    --logger {info,debug,warning,error,critical}, -l {info,debug,warning,error,critical}</span>
+<span class="sd">                            logger level. Default: info</span>
+<span class="sd">    -o, --overwrite       Overwrite designs if already in %dest_path%</span>
+<span class="sd">    -t TECH_FOLDER, --tech_folder TECH_FOLDER</span>
+<span class="sd">                            The folder where the generic_cells tech files are</span>
+<span class="sd">                            located. Default is the integrated generic_cells</span>
+<span class="sd">                            folder, which just works.</span>
+<span class="sd">    -d DEST_PATH, --dest_path DEST_PATH</span>
+<span class="sd">                            The folder where the prepared files will be put.</span>
+<span class="sd">                            Default: cwd</span>
+<span class="sd">    -f, --file_logging    Log to file additionally.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">argparse</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArgumentParser</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..defines</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MODULE_INSTANTIATION_LINE_NODOT_RE</span><span class="p">,</span>
+    <span class="n">CONNECTIONS_NODOT_RE</span><span class="p">,</span>
+    <span class="n">IO_PORT_LINE_RE</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_cli</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">DEFAULT_GENERIC_CELLS_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;/../generic_cells/&quot;</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_var_from_tcsh">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.prepare_generic_cells.get_var_from_tcsh.html#tueisec_myparsing.cli.prepare_generic_cells.get_var_from_tcsh">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_var_from_tcsh</span><span class="p">(</span><span class="n">varname</span><span class="p">,</span> <span class="n">shfile</span><span class="p">):</span>
+    <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;^\s*(?:set\s+(?P&lt;variable&gt;\w+)=(?P&lt;value&gt;[\w\d#+?&#39;\\/&amp;%$!-.]*&quot;&quot;&quot;</span>
+        <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;|&quot;[\s\w\d#+?&#39;\\/&amp;%$!.-]*&quot;|&#39;[\s\w\d#+?&#39;\\/&amp;%$!.-]*&#39;)\s*)?;?(?:[#].+)?$&quot;&quot;&quot;</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">shfile</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot parse shfile, line &#39;</span><span class="si">{}</span><span class="s2">&#39; is bad&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">match</span><span class="p">[</span><span class="s2">&quot;variable&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">varname</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">match</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\&quot;</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">continue</span></div>
+
+
+
+<div class="viewcode-block" id="prepare">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.prepare_generic_cells.prepare.html#tueisec_myparsing.cli.prepare_generic_cells.prepare">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">():</span>
+
+    <span class="n">libname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">tech_folder</span><span class="p">)</span>
+
+    <span class="n">shfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">tech_folder</span><span class="p">,</span> <span class="n">libname</span> <span class="o">+</span> <span class="s2">&quot;.sh&quot;</span><span class="p">)</span>
+    <span class="n">numbersep</span> <span class="o">=</span> <span class="n">get_var_from_tcsh</span><span class="p">(</span><span class="s2">&quot;separator&quot;</span><span class="p">,</span> <span class="n">shfile</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">all_designs</span> <span class="o">=</span> <span class="p">[</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">all_designs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">)</span>
+
+    <span class="n">prepare_designs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">will_overwrite</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">design</span> <span class="ow">in</span> <span class="n">all_designs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">dest_path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">design</span><span class="p">))</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">overwrite</span><span class="p">:</span>
+                <span class="n">will_overwrite</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">prepare_designs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">design</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prepare_designs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">design</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">prepare_designs</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Will prepare these designs: &quot;</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prepare_designs</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Woops, no files to prepare. Maybe you have to specify --overwrite?&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="n">will_overwrite</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Last Warning: will overwrite some designs!&quot;</span><span class="p">)</span>
+        <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;ok?&quot;</span><span class="p">)</span>
+
+    <span class="c1">################</span>
+    <span class="c1"># start doing actual work:</span>
+    <span class="c1">################</span>
+
+    <span class="n">ALLOWED_CELLS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;and&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;AND&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+        <span class="s2">&quot;or&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;OR&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+        <span class="s2">&quot;nand&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;NAND&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+        <span class="s2">&quot;nor&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;NOR&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+        <span class="s2">&quot;xor&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;XOR&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+        <span class="s2">&quot;xnor&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;XNOR&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+        <span class="s2">&quot;buf&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;BUF&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+        <span class="s2">&quot;not&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;repl&quot;</span><span class="p">:</span> <span class="s2">&quot;INV&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="n">IN_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span> <span class="s2">&quot;F&quot;</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">design</span> <span class="ow">in</span> <span class="n">prepare_designs</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">design</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">inhandle</span><span class="p">:</span>
+            <span class="n">outfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">dest_path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">design</span><span class="p">))</span>
+
+            <span class="n">collected_io</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outhandle</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">inhandle</span><span class="p">:</span>
+                    <span class="n">line_s</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="n">io_match</span> <span class="o">=</span> <span class="n">IO_PORT_LINE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line_s</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">io_match</span><span class="p">:</span>
+                        <span class="n">collected_io</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="p">(</span><span class="n">io_match</span><span class="p">[</span><span class="s2">&quot;ioro&quot;</span><span class="p">],</span> <span class="n">io_match</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">],</span> <span class="n">io_match</span><span class="p">[</span><span class="s2">&quot;portname&quot;</span><span class="p">])</span>
+                        <span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">line_s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;);&quot;</span><span class="p">):</span>
+                        <span class="n">ports</span> <span class="o">=</span> <span class="s2">&quot;,</span><span class="se">\n\t</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                            <span class="p">[</span><span class="n">portname</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">portname</span> <span class="ow">in</span> <span class="n">collected_io</span><span class="p">]</span>
+                        <span class="p">)</span>
+                        <span class="n">outhandle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">{}</span><span class="se">\n</span><span class="s2">);</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ports</span><span class="p">))</span>
+                        <span class="k">for</span> <span class="n">ioro</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">portname</span> <span class="ow">in</span> <span class="n">collected_io</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">outhandle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ioro</span><span class="p">,</span> <span class="n">portname</span><span class="p">))</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">outhandle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                                    <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ioro</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">portname</span><span class="p">)</span>
+                                <span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="n">instantiation_match</span> <span class="o">=</span> <span class="n">MODULE_INSTANTIATION_LINE_NODOT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span>
+                        <span class="n">line_s</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">instantiation_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">outhandle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="n">cell_name</span> <span class="o">=</span> <span class="n">instantiation_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;cell_name&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">cell_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ALLOWED_CELLS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unallowed cell in file: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cell_name</span><span class="p">))</span>
+                    <span class="n">inst_name</span> <span class="o">=</span> <span class="n">instantiation_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;inst_name&quot;</span><span class="p">)</span>
+                    <span class="n">connections</span> <span class="o">=</span> <span class="n">instantiation_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;connections&quot;</span><span class="p">)</span>
+                    <span class="n">connections_match</span> <span class="o">=</span> <span class="n">CONNECTIONS_NODOT_RE</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">connections</span><span class="p">)</span>
+
+                    <span class="n">connections_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">match</span> <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">connections_match</span><span class="p">]</span>
+
+                    <span class="n">output</span> <span class="o">=</span> <span class="n">connections_list</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+                    <span class="n">num_of_ins</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">connections_list</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">num_of_ins</span> <span class="o">&gt;</span> <span class="n">ALLOWED_CELLS</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;max&quot;</span><span class="p">]</span>
+                        <span class="ow">or</span> <span class="n">num_of_ins</span> <span class="o">&lt;</span> <span class="n">ALLOWED_CELLS</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;min&quot;</span><span class="p">]</span>
+                    <span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Cell </span><span class="si">{}</span><span class="s2"> has </span><span class="si">{}</span><span class="s2"> inputs, which is not in allowed range (</span><span class="si">{}</span><span class="s2">-</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">cell_name</span><span class="p">,</span>
+                                <span class="n">num_of_ins</span><span class="p">,</span>
+                                <span class="n">ALLOWED_CELLS</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;min&quot;</span><span class="p">],</span>
+                                <span class="n">ALLOWED_CELLS</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;max&quot;</span><span class="p">],</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+
+                    <span class="n">new_cell_name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}{}{}</span><span class="s2">1&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">ALLOWED_CELLS</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;repl&quot;</span><span class="p">],</span> <span class="n">num_of_ins</span><span class="p">,</span> <span class="n">numbersep</span>
+                    <span class="p">)</span>
+
+                    <span class="n">newins_l</span> <span class="o">=</span> <span class="p">[]</span>
+
+                    <span class="k">for</span> <span class="n">match</span><span class="p">,</span> <span class="n">portname</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">connections_list</span><span class="p">,</span> <span class="n">IN_NAMES</span><span class="p">):</span>
+                        <span class="n">net_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;net_name&quot;</span><span class="p">)</span>
+                        <span class="n">newins_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;.</span><span class="si">{}</span><span class="s2">(</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">portname</span><span class="p">,</span> <span class="n">net_name</span><span class="p">))</span>
+
+                    <span class="n">newins</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">newins_l</span><span class="p">)</span>
+                    <span class="n">new_ports</span> <span class="o">=</span> <span class="s2">&quot;.Z(</span><span class="si">{}</span><span class="s2">), </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;net_name&quot;</span><span class="p">),</span> <span class="n">newins</span><span class="p">)</span>
+
+                    <span class="n">newline</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">);&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_cell_name</span><span class="p">,</span> <span class="n">inst_name</span><span class="p">,</span> <span class="n">new_ports</span><span class="p">)</span>
+
+                    <span class="n">outhandle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">newline</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.prepare_generic_cells.main.html#tueisec_myparsing.cli.prepare_generic_cells.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">GLOBAL_PARSER</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Synthesize files in an existing qflow folder structure.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--logger&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;-l&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;logger level. Default: info&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;info&quot;</span><span class="p">,</span> <span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="s2">&quot;warning&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;critical&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--overwrite&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overwrite designs if already in </span><span class="si">%%</span><span class="s2">dest_path</span><span class="si">%%</span><span class="s2"> &quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-t&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--tech_folder&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The folder where the generic_cells tech files are located. &quot;</span>
+        <span class="s2">&quot;Default is the integrated generic_cells folder, which just works.&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_GENERIC_CELLS_DIR</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-d&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--dest_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The folder where the prepared files will be put. Default: cwd&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;design&quot;</span><span class="p">,</span>
+        <span class="n">dest</span><span class="o">=</span><span class="s2">&quot;designs&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Design file paths that should be prepped. &quot;</span><span class="p">),</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="s2">&quot;--file_logging&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Log to file additionally.&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">setup_cli</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span> <span class="n">file_logging</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">file_logging</span><span class="p">)</span>
+    <span class="n">prepare</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

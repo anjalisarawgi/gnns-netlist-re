@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Width
+==============================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Width
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Width.__init__
+      ~Width.children
+      ~Width.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Width.attr_names
+   
+   

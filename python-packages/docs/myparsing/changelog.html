@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Changelog &#8212; TUEISEC_myparsing 0.0.1a25 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="_static/documentation_options.js?v=c61080f6"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Authors" href="authors.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="index.html">TUEISEC_myparsing-0.0.1a25</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<p>This project uses semantic versioning.
+This changelog uses recommended emojis from <a class="reference external" href="https://gitmoji.dev/">https://gitmoji.dev/</a>.</p>
+<section id="a24-2024-05-27">
+<h2>0.0.1a24 (2024-05-27)<a class="headerlink" href="#a24-2024-05-27" title="Link to this heading">¶</a></h2>
+<section id="changed">
+<h3>Changed:<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>✨: Add a fuzzy mode to verilog2lib. This mode Searches for partial matches when guessing cell functions based on cell names.</p></li>
+</ul>
+</section>
+</section>
+<section id="a23-2024-05-03">
+<h2>0.0.1a23 (2024-05-03)<a class="headerlink" href="#a23-2024-05-03" title="Link to this heading">¶</a></h2>
+<section id="id1">
+<h3>Changed:<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>👽️: Networkx 3 deprecated gpickle read/write. We have to use our own implementation:
+<a class="reference external" href="https://networkx.org/documentation/stable/release/migration_guide_from_2.x_to_3.0.html#deprecated-code">https://networkx.org/documentation/stable/release/migration_guide_from_2.x_to_3.0.html#deprecated-code</a></p></li>
+<li><p>✅: Add a test for run_hierarchy</p></li>
+<li><p>🔧: update dockerfile so that tests can be executed</p></li>
+<li><p>🚑️: run_hierarchy was severely broken, it was producing severely wrong hierarchies due to a missing
+deepcopy when creating the hierarchy tree</p></li>
+<li><p>🔇: add a flag to silence warnings about consts used in the netlist.</p></li>
+</ul>
+</section>
+</section>
+<section id="a22-2023-11-22">
+<h2>0.0.1a22 (2023-11-22)<a class="headerlink" href="#a22-2023-11-22" title="Link to this heading">¶</a></h2>
+<section id="id2">
+<h3>Changed:<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>🐛: Revert the removal of the library from cluster2verilog and hierarchy2verilog</dt><dd><p>Actually, the library is very much needed, because it gives yosys information
+on the direction of cell ports. Only with this info, yosys can derive the
+directions of ports of the extracted module. Without, yosys makes all ports inouts.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+</section>
+<section id="a21-2023-11-15">
+<h2>0.0.1a21 (2023-11-15)<a class="headerlink" href="#a21-2023-11-15" title="Link to this heading">¶</a></h2>
+<section id="id3">
+<h3>Changed:<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Remove the library commandline flag from cluster2verilog</p></li>
+</ul>
+</section>
+</section>
+<section id="a20-2023-11-15">
+<h2>0.0.1a20 (2023-11-15)<a class="headerlink" href="#a20-2023-11-15" title="Link to this heading">¶</a></h2>
+<section id="id4">
+<h3>Changed:<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Remove liberty dependency from hierarchy2verilog and cluster2verilog</p></li>
+<li><p>🐛: Fix yosys script of hierarchy2verilog and cluster2verilog: tcl -&gt; ys script change because of escaping errors</p></li>
+</ul>
+</section>
+</section>
+<section id="a19-2023-09-26">
+<h2>0.0.1a19 (2023-09-26)<a class="headerlink" href="#a19-2023-09-26" title="Link to this heading">¶</a></h2>
+<section id="id5">
+<h3>Changed:<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>📝: Improved docs: Page for cluster2verilog and hierarchy2verilog was missing</p></li>
+<li><p>✨: Add pickling of parsed verilog to genus2hierarchy, so that rerunning genus2hierarchy on a only changed toml is faster.</p></li>
+</ul>
+</section>
+</section>
+<section id="a18-2023-09-26">
+<h2>0.0.1a18 (2023-09-26)<a class="headerlink" href="#a18-2023-09-26" title="Link to this heading">¶</a></h2>
+<section id="id6">
+<h3>Changed:<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>🐛: In ASIC netlists, it may occur that a node has an unattached output pin (not listed in netlist at all).</dt><dd><p>Change parser so that such a cell pin missing is allowed.</p>
+</dd>
+</dl>
+</li>
+<li><p>🐛: Genus2hierarchy counts unknown module types. however, the +1 was missing.</p></li>
+<li><dl class="simple">
+<dt>✨: Add 2 new tools “cluster2verilog” and “hierarchy2verilog” to extract a partition (either detected or original)</dt><dd><p>from a verilog netlist in verilog format, so that it can be used with other, maybe external RE-tools.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+</section>
+<section id="a17-2023-04-05">
+<h2>0.0.1a17 (2023-04-05)<a class="headerlink" href="#a17-2023-04-05" title="Link to this heading">¶</a></h2>
+<section id="id7">
+<h3>Changed:<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: typo in netlist parsing, nets must be a list-of-dicts, so convert set to list.</p></li>
+<li><p>✨: Hierarchy parsing now uses regexes, so that hierarchical names separated with <a href="#id8"><span class="problematic" id="id9">`</span></a>.`s are also OK</p></li>
+</ul>
+</section>
+</section>
+<section id="a16-2022-10-12">
+<h2>0.0.1a16 (2022-10-12)<a class="headerlink" href="#a16-2022-10-12" title="Link to this heading">¶</a></h2>
+<section id="id10">
+<h3>Changed:<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🔖: version update of synthesis</p></li>
+</ul>
+</section>
+</section>
+<section id="a15-2022-10-12">
+<h2>0.0.1a15 (2022-10-12)<a class="headerlink" href="#a15-2022-10-12" title="Link to this heading">¶</a></h2>
+<section id="id11">
+<h3>Changed:<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: typo in run_write_adjlist from removing the sia option.</p></li>
+<li><p>🗑️: deprecate the run_write_adjlist tool, there is a better option: verilog2graph.</p></li>
+</ul>
+</section>
+</section>
+<section id="a14-2022-10-10">
+<h2>0.0.1a14 (2022-10-10)<a class="headerlink" href="#a14-2022-10-10" title="Link to this heading">¶</a></h2>
+<section id="id12">
+<h3>Changed:<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>📝: Improved docs: Page for genus2hierarchy was missing</p></li>
+<li><p>🐛: Fix a bug when there are INOUTS: this created problems with the duplicate drivers check</p></li>
+<li><p>🐛: Fix the MANIFEST so that the codegen templates are also provided in the source distribution</p></li>
+<li><p>🐛: When using verilog2graph, one must use complex output formats with –output_info write_node_type</p></li>
+<li><p>🐛: During assign handling in parsing, net_drivers shall be updated</p></li>
+<li><dl class="simple">
+<dt>✨: space_is_and is now deprecated. The root cause, that is parsing of the boolean functions by</dt><dd><p>pyeda, was fixed</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+</section>
+<section id="a13-2022-07-19">
+<h2>0.0.1a13 (2022-07-19)<a class="headerlink" href="#a13-2022-07-19" title="Link to this heading">¶</a></h2>
+<section id="id13">
+<h3>Changed:<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>✨: Add a new tool to generate hierarchies from a general toml file</p></li>
+<li><p>🎨: Format part of code with black</p></li>
+<li><p>⚡️: Improve parsing performance with a assign chain cache</p></li>
+<li><p>🔊: Improve typos and step-information in parsing debug output</p></li>
+<li><p>✨: Allow inouts, treat them as duplicated inputs and outputs</p></li>
+<li><p>➕: Add pandas as requirement for parsing</p></li>
+<li><dl class="simple">
+<dt>🐛: Fix a severe bug in hierarchy due to bad handling of python objects (sorting objects multiple times into</dt><dd><p>a dtastructure requires to copy them!)</p>
+</dd>
+</dl>
+</li>
+<li><p>✨: Add helpers to find specific constructs in parsed net names</p></li>
+<li><p>✨: Multidigraph support for commercial libs, where a cell can have multiple outputs that drive the same dependent cell</p></li>
+<li><p>✨: Handle wires, input and outputs that are buses (multi bit variables)</p></li>
+<li><p>🐛: When parsing a net name, make sure to search for UNCONNECTED in the whole name</p></li>
+<li><p>✨: Improve the complete graph with better ff and latch info</p></li>
+<li><p>✨: Better file logging helper function</p></li>
+<li><dl class="simple">
+<dt>✨: Add a config option so that unconnected inputs are kept - this might be needed to go back</dt><dd><p>from graph to verilog</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>✨: In the parsed celllib structure, add more info about ffs, for example the name of</dt><dd><p>the internal state variable (this name might be used in pin functions)</p>
+</dd>
+</dl>
+</li>
+<li><p>✨: Add a new pickle based graph file format</p></li>
+<li><p>🐛: Fix code generation from AST for escaped verilog identifiers</p></li>
+<li><p>✨: New interactive cli function to build a cell lib from a unknown verilog (verilog2lib)</p></li>
+<li><p>📝: Improved docs: Additional parsing code example added</p></li>
+<li><p>👷: Build docs for merge requests, so that there is feedback for doc updates️</p></li>
+<li><p>🚑️: Make space_is_and available as a commandline flag in run_hierarchy</p></li>
+<li><p>✨: allow TESTCELLS in liberty files</p></li>
+</ul>
+</section>
+</section>
+<section id="a12-2021-11-12">
+<h2>0.0.1a12 (2021-11-12)<a class="headerlink" href="#a12-2021-11-12" title="Link to this heading">¶</a></h2>
+<section id="id14">
+<h3>Changed:<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>🐛: Improve Library parsing: Differentiate between library attributes and cell attributes,</dt><dd><p>so taht a cell attribute cannot occur as a library attribute</p>
+</dd>
+</dl>
+</li>
+<li><p>🐛: Ensure uniqueness of driven nodes, else parsing fails for specific nelists.</p></li>
+<li><p>🔊: Improve error message of a specific parsing error</p></li>
+<li><p>🐛: Parsing should properly ignore UNCONNECTED nets</p></li>
+<li><dl class="simple">
+<dt>🚑️: Hierarchy generation was not using a OrderedDict internally, so the hierarchy was</dt><dd><p>evaluated in random order. this lead to not-from-the-bottom-up hierarchy evaluation</p>
+</dd>
+</dl>
+</li>
+<li><p>🗃️: Sort the columns of the hierarchy output files alphabetically for better readability</p></li>
+<li><p>🔊: Add some debug status messages</p></li>
+<li><p>🔇: Allow to mute annoying parser logs run_hierarchy</p></li>
+<li><p>👷: Release notes now include a link to the changelog</p></li>
+<li><dl class="simple">
+<dt>✨: Allow to disable the interrupt disabling in pool_wrapper, because interrupt</dt><dd><p>mangling is not allowed in some contexts</p>
+</dd>
+</dl>
+</li>
+<li><p>🏗️: Fix parquet graph output file format extension</p></li>
+<li><p>📝: Fix documentation generation</p></li>
+<li><p>🔖: Ease version bumping</p></li>
+</ul>
+</section>
+</section>
+<section id="a11-2021-07-08">
+<h2>0.0.1a11 (2021-07-08)<a class="headerlink" href="#a11-2021-07-08" title="Link to this heading">¶</a></h2>
+<section id="id15">
+<h3>Changed:<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>📝: Document the parsing of constant inputs</p></li>
+<li><p>📝: Document the disabling of warnings</p></li>
+<li><p>✨: New class for easier I/O of netlist graphs</p></li>
+<li><p>🎨: Lint verilog2fatures</p></li>
+<li><p>📝: Improve documentation (API order etc.)</p></li>
+</ul>
+</section>
+</section>
+<section id="a10-2021-05-04">
+<h2>0.0.1a10 (2021-05-04)<a class="headerlink" href="#a10-2021-05-04" title="Link to this heading">¶</a></h2>
+<section id="id16">
+<h3>Changed:<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>nothing</p></li>
+</ul>
+</section>
+</section>
+<section id="a9-2021-05-04">
+<h2>0.0.1a9 (2021-05-04)<a class="headerlink" href="#a9-2021-05-04" title="Link to this heading">¶</a></h2>
+<section id="id17">
+<h3>Changed:<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>nothing</p></li>
+</ul>
+</section>
+</section>
+<section id="a8-2021-05-01">
+<h2>0.0.1a8 (2021-05-01)<a class="headerlink" href="#a8-2021-05-01" title="Link to this heading">¶</a></h2>
+<section id="id18">
+<h3>Changed:<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Add common cli helper to simplify logging config</p></li>
+<li><p>Some bugs in hierarchy, such as with autodetection and OLD yosys versions</p></li>
+<li><p>flake8 config</p></li>
+</ul>
+</section>
+</section>
+<section id="a7-2021-04-20">
+<h2>0.0.1a7 (2021-04-20)<a class="headerlink" href="#a7-2021-04-20" title="Link to this heading">¶</a></h2>
+<section id="id19">
+<h3>Changed:<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>parsing for complete_data also creates inputs for constants</p></li>
+<li><p>change format of graph edge annotations, so that a node driving multiple pins
+of another node can be represented</p></li>
+<li><p>For old yosys versions, make sure params are not included in hierarchy names</p></li>
+<li><p>For verilog2graph, add a very compact output format based on apache parquet.</p></li>
+<li><p>fix modulename parsing for very contrived name</p></li>
+<li><p>parse bus assignments like <code class="code highlight python docutils literal highlight-python"><span class="n">assign</span> <span class="n">bus_a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">bus_b</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span></code></p></li>
+<li><p>fix documentation error that linked to the wrong rleases page</p></li>
+<li><p>Fix installation of cli-scripts for the non-editable build</p></li>
+</ul>
+</section>
+</section>
+<section id="a4-2020-09-30">
+<h2>0.0.0a4 (2020-09-30)<a class="headerlink" href="#a4-2020-09-30" title="Link to this heading">¶</a></h2>
+<section id="id20">
+<h3>Changed:<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Add packaging and releasing for synthesis, too</p></li>
+</ul>
+</section>
+</section>
+<section id="a3-2020-09-25">
+<h2>0.0.0-a3 (2020-09-25)<a class="headerlink" href="#a3-2020-09-25" title="Link to this heading">¶</a></h2>
+<section id="id21">
+<h3>Changed:<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>CI for auto releasing. A tag releases to the releases page now.</p></li>
+</ul>
+</section>
+</section>
+<section id="a2-2020-09-24">
+<h2>0.0.0-a2 (2020-09-24)<a class="headerlink" href="#a2-2020-09-24" title="Link to this heading">¶</a></h2>
+<section id="id22">
+<h3>Changed:<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>CI for auto packaging. A tag uploads to the pypi repo now.</p></li>
+</ul>
+</section>
+</section>
+<section id="a1-2020-09-24">
+<h2>0.0.0-a1 (2020-09-24)<a class="headerlink" href="#a1-2020-09-24" title="Link to this heading">¶</a></h2>
+<section id="added">
+<h3>Added:<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Auto-packaging</p></li>
+</ul>
+</section>
+</section>
+<section id="id23">
+<h2>0.0.0 (2019-05-11)<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Initial refactored version.</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#a24-2024-05-27">0.0.1a24 (2024-05-27)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a23-2024-05-03">0.0.1a23 (2024-05-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a22-2023-11-22">0.0.1a22 (2023-11-22)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a21-2023-11-15">0.0.1a21 (2023-11-15)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a20-2023-11-15">0.0.1a20 (2023-11-15)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a19-2023-09-26">0.0.1a19 (2023-09-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a18-2023-09-26">0.0.1a18 (2023-09-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a17-2023-04-05">0.0.1a17 (2023-04-05)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a16-2022-10-12">0.0.1a16 (2022-10-12)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a15-2022-10-12">0.0.1a15 (2022-10-12)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a14-2022-10-10">0.0.1a14 (2022-10-10)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a13-2022-07-19">0.0.1a13 (2022-07-19)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a12-2021-11-12">0.0.1a12 (2021-11-12)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a11-2021-07-08">0.0.1a11 (2021-07-08)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a10-2021-05-04">0.0.1a10 (2021-05-04)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a9-2021-05-04">0.0.1a9 (2021-05-04)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a8-2021-05-01">0.0.1a8 (2021-05-01)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a7-2021-04-20">0.0.1a7 (2021-04-20)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a4-2020-09-30">0.0.0a4 (2020-09-30)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a3-2020-09-25">0.0.0-a3 (2020-09-25)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a2-2020-09-24">0.0.0-a2 (2020-09-24)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a1-2020-09-24">0.0.0-a1 (2020-09-24)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id23">0.0.0 (2019-05-11)</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/changelog.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="authors.html" title="Authors"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

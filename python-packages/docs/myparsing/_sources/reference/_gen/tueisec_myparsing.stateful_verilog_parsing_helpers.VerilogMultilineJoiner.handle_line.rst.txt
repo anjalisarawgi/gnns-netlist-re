@@ -1,0 +1,6 @@
+tueisec\_myparsing.stateful\_verilog\_parsing\_helpers.VerilogMultilineJoiner.handle\_line
+==========================================================================================
+
+.. currentmodule:: tueisec_myparsing.stateful_verilog_parsing_helpers
+
+.. automethod:: tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogMultilineJoiner.handle_line

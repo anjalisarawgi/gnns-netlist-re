@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_parser.VerilogParser.p\_floatnumber
+========================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. automethod:: tueisec_myparsing.synthed_verilog_parser.VerilogParser.p_floatnumber

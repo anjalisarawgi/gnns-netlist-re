@@ -1,0 +1,11 @@
+*********
+Reference
+*********
+
+This is the module and function reference for the :mod:`re_verilog2features` module.
+
+.. toctree::
+    :glob:
+    :maxdepth: 2
+
+    re_verilog2features.rst

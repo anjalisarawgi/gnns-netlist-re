@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_algorithms.run\_walkscan
+====================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_algorithms
+
+.. autofunction:: re_verilog2features.clustering.clustering_algorithms.run_walkscan

@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_algorithms.cluster\_mcl\_manual
+===========================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_algorithms
+
+.. autofunction:: re_verilog2features.clustering.clustering_algorithms.cluster_mcl_manual

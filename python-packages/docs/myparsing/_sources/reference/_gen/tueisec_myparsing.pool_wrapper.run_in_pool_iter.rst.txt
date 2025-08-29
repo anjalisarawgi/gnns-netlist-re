@@ -1,0 +1,6 @@
+tueisec\_myparsing.pool\_wrapper.run\_in\_pool\_iter
+====================================================
+
+.. currentmodule:: tueisec_myparsing.pool_wrapper
+
+.. autofunction:: tueisec_myparsing.pool_wrapper.run_in_pool_iter

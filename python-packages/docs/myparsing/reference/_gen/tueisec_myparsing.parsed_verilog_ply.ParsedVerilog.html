@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>tueisec_myparsing.parsed_verilog_ply.ParsedVerilog &#8212; TUEISEC_myparsing 0.0.1a25 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=c61080f6"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddInput" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddInput.html" />
+    <link rel="prev" title="tueisec_myparsing.parsed_verilog_ply" href="tueisec_myparsing.parsed_verilog_ply.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a25</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../tueisec_myparsing.html" >tueisec_myparsing</a> &#187;</li>
+          <li><a href="tueisec_myparsing.parsed_verilog_ply.html" accesskey="U">tueisec_myparsing.parsed_verilog_ply</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="tueisec-myparsing-parsed-verilog-ply-parsedverilog">
+<h1>tueisec_myparsing.parsed_verilog_ply.ParsedVerilog<a class="headerlink" href="#tueisec-myparsing-parsed-verilog-ply-parsedverilog" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tueisec_myparsing.parsed_verilog_ply.</span></span><span class="sig-name descname"><span class="pre">ParsedVerilog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">netlist_file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_lib</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_ply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_const_as_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_all_const_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delete_unconnected_inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tueisec_myparsing/parsed_verilog_ply.html#ParsedVerilog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog" title="Link to this definition">¶</a></dt>
+<dd><p>Object representing a verilog file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>module_name</strong> – Name of the parsed module</p></li>
+<li><p><strong>nets</strong> – Dict containing a list of driven nodes for each net:
+<code class="code highlight python docutils literal highlight-python"><span class="p">[</span><span class="s2">&quot;net_a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;AND2X1&quot;</span><span class="p">,</span> <span class="s2">&quot;DFFPOSX1&quot;</span> <span class="o">...</span><span class="p">],</span> <span class="s2">&quot;net_b&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">]</span></code></p></li>
+<li><p><strong>nets_to_nodes</strong> – Dict mapping net names to the net driver, generated at end.</p></li>
+<li><p><strong>netlist_file_path</strong> – Path of the parsed file</p></li>
+<li><p><strong>cell_lib</strong> – cell_lib object corresponding to this netlist</p></li>
+<li><p><strong>nodes</strong> – <p>Tuple of node information:
+<code class="code highlight python docutils literal highlight-python"><span class="p">(</span><span class="n">in_nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">out_nodes</span><span class="p">)</span></code>, where each is a list of nodes.
+each node is a dict of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">inst_name</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">cell_name</span><span class="p">,</span>
+    <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span>
+    <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>and dest and src are lists of pin tuples like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">pin_name</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><strong>node_types</strong> – Simplified nodes dict only containing node-to-cell_type mapping</p></li>
+<li><p><strong>graph</strong> – Netlist graph as a dictionary adjacency list.
+For each node, there is a list of destination nodes.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddInput.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddInput" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddInput"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AddInput</span></code></a>(declaration)</p></td>
+<td><p>Helper function to add primary inputs to the graph</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNet_helper.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNet_helper" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNet_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AddNet_helper</span></code></a>(instance)</p></td>
+<td><p>Add the found net line to the nets and nodes dict</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNode.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNode" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AddNode</span></code></a>(instance)</p></td>
+<td><p>Helper function to add a node to the graph</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNode_helper.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNode_helper" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddNode_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AddNode_helper</span></code></a>(instance)</p></td>
+<td><p>Add the found net line to the nets and nodes dict</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddOutput.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddOutput" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddOutput"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AddOutput</span></code></a>(declaration)</p></td>
+<td><p>Helper function to add extra nodes for the primary outputs</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.__init__.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.__init__" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(netlist_file, cell_lib[, ...])</p></td>
+<td><p>Initialize the ParsedVerilog by parsing a source file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.add_edge_data.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.add_edge_data" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.add_edge_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_edge_data</span></code></a>(G[, graph_attribute_names])</p></td>
+<td><p>For each edge in the graph, add attributes such as begin and end ports,</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.add_edge_data_multi.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.add_edge_data_multi" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.add_edge_data_multi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_edge_data_multi</span></code></a>(G[, graph_attribute_names])</p></td>
+<td><p>For each edge in the graph, add attributes such as begin and end ports,</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_final_assign_chain.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_final_assign_chain" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_final_assign_chain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_final_assign_chain</span></code></a>(assign_later)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_nets.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_nets" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_nets"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_nets</span></code></a>(module)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_nodes.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_nodes" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.build_nodes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_nodes</span></code></a>(module)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.create_nets_expl.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.create_nets_expl" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.create_nets_expl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_nets_expl</span></code></a>(declaration)</p></td>
+<td><p>parses all nodes for explicitly declared wires/nets.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.create_nets_impl.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.create_nets_impl" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.create_nets_impl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_nets_impl</span></code></a>(instance)</p></td>
+<td><p>parses all nodes for implicitly declared wires/nets</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.find_inpins.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.find_inpins" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.find_inpins"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_inpins</span></code></a>(edge, net)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_net_names_for_decls.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_net_names_for_decls" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_net_names_for_decls"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_net_names_for_decls</span></code></a>(declaration)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_net_names_for_ports.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_net_names_for_ports" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_net_names_for_ports"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_net_names_for_ports</span></code></a>(port, instance)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_node_functions_dict.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_node_functions_dict" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.generate_node_functions_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_node_functions_dict</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_graph_with_types_in_names.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_graph_with_types_in_names" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_graph_with_types_in_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_graph_with_types_in_names</span></code></a>([cached])</p></td>
+<td><p>Prepend node types for all non I/O nodes that do not have that name already</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_networkx_graph.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_networkx_graph" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_networkx_graph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_networkx_graph</span></code></a>([node_types, complete, ...])</p></td>
+<td><p>Convert the adjlist-dict to a networkx graph</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.parse_ast_to_self.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.parse_ast_to_self" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.parse_ast_to_self"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ast_to_self</span></code></a>(ast)</p></td>
+<td><p>Parses the verilog ast 2 times to get the dictionaries</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.rev_lookup.html#tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.rev_lookup" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.rev_lookup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rev_lookup</span></code></a>(nodes_lookup)</p></td>
+<td><p>Generate a dictionary of driving nodes for nets by reversing the nodes dictionary.</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../tueisec_myparsing.html">tueisec_myparsing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddInput.html" title="tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.AddInput"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tueisec_myparsing.parsed_verilog_ply.html" title="tueisec_myparsing.parsed_verilog_ply"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

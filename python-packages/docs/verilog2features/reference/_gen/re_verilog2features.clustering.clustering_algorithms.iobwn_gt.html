@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>re_verilog2features.clustering.clustering_algorithms.iobwn_gt &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="re_verilog2features.clustering.clustering_algorithms.merge_nodes" href="re_verilog2features.clustering.clustering_algorithms.merge_nodes.html" />
+    <link rel="prev" title="re_verilog2features.clustering.clustering_algorithms.gt_filter_most_valuable_edge" href="re_verilog2features.clustering.clustering_algorithms.gt_filter_most_valuable_edge.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../re_verilog2features.html" >re_verilog2features</a> &#187;</li>
+          <li><a href="re_verilog2features.clustering.clustering_algorithms.html" accesskey="U">re_verilog2features.clustering.clustering_algorithms</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="re-verilog2features-clustering-clustering-algorithms-iobwn-gt">
+<h1>re_verilog2features.clustering.clustering_algorithms.iobwn_gt<a class="headerlink" href="#re-verilog2features-clustering-clustering-algorithms-iobwn-gt" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="re_verilog2features.clustering.clustering_algorithms.iobwn_gt">
+<span class="sig-prename descclassname"><span class="pre">re_verilog2features.clustering.clustering_algorithms.</span></span><span class="sig-name descname"><span class="pre">iobwn_gt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_tries</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/re_verilog2features/clustering/clustering_algorithms.html#iobwn_gt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#re_verilog2features.clustering.clustering_algorithms.iobwn_gt" title="Link to this definition">¶</a></dt>
+<dd><p>Finds communities in a graph using the Girvan–Newman method.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul>
+<li><p><strong>G</strong> (<em>NetworkX graph</em>)</p></li>
+<li><p><strong>most_valuable_edge</strong> (<em>function</em>) – Function that takes a graph as input and outputs an edge. The
+edge returned by this function will be recomputed and removed at
+each iteration of the algorithm.</p>
+<p>If not specified, the edge with the highest
+<code class="xref py py-func docutils literal notranslate"><span class="pre">networkx.edge_betweenness_centrality()</span></code> will be used.</p>
+</li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>iterator</em> – Iterator over tuples of sets of nodes in <cite>G</cite>. Each set of node
+is a community, each tuple is a sequence of communities at a
+particular level of the algorithm.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>To get the first pair of communities:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">path_graph</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comp</span> <span class="o">=</span> <span class="n">girvan_newman</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">next</span><span class="p">(</span><span class="n">comp</span><span class="p">))</span>
+<span class="go">([0, 1, 2, 3, 4], [5, 6, 7, 8, 9])</span>
+</pre></div>
+</div>
+<p>To get only the first <em>k</em> tuples of communities, use
+<a class="reference external" href="https://docs.python.org/3/library/itertools.html#itertools.islice" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">itertools.islice()</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">path_graph</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comp</span> <span class="o">=</span> <span class="n">girvan_newman</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">communities</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">communities</span><span class="p">))</span>
+<span class="gp">...</span>
+<span class="go">([0, 1, 2, 3], [4, 5, 6, 7])</span>
+<span class="go">([0, 1], [2, 3], [4, 5, 6, 7])</span>
+</pre></div>
+</div>
+<p>To stop getting tuples of communities once the number of communities
+is greater than <em>k</em>, use <a class="reference external" href="https://docs.python.org/3/library/itertools.html#itertools.takewhile" title="(in Python v3.13)"><code class="xref py py-func docutils literal notranslate"><span class="pre">itertools.takewhile()</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">path_graph</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comp</span> <span class="o">=</span> <span class="n">girvan_newman</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">limited</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">takewhile</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">k</span><span class="p">,</span> <span class="n">comp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">communities</span> <span class="ow">in</span> <span class="n">limited</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">communities</span><span class="p">))</span>
+<span class="gp">...</span>
+<span class="go">([0, 1, 2, 3], [4, 5, 6, 7])</span>
+<span class="go">([0, 1], [2, 3], [4, 5, 6, 7])</span>
+<span class="go">([0, 1], [2, 3], [4, 5], [6, 7])</span>
+</pre></div>
+</div>
+<p>To just choose an edge to remove based on the weight:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">operator</span><span class="w"> </span><span class="kn">import</span> <span class="n">itemgetter</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">path_graph</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">edges</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">edges</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nx</span><span class="o">.</span><span class="n">set_edge_attributes</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="p">{(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">},</span> <span class="s1">&#39;weight&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">heaviest</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comp</span> <span class="o">=</span> <span class="n">girvan_newman</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">most_valuable_edge</span><span class="o">=</span><span class="n">heaviest</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">next</span><span class="p">(</span><span class="n">comp</span><span class="p">))</span>
+<span class="go">([0, 1, 2, 3, 4, 5, 6, 7, 8], [9])</span>
+</pre></div>
+</div>
+<p>To utilize edge weights when choosing an edge with, for example, the
+highest betweenness centrality:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">edge_betweenness_centrality</span> <span class="k">as</span> <span class="n">betweenness</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">most_central_edge</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">centrality</span> <span class="o">=</span> <span class="n">betweenness</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">centrality</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">centrality</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">path_graph</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comp</span> <span class="o">=</span> <span class="n">girvan_newman</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">most_valuable_edge</span><span class="o">=</span><span class="n">most_central_edge</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">next</span><span class="p">(</span><span class="n">comp</span><span class="p">))</span>
+<span class="go">([0, 1, 2, 3, 4], [5, 6, 7, 8, 9])</span>
+</pre></div>
+</div>
+<p>To specify a different ranking algorithm for edges, use the
+<cite>most_valuable_edge</cite> keyword argument:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">edge_betweenness_centrality</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">random</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">most_central_edge</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">centrality</span> <span class="o">=</span> <span class="n">edge_betweenness_centrality</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">max_cent</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">centrality</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="gp">... </span>    <span class="c1"># Scale the centrality values so they are between 0 and 1,</span>
+<span class="gp">... </span>    <span class="c1"># and add some random noise.</span>
+<span class="gp">... </span>    <span class="n">centrality</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="p">:</span> <span class="n">c</span> <span class="o">/</span> <span class="n">max_cent</span> <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">centrality</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="gp">... </span>    <span class="c1"># Add some random noise.</span>
+<span class="gp">... </span>    <span class="n">centrality</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="p">:</span> <span class="n">c</span> <span class="o">+</span> <span class="n">random</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">centrality</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">centrality</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">centrality</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">path_graph</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comp</span> <span class="o">=</span> <span class="n">girvan_newman</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">most_valuable_edge</span><span class="o">=</span><span class="n">most_central_edge</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Notes</p>
+<p>The Girvan–Newman algorithm detects communities by progressively
+removing edges from the original graph. The algorithm removes the
+“most valuable” edge, traditionally the edge with the highest
+betweenness centrality, at each step. As the graph breaks down into
+pieces, the tightly knit community structure is exposed and the
+result can be depicted as a dendrogram.</p>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../re_verilog2features.html">re_verilog2features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/re_verilog2features.clustering.clustering_algorithms.iobwn_gt.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.clustering.clustering_algorithms.merge_nodes.html" title="re_verilog2features.clustering.clustering_algorithms.merge_nodes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.clustering.clustering_algorithms.gt_filter_most_valuable_edge.html" title="re_verilog2features.clustering.clustering_algorithms.gt_filter_most_valuable_edge"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

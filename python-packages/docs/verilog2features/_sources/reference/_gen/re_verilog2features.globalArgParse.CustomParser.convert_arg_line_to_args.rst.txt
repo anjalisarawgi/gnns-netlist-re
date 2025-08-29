@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.CustomParser.convert\_arg\_line\_to\_args
+=============================================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. automethod:: re_verilog2features.globalArgParse.CustomParser.convert_arg_line_to_args

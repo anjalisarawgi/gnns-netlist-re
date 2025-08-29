@@ -1,0 +1,23 @@
+﻿tueisec\_myparsing.cli.cluster2verilog
+======================================
+
+.. automodule:: tueisec_myparsing.cli.cluster2verilog
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+   
+   
+
+   
+   
+   
+
+   
+   
+   

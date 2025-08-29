@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Changelog &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="_static/documentation_options.js?v=0d99103b"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Authors" href="authors.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="index.html">re_verilog2features-0.0.1a22</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<p>This project uses semantic versioning.
+This changelog uses recommended emojis from <a class="reference external" href="https://gitmoji.dev/">https://gitmoji.dev/</a></p>
+<section id="a21-2024-03-05">
+<h2>0.0.1a21 (2024-03-05)<a class="headerlink" href="#a21-2024-03-05" title="Link to this heading">¶</a></h2>
+<section id="changed">
+<h3>Changed:<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Fix a inconsistency between ig’s and nx’s closeness centrality. it must be 0 for INPUTs</p></li>
+<li><p>✨: When converting from nx2igraph, use ig’s own conversion function</p></li>
+</ul>
+</section>
+</section>
+<section id="a20-2024-03-03">
+<h2>0.0.1a20 (2024-03-03)<a class="headerlink" href="#a20-2024-03-03" title="Link to this heading">¶</a></h2>
+<section id="id1">
+<h3>Changed:<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Fix a incompatibility with newer versions of networkx</p></li>
+</ul>
+</section>
+</section>
+<section id="a19-2024-02-07">
+<h2>0.0.1a19 (2024-02-07)<a class="headerlink" href="#a19-2024-02-07" title="Link to this heading">¶</a></h2>
+<section id="id2">
+<h3>Changed:<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Fix a bug in printing of overlong wires, there were no linebreaks</p></li>
+</ul>
+</section>
+</section>
+<section id="a18-2024-01-15">
+<h2>0.0.1a18 (2024-01-15)<a class="headerlink" href="#a18-2024-01-15" title="Link to this heading">¶</a></h2>
+<section id="id3">
+<h3>Changed:<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛/✨: allow very long module names in netlists</p></li>
+</ul>
+</section>
+</section>
+<section id="a17-2023-08-09">
+<h2>0.0.1a17 (2023-08-09)<a class="headerlink" href="#a17-2023-08-09" title="Link to this heading">¶</a></h2>
+<section id="id4">
+<h3>Changed:<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>✨: new tool to convert the output of clustering to a representation nice for gephi</p></li>
+</ul>
+</section>
+</section>
+<section id="a16-2023-04-26">
+<h2>0.0.1a16 (2023-04-26)<a class="headerlink" href="#a16-2023-04-26" title="Link to this heading">¶</a></h2>
+<section id="id5">
+<h3>Changed:<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛️: Fix folder hierarchy of new clustering output: every algo should have at least
+one parameter, so that all algos have a hierarchy level defining the params</p></li>
+</ul>
+</section>
+</section>
+<section id="a15-2023-02-13">
+<h2>0.0.1a15 (2023-02-13)<a class="headerlink" href="#a15-2023-02-13" title="Link to this heading">¶</a></h2>
+<section id="id6">
+<h3>Changed:<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>✏️: typo in setup.py - wrong package name for scikit-learn</p></li>
+</ul>
+</section>
+</section>
+<section id="a14-2023-02-13">
+<h2>0.0.1a14 (2023-02-13)<a class="headerlink" href="#a14-2023-02-13" title="Link to this heading">¶</a></h2>
+<section id="id7">
+<h3>Changed:<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>⬆️: now depending on python 3.8, as should have always been the case since commit 60102213e896006f941508b9298226ae812d414c</p></li>
+<li><p>➖: remove dependency on sklearn and…</p></li>
+<li><p>➕: add dependeny on scikit-learn, which is the canonical, nondeprecated name</p></li>
+<li><p>✨: new tool to calculate hasegawa features in the netlist</p></li>
+</ul>
+</section>
+</section>
+<section id="a13-2022-07-19">
+<h2>0.0.1a13 (2022-07-19)<a class="headerlink" href="#a13-2022-07-19" title="Link to this heading">¶</a></h2>
+<section id="id8">
+<h3>Changed:<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>⚡: Clustering: overwrite logic adapted accordingly</p></li>
+<li><dl class="simple">
+<dt>✨: Clustering: new output implementation:</dt><dd><p>Output folder names use individual IDs instead of parameter values.
+Parameters are saved into a toml file, separately.</p>
+</dd>
+</dl>
+</li>
+<li><p>🏛️ : Keep legacy clustering datastructure below –legacy flag</p></li>
+</ul>
+</section>
+</section>
+<section id="a12-2022-07-15">
+<h2>0.0.1a12 (2022-07-15)<a class="headerlink" href="#a12-2022-07-15" title="Link to this heading">¶</a></h2>
+<section id="id9">
+<h3>Changed:<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>👷: Have newlines in the release description…</p></li>
+<li><p>📝: Document the usage of clustering config roughly</p></li>
+<li><p>📦: Use sklearn as a requirement…</p></li>
+</ul>
+</section>
+</section>
+<section id="a11-2022-07-15">
+<h2>0.0.1a11 (2022-07-15)<a class="headerlink" href="#a11-2022-07-15" title="Link to this heading">¶</a></h2>
+<section id="id10">
+<h3>Changed:<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>📝: Document how to release a new version in <a class="reference internal" href="contributing.html"><span class="doc">Contributing</span></a></p></li>
+<li><p>📦️: Cleanup of setup.py, python requirements etc.</p></li>
+<li><p>📝: MCL documented in installation instructions</p></li>
+<li><p>👷: Maybe fix the release script once and for all.</p></li>
+<li><p>📝: Improved docs: Additional code example added</p></li>
+<li><p>✨: In <cite>make_features</cite> you can now pass a single file on the commandline and it will be handled!</p></li>
+<li><p>🐛: It is mandatory to give an output path. this is now enforced by the argumentparser</p></li>
+<li><dl class="simple">
+<dt>✨: Requirement for graphtool reduced: there is a fast calculation that is solely based on igraph and networkx now.</dt><dd><p>Use <cite>–use_ig</cite> as a flag for <cite>make_features</cite></p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>➕: New networkx versions have another internal api we depend on, as we modify an networkx method for our purposes.</dt><dd><p>We need to update the requirements for python packages.</p>
+</dd>
+</dl>
+</li>
+<li><p>✨: There is a very rough version of a hasegawa-feature (HT detection) calculator now.</p></li>
+<li><p>👷: CI should build docs also for merge requests =&gt; you can see what you do when updating docs in MRs</p></li>
+<li><p>📝: Broken link in docs fixed</p></li>
+</ul>
+</section>
+</section>
+<section id="a10-2022-01-07">
+<h2>0.0.1a10 (2022-01-07)<a class="headerlink" href="#a10-2022-01-07" title="Link to this heading">¶</a></h2>
+<section id="id11">
+<h3>Changed:<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Fix input/output analysis for split_ports</p></li>
+<li><p>⚡: Add feature to run clustering without hierarchy files</p></li>
+</ul>
+</section>
+</section>
+<section id="a9-2021-10-21">
+<h2>0.0.1a9 (2021-10-21)<a class="headerlink" href="#a9-2021-10-21" title="Link to this heading">¶</a></h2>
+<section id="id12">
+<h3>Changed:<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>⬇️: Limit versions of python-igraph and leidenalg</p></li>
+<li><p>📝: Make docs building again</p></li>
+<li><p>🥅: Catch more errors during eigenvector centrality calculation</p></li>
+<li><p>🥅: Ignore bad parquet files in feature calculation</p></li>
+<li><p>✨: Add unflattened version of louvain_dend and nsbm via a config flag in the clustering_params.toml</p></li>
+<li><p>⚡️: remove exceptions-used-for-branching in louvain calculation</p></li>
+<li><p>✨: In clustering, import <a class="reference external" href="https://graph-tool.skewed.de/static/docs/stable/graph_tool.html#module-graph_tool" title="(in graph-tool v2.98)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">graph_tool</span></code></a> as late as possible, i.e. only if nsbm is acutally used.</p></li>
+</ul>
+</section>
+</section>
+<section id="a8-2021-07-31">
+<h2>0.0.1a8 (2021-07-31)<a class="headerlink" href="#a8-2021-07-31" title="Link to this heading">¶</a></h2>
+<section id="id13">
+<h3>Changed:<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>✨: Introduce <code class="xref py py-mod docutils literal notranslate"><span class="pre">make_scoap</span></code> to calculate scoap data for a design</p></li>
+<li><p>👷: fix CI release message with proper linebreaks</p></li>
+</ul>
+</section>
+</section>
+<section id="a7-2021-07-12">
+<h2>0.0.1a7 (2021-07-12)<a class="headerlink" href="#a7-2021-07-12" title="Link to this heading">¶</a></h2>
+<section id="id14">
+<h3>Changed:<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>👷: improve CI release message with a changelog</p></li>
+<li><p>📝: <a class="reference internal" href="reference/_gen/re_verilog2features.cli.make_features.html#module-re_verilog2features.cli.make_features" title="re_verilog2features.cli.make_features"><code class="xref py py-mod docutils literal notranslate"><span class="pre">make_features</span></code></a> only accepts folders for now.</p></li>
+<li><p>🐛: fix error reporting for empty input folders to <a class="reference internal" href="reference/_gen/re_verilog2features.cli.make_features.html#module-re_verilog2features.cli.make_features" title="re_verilog2features.cli.make_features"><code class="xref py py-mod docutils literal notranslate"><span class="pre">make_features</span></code></a></p></li>
+<li><p>🐛: make a list of the known formats in <a class="reference internal" href="reference/_gen/re_verilog2features.cli.make_features.html#module-re_verilog2features.cli.make_features" title="re_verilog2features.cli.make_features"><code class="xref py py-mod docutils literal notranslate"><span class="pre">make_features</span></code></a>, because else the tool only accepts one input folder.</p></li>
+<li><p>🐛: In <a class="reference internal" href="reference/_gen/re_verilog2features.cli.make_features.html#module-re_verilog2features.cli.make_features" title="re_verilog2features.cli.make_features"><code class="xref py py-mod docutils literal notranslate"><span class="pre">make_features</span></code></a>, try to get rid of some unnecessary copies.</p></li>
+</ul>
+</section>
+</section>
+<section id="a6-2021-07-12">
+<h2>0.0.1a6 (2021-07-12)<a class="headerlink" href="#a6-2021-07-12" title="Link to this heading">¶</a></h2>
+<section id="id15">
+<h3>Changed:<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>📝: Improve documentation of <a class="reference internal" href="reference/_gen/re_verilog2features.cli.make_features.html#module-re_verilog2features.cli.make_features" title="re_verilog2features.cli.make_features"><code class="xref py py-mod docutils literal notranslate"><span class="pre">make_features</span></code></a>, <a class="reference internal" href="reference/_gen/re_verilog2features.cli.run_make_csv.html#module-re_verilog2features.cli.run_make_csv" title="re_verilog2features.cli.run_make_csv"><code class="xref py py-mod docutils literal notranslate"><span class="pre">run_make_csv</span></code></a>, <a class="reference internal" href="reference/_gen/re_verilog2features.cli.run_csv_to_hdf5.html#module-re_verilog2features.cli.run_csv_to_hdf5" title="re_verilog2features.cli.run_csv_to_hdf5"><code class="xref py py-mod docutils literal notranslate"><span class="pre">run_csv_to_hdf5</span></code></a></p></li>
+<li><p>🎨: lint make_features</p></li>
+<li><p>👷: update release script so that it generates non-404ing links</p></li>
+<li><p>🐛: fix <a class="reference internal" href="reference/_gen/re_verilog2features.create_data.graph_tests_nx.html#re_verilog2features.create_data.graph_tests_nx" title="re_verilog2features.create_data.graph_tests_nx"><code class="xref py py-func docutils literal notranslate"><span class="pre">graph_tests_nx</span></code></a>, there was a bad parameter name and wrong string formatting in loggin</p></li>
+<li><p>✨: Import <a class="reference external" href="https://graph-tool.skewed.de/static/docs/stable/graph_tool.html#module-graph_tool" title="(in graph-tool v2.98)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">graph_tool</span></code></a> as late as possible, so that the usage of <code class="docutils literal notranslate"><span class="pre">--use_nx</span></code> is possible without having <a class="reference external" href="https://graph-tool.skewed.de/static/docs/stable/graph_tool.html#module-graph_tool" title="(in graph-tool v2.98)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">graph_tool</span></code></a> installed.</p></li>
+</ul>
+</section>
+</section>
+<section id="a5-2021-07-07">
+<h2>0.0.1a5 (2021-07-07)<a class="headerlink" href="#a5-2021-07-07" title="Link to this heading">¶</a></h2>
+<section id="id16">
+<h3>Changed:<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Wrong requirements for igraph fixed.</p></li>
+<li><p>🐛: In feature calculation, if the node type is None, do not crash.</p></li>
+<li><p>✨: Add a new tool (executable <strong class="program">make_features</strong>) for feature generation.</p></li>
+<li><p>🗑️: Deprecate <strong class="program">run_make_csv</strong> in favor of <strong class="program">make_features</strong>.</p></li>
+</ul>
+</section>
+</section>
+<section id="a4-2021-05-28">
+<h2>0.0.1a4 (2021-05-28)<a class="headerlink" href="#a4-2021-05-28" title="Link to this heading">¶</a></h2>
+<section id="id17">
+<h3>Changed:<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>🐛: Match exporting returned wrong type on empty match</p></li>
+<li><p>🐛: Walksacan must not accept an float as nb_steps</p></li>
+<li><p>🐛: louvain_dend returned wrong type</p></li>
+<li><p>🐛: wrong variable name in louvain clustering</p></li>
+<li><p>🐛: Missing requirements and imports</p></li>
+<li><p>🐛: Workaround for Gitlab Bug in publishing</p></li>
+</ul>
+</section>
+</section>
+<section id="a3-2021-05-04">
+<h2>0.0.1a3 (2021-05-04)<a class="headerlink" href="#a3-2021-05-04" title="Link to this heading">¶</a></h2>
+<section id="id18">
+<h3>Changed:<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>dependency to mypersing without url</p></li>
+</ul>
+</section>
+</section>
+<section id="a2-2021-05-03">
+<h2>0.0.1a2 (2021-05-03)<a class="headerlink" href="#a2-2021-05-03" title="Link to this heading">¶</a></h2>
+<section id="id19">
+<h3>Changed:<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>permanent release links</p></li>
+</ul>
+</section>
+</section>
+<section id="a1-2021-05-03">
+<h2>0.0.1a1 (2021-05-03)<a class="headerlink" href="#a1-2021-05-03" title="Link to this heading">¶</a></h2>
+<section id="id20">
+<h3>Changed:<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>First version with releases</p></li>
+<li><p>added clustering</p></li>
+<li><p>some refactoring</p></li>
+<li><p>removed forkme banner on docs</p></li>
+</ul>
+</section>
+</section>
+<section id="id21">
+<h2>0.0.0 (2019-09-23)<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Initial refactored version.</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#a21-2024-03-05">0.0.1a21 (2024-03-05)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a20-2024-03-03">0.0.1a20 (2024-03-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a19-2024-02-07">0.0.1a19 (2024-02-07)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a18-2024-01-15">0.0.1a18 (2024-01-15)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a17-2023-08-09">0.0.1a17 (2023-08-09)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a16-2023-04-26">0.0.1a16 (2023-04-26)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a15-2023-02-13">0.0.1a15 (2023-02-13)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a14-2023-02-13">0.0.1a14 (2023-02-13)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a13-2022-07-19">0.0.1a13 (2022-07-19)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a12-2022-07-15">0.0.1a12 (2022-07-15)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a11-2022-07-15">0.0.1a11 (2022-07-15)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a10-2022-01-07">0.0.1a10 (2022-01-07)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a9-2021-10-21">0.0.1a9 (2021-10-21)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a8-2021-07-31">0.0.1a8 (2021-07-31)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a7-2021-07-12">0.0.1a7 (2021-07-12)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a6-2021-07-12">0.0.1a6 (2021-07-12)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a5-2021-07-07">0.0.1a5 (2021-07-07)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a4-2021-05-28">0.0.1a4 (2021-05-28)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a3-2021-05-04">0.0.1a3 (2021-05-04)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a2-2021-05-03">0.0.1a2 (2021-05-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a1-2021-05-03">0.0.1a1 (2021-05-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id21">0.0.0 (2019-09-23)</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/changelog.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="authors.html" title="Authors"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

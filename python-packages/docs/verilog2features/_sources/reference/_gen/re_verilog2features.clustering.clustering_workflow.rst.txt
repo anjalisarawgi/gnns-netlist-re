@@ -1,0 +1,33 @@
+﻿re\_verilog2features.clustering.clustering\_workflow
+====================================================
+
+.. automodule:: re_verilog2features.clustering.clustering_workflow
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      dictinvert
+      exists_in_hdf5
+      generate_dictionary
+      get_existing_param_data
+      get_match
+      get_results
+      multi_run_wrapper
+      multi_run_wrapper_legacy
+      perform_clustering
+      store_dictionary
+      update_config
+   
+   
+
+   
+   
+   
+
+   
+   
+   

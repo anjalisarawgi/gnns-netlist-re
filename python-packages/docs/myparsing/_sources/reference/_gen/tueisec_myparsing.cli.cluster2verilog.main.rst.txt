@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.cluster2verilog.main
+===========================================
+
+.. currentmodule:: tueisec_myparsing.cli.cluster2verilog
+
+.. autofunction:: tueisec_myparsing.cli.cluster2verilog.main

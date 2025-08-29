@@ -1,0 +1,6 @@
+tueisec\_myparsing.parsed\_verilog.ParsedVerilog.\_\_init\_\_
+=============================================================
+
+.. currentmodule:: tueisec_myparsing.parsed_verilog
+
+.. automethod:: tueisec_myparsing.parsed_verilog.ParsedVerilog.__init__

@@ -1,0 +1,6 @@
+tueisec\_myparsing.codegen.del\_paren
+=====================================
+
+.. currentmodule:: tueisec_myparsing.codegen
+
+.. autofunction:: tueisec_myparsing.codegen.del_paren

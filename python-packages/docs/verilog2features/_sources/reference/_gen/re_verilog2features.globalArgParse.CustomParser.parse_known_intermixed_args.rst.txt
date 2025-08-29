@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.CustomParser.parse\_known\_intermixed\_args
+===============================================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. automethod:: re_verilog2features.globalArgParse.CustomParser.parse_known_intermixed_args

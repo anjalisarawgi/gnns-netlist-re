@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.myparsing_ply &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.myparsing_ply</h1><div class="highlight"><pre>
+<span></span>
+<span class="c1">########################################################################</span>
+<span class="c1"># derived from JB, partly changed by MB, refactored by AD</span>
+<span class="c1">########################################################################</span>
+
+<span class="c1"># stdlib imports</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parsed_verilog_ply</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParsedVerilog</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.liberty_parsing</span><span class="w"> </span><span class="kn">import</span> <span class="n">own_parseLibertyToDataStruct</span><span class="p">,</span> <span class="n">parse_liberty_file</span>
+
+<span class="n">cell_lib</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">node_lookup</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">nets_to_nodes</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="parse_to_obj">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_ply.parse_to_obj.html#tueisec_myparsing.myparsing_ply.parse_to_obj">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_to_obj</span><span class="p">(</span>
+    <span class="n">netlist_file</span><span class="p">,</span>
+    <span class="n">liberty_file</span><span class="p">,</span>
+    <span class="n">pickle_folder</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span>
+    <span class="n">exprvar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">space_is_and</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">vparsing_debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">add_const_as_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">delete_unconnected_inputs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entry point for parsing a verilog file using a refined API.</span>
+
+<span class="sd">    Specify the verilog file to parse and the liberty file to use.</span>
+
+<span class="sd">    :param netlist_file: Filepath of the verilog file to parse</span>
+<span class="sd">    :type netlist_file: str</span>
+<span class="sd">    :param liberty_file: Filepath of the liberty file to use</span>
+<span class="sd">    :type liberty_file: str</span>
+<span class="sd">    :param pickle_folder: Folderpath, where the parsed liberty file can be found, </span>
+<span class="sd">        defaults to os.getcwd()</span>
+<span class="sd">    :type pickle_folder: [type], str</span>
+<span class="sd">    :param exprvar: If set to true, cell functions are returned as pyeda expressions,</span>
+<span class="sd">        defaults to False</span>
+<span class="sd">    :param space_is_and: Deprecated option kept for compatibility. Do not use.</span>
+<span class="sd">        Defaults to :pycode:`None`.</span>
+<span class="sd">    :type space_is_and: bool, optional</span>
+<span class="sd">    :param vparsing_debug: Enable debug output from ply parsing, defaults to False</span>
+<span class="sd">    :type vparsing_debug: bool, optional</span>
+<span class="sd">    :type exprvar: bool, optional</span>
+<span class="sd">    :return: Returns a ParsedVerilog object.</span>
+<span class="sd">    :rtype: parsed_verilog_ply.ParsedVerilog</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">space_is_and</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Space is and is deprecated, as the root cause was fixed. Ignoring it!&quot;</span><span class="p">)</span>
+
+    <span class="c1"># check if lib was already parsed</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">parse_liberty_file</span><span class="p">(</span><span class="n">liberty_file</span><span class="p">,</span> <span class="n">pickle_folder</span><span class="p">)</span>
+
+    <span class="c1"># parse liberty file to the cell_lib data structure</span>
+    <span class="n">cell_lib</span> <span class="o">=</span> <span class="n">own_parseLibertyToDataStruct</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">exprvar</span><span class="p">)</span>
+
+    <span class="c1"># parse the verilog file using the cell_lib</span>
+    <span class="n">parsed_verilog</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="p">(</span>
+        <span class="n">netlist_file</span><span class="p">,</span>
+        <span class="n">cell_lib</span><span class="p">,</span>
+        <span class="n">debug_ply</span><span class="o">=</span><span class="n">vparsing_debug</span><span class="p">,</span>
+        <span class="n">add_const_as_input</span><span class="o">=</span><span class="n">add_const_as_input</span><span class="p">,</span>
+        <span class="n">delete_unconnected_inputs</span><span class="o">=</span><span class="n">delete_unconnected_inputs</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">parsed_verilog</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

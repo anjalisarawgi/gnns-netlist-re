@@ -1,0 +1,23 @@
+﻿tueisec\_myparsing.myparsing\_ply
+=================================
+
+.. automodule:: tueisec_myparsing.myparsing_ply
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      parse_to_obj
+   
+   
+
+   
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.init\_global\_parser
+========================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. autofunction:: re_verilog2features.globalArgParse.init_global_parser

@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.CustomParser.parsed\_args
+=============================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. autoproperty:: re_verilog2features.globalArgParse.CustomParser.parsed_args

@@ -1,0 +1,6 @@
+re\_verilog2features.graph\_algo\_func.nx2gt
+============================================
+
+.. currentmodule:: re_verilog2features.graph_algo_func
+
+.. autofunction:: re_verilog2features.graph_algo_func.nx2gt

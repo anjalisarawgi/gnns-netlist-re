@@ -1,0 +1,29 @@
+﻿tueisec\_myparsing.myparsing\_bench
+===================================
+
+.. automodule:: tueisec_myparsing.myparsing_bench
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      AddInput_bench
+      AddNode_bench
+      AddOutput_bench
+      create_nets_expl_bench
+      create_nets_impl_bench
+      parseBenchToData
+      parse_it_bench
+   
+   
+
+   
+   
+   
+
+   
+   
+   

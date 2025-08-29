@@ -1,0 +1,6 @@
+re\_verilog2features.hasegawa\_et\_al.calc\_in\_flipflop\_4
+===========================================================
+
+.. currentmodule:: re_verilog2features.hasegawa_et_al
+
+.. autofunction:: re_verilog2features.hasegawa_et_al.calc_in_flipflop_4

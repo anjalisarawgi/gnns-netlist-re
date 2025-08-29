@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.cli.partition2gephi &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.cli.partition2gephi</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Run clustering.</span>
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: Synopsys:</span>
+
+<span class="sd">    usage: partition2gephi [-h] [--cores CORES] -o OUTPUT_PATH [-p PARTITION_GRAPH_PATH] [-c CLUSTERED_GRAPH_PATH] [-t {txt,gexf,gml,graphml,json,epq,pq,gpickle}]</span>
+<span class="sd">                           [--smallest_first] [--do-not-zip] [--debug]</span>
+<span class="sd">                           designs [designs ...]</span>
+
+<span class="sd">    Create a single graph showing all partition results.</span>
+
+<span class="sd">    positional arguments:</span>
+<span class="sd">      designs               One or many graph files to generate the gephi view for. Please specify the original graph, as given to `run_clustering`. This application can</span>
+<span class="sd">                            read (txt, gml, graphml, gexf, pq, json). Note that the designs will be sorted by file size, as it is more efficient to handle large files</span>
+<span class="sd">                            first.</span>
+
+<span class="sd">    optional arguments:</span>
+<span class="sd">      -h, --help            show this help message and exit</span>
+<span class="sd">      --cores CORES         Cores to use for processing</span>
+<span class="sd">      -o OUTPUT_PATH, --output_path OUTPUT_PATH</span>
+<span class="sd">                            The filepath where gephi graphs will be stored. Filename will be defined by input path. Remember to set your wanted output format with `-t`.</span>
+<span class="sd">      -p PARTITION_GRAPH_PATH, --partition_graph_path PARTITION_GRAPH_PATH</span>
+<span class="sd">                            The folder where partition_graph output files are found. The folder should contain one folder per design, containing partition folders.</span>
+<span class="sd">      -c CLUSTERED_GRAPH_PATH, --clustered_graph_path CLUSTERED_GRAPH_PATH</span>
+<span class="sd">                            The folder where clustered_graph output files are found. The folder should contain one folder per design, containing one folder per cluster</span>
+<span class="sd">                            method, containing one folder per parameter set containing one folder per edentified cluster.</span>
+<span class="sd">      -t {txt,gexf,gml,graphml,json,epq,pq,gpickle}, --output-format {txt,gexf,gml,graphml,json,epq,pq,gpickle}</span>
+<span class="sd">                            Choose the output format as you like.</span>
+<span class="sd">      --smallest_first      By default, the largest designs will be converted first. With this flag, convert the smallest first. Earlier results, but large designs may</span>
+<span class="sd">                            be severely delayed and create errors late.</span>
+<span class="sd">      --do-not-zip          No zipping of output file formats</span>
+
+<span class="sd">    main:</span>
+<span class="sd">      --debug               Enable debug output</span>
+
+<span class="sd">    Please note that this tool accepts multiple paths with its `designs` argument. Please do not start multiple instances of this executable, but start one instance and</span>
+<span class="sd">    supply it with all the netlists you want to generate for. This is most efficient.</span>
+
+<span class="sd">    Recommended settings for --cores is more than 1! Please still make sure that you never exceed your alotted core limit!</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span>
+
+<span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">init_global_parser</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Create a single graph showing all partition results.&quot;</span><span class="p">,</span>
+    <span class="n">epilog</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        Please note that this tool accepts multiple paths</span>
+<span class="s2">        with its `designs` argument.</span>
+<span class="s2">        Please do not start multiple instances of this executable, but</span>
+<span class="s2">        start one instance and supply it with all the netlists you want</span>
+<span class="s2">        to generate for. This is most efficient.</span>
+<span class="s2">        |n</span>
+<span class="s2">        Recommended settings for --cores is more than 1! Please</span>
+<span class="s2">        still make sure that you never exceed your alotted core limit!</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.pool_wrapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_in_pool_with_progress</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.graph_output_file_formats</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphOutputFormat</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.cli.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_cli</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pformat</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">toml</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span><span class="w"> </span><span class="kn">import</span> <span class="n">GLOBAL_PARSER</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">pg_path_default</span> <span class="o">=</span> <span class="s2">&quot;outputFiles/</span><span class="si">{}</span><span class="s2">/partition_graph/&quot;</span>
+<span class="n">cg_path_default</span> <span class="o">=</span> <span class="s2">&quot;outputFiles/</span><span class="si">{}</span><span class="s2">/clustered_graph/&quot;</span>
+<span class="k">try</span><span class="p">:</span>  <span class="c1"># sphinx barrier, because GLOBAL_PARSER will fail to import</span>
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;designs&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;One or many graph files to generate the gephi view for. &quot;</span>
+        <span class="s2">&quot;Please specify the original graph, as given to `run_clustering`. &quot;</span>
+        <span class="s2">&quot;This application can read (txt, gml, graphml, gexf, pq, json). &quot;</span>
+        <span class="s2">&quot;Note that the designs will be sorted by file size, &quot;</span>
+        <span class="s2">&quot;as it is more efficient to handle large files first.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--cores&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cores to use for processing&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--output_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The filepath where gephi graphs will be stored. &quot;</span>
+        <span class="s2">&quot;Filename will be defined by input path. &quot;</span>
+        <span class="s2">&quot;Remember to set your wanted output format with `-t`.&quot;</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-p&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--partition_graph_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;The folder where partition_graph output files are found. &quot;</span>
+            <span class="s2">&quot;The folder should contain one folder per design, containing &quot;</span>
+            <span class="s2">&quot;partition folders.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">pg_path_default</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--clustered_graph_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;The folder where clustered_graph output files are found. &quot;</span>
+            <span class="s2">&quot;The folder should contain one folder per design, containing &quot;</span>
+            <span class="s2">&quot;one folder per cluster method, containing one folder per &quot;</span>
+            <span class="s2">&quot;parameter set containing one folder per edentified cluster.&quot;</span>
+
+        <span class="p">),</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">cg_path_default</span><span class="p">,</span>
+    <span class="p">)</span>
+                            
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-t&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--output-format&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Choose the output format as you like.&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">adjlist</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="n">GraphOutputFormat</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">GraphOutputFormat</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--smallest_first&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;By default, the largest designs will be converted first. &quot;</span>
+        <span class="s2">&quot;With this flag, convert the smallest first. Earlier results, &quot;</span>
+        <span class="s2">&quot;but large designs may be severely delayed and create errors late.&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_false&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--do-not-zip&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;No zipping of output file formats&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;GLOBAL_PARSER unitialized. Are you really sure that you init&#39;ed it?&quot;</span><span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.partition2gephi.main.html#re_verilog2features.cli.partition2gephi.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--debug&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable debug output&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">parse_args_main</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span>
+            <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span>
+            <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;re_verilog2features&quot;</span><span class="p">,</span> <span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span>
+            <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+            <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;re_verilog2features&quot;</span><span class="p">,</span> <span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+    <span class="n">designs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">designs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">run_in_pool_with_progress</span><span class="p">(</span><span class="n">partition_to_gephi</span><span class="p">,</span> <span class="n">designs</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">cores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="partition_to_gephi">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.partition2gephi.partition_to_gephi.html#re_verilog2features.cli.partition2gephi.partition_to_gephi">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">partition_to_gephi</span><span class="p">(</span><span class="n">designpath</span><span class="p">):</span>
+    <span class="n">G</span><span class="p">,</span> <span class="n">architecture_name</span> <span class="o">=</span> <span class="n">read_original_graph</span><span class="p">(</span><span class="n">designpath</span><span class="p">)</span>
+    <span class="n">read_partition</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">architecture_name</span><span class="p">)</span>
+    <span class="n">read_clusters</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">architecture_name</span> <span class="p">)</span>
+    <span class="n">write_graph</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">architecture_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="read_original_graph">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.partition2gephi.read_original_graph.html#re_verilog2features.cli.partition2gephi.read_original_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_original_graph</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+
+    <span class="n">architecture_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">d</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing </span><span class="si">{</span><span class="n">architecture_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">read_graph_from_filepath</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">architecture_name</span></div>
+
+
+<div class="viewcode-block" id="read_partition">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.partition2gephi.read_partition.html#re_verilog2features.cli.partition2gephi.read_partition">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_partition</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">architecture_name</span><span class="p">):</span>
+    <span class="c1"># read ground_truth partitions</span>
+    <span class="n">partition_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">partition_node_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># find all pq files for patition</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">partition_graph_path</span><span class="p">,</span> <span class="n">architecture_name</span><span class="p">,</span> <span class="s2">&quot;*.pq&quot;</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="c1"># read in the pq files</span>
+        <span class="n">nodes_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="n">nx</span><span class="o">.</span><span class="n">from_pandas_edgelist</span><span class="p">(</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">),</span> <span class="n">create_using</span><span class="o">=</span><span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">partition_node_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">nodes_list</span><span class="p">)</span>
+        <span class="n">hierarchy_address</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;partitionReal_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_moduleName_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">hierarchy_levels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hierarchy_address</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">))</span>
+        <span class="n">matched_module</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_moduleName_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.pq&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_list</span><span class="p">:</span>
+            <span class="n">partition_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">hierarchy_address</span><span class="p">,</span> <span class="n">hierarchy_levels</span><span class="p">)</span> <span class="k">if</span> <span class="n">hierarchy_levels</span> <span class="o">&gt;</span> <span class="n">partition_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="n">partition_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;following partitioning was found&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">pformat</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">partition_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+    <span class="n">partition_dict</span> <span class="o">=</span> <span class="p">{</span> <span class="n">node</span><span class="p">:</span> <span class="n">partition</span> <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="n">partition</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span> <span class="ow">in</span> <span class="n">partition_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="p">}</span>
+    <span class="n">nx</span><span class="o">.</span><span class="n">set_node_attributes</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">partition_dict</span><span class="p">,</span> <span class="s2">&quot;partition&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="read_clusters">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.partition2gephi.read_clusters.html#re_verilog2features.cli.partition2gephi.read_clusters">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_clusters</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">architecture_name</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">cluster_method_path</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">clustered_graph_path</span><span class="p">,</span> <span class="n">architecture_name</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">clustering_method</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cluster_method_path</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">cluster_method_paramset_path</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cluster_method_path</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">cluster_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">cluster_node_list</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">toml_dict</span> <span class="o">=</span> <span class="n">toml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cluster_method_paramset_path</span> <span class="p">,</span><span class="s2">&quot;param-values.toml&quot;</span><span class="p">))</span>
+                <span class="n">parameter</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                    <span class="n">toml_dict</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">toml_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]][</span>
+                        <span class="nb">list</span><span class="p">(</span><span class="n">toml_dict</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">toml_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">cluster_method_paramset_clusterid_path</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cluster_method_paramset_path</span><span class="p">,</span> <span class="s2">&quot;cluster_*&quot;</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="n">graph_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cluster_method_paramset_clusterid_path</span><span class="p">,</span> <span class="s2">&quot;adj.pq&quot;</span><span class="p">)</span>
+
+                    <span class="n">nodes_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                        <span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">read_graph_from_filepath</span><span class="p">(</span><span class="n">graph_path</span><span class="p">)</span>
+                        <span class="c1"># nx.from_pandas_edgelist(</span>
+                        <span class="c1">#     pd.read_parquet(graph_path, engine=&quot;pyarrow&quot;), create_using=nx.DiGraph()</span>
+                        <span class="c1"># )</span>
+                    <span class="p">)</span>
+                    <span class="n">cluster_node_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">nodes_list</span><span class="p">)</span>
+                    <span class="n">clustering_id</span> <span class="o">=</span> <span class="n">graph_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">clustering_match</span> <span class="o">=</span> <span class="n">graph_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_moduleNames_&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+                    <span class="n">cluster_identifier</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">clustering_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">clustering_match</span><span class="si">}</span><span class="s2">&quot;</span>
+                    
+                    <span class="c1"># Allgemeine Zuweisug einfügen, wenn die Anzahl der Cluster</span>
+                    <span class="c1"># nicht übereinstimmt (alle kleineren zusammenfassen)</span>
+
+                    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_list</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cluster_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="n">cluster_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">cluster_identifier</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># node exists in another cluster already (overlapping clusters)</span>
+                            <span class="c1"># warn and do nothing, i.e. first cluster wins</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;method </span><span class="si">{</span><span class="n">clustering_method</span><span class="si">}</span><span class="s2"> with `</span><span class="si">{</span><span class="n">parameter</span><span class="si">}</span><span class="s2">` &quot;</span>
+                                <span class="s2">&quot;produces overlapping clusters. `</span><span class="si">{node}</span><span class="s2">` is &quot;</span>
+                                <span class="s2">&quot;both in `</span><span class="si">{cluster_dict[node]}</span><span class="s2">` and in &quot;</span>
+                                <span class="s2">&quot;`</span><span class="si">{cluster_identifier}</span><span class="s2">`&quot;</span>
+                            <span class="p">)</span>
+
+                    <span class="c1"># each node in the graph is now assigned the cluster according to the cluster dict</span>
+                <span class="n">nx</span><span class="o">.</span><span class="n">set_node_attributes</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">cluster_dict</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">clustering_method</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">parameter</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span><span class="s2">&quot;__&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span><span class="s2">&quot;___&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="write_graph">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.partition2gephi.write_graph.html#re_verilog2features.cli.partition2gephi.write_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_graph</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">architecture_name</span><span class="p">):</span>
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_format</span><span class="o">.</span><span class="n">write_graph</span><span class="p">(</span>
+        <span class="n">G</span><span class="p">,</span>
+        <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">architecture_name</span><span class="si">}</span><span class="s2">_gephi&quot;</span><span class="p">,</span>
+        <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">do_not_zip</span>
+    <span class="p">)</span></div>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

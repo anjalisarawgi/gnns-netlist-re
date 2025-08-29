@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_cmty.cluster
+========================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_cmty
+
+.. autofunction:: re_verilog2features.clustering.clustering_cmty.cluster

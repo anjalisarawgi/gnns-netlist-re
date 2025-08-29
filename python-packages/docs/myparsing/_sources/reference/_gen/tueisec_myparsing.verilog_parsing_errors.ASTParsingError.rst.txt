@@ -1,0 +1,6 @@
+tueisec\_myparsing.verilog\_parsing\_errors.ASTParsingError
+===========================================================
+
+.. currentmodule:: tueisec_myparsing.verilog_parsing_errors
+
+.. autoexception:: tueisec_myparsing.verilog_parsing_errors.ASTParsingError

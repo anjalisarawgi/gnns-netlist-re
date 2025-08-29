@@ -1,0 +1,6 @@
+tueisec\_myparsing.myparsing\_ply.parse\_to\_obj
+================================================
+
+.. currentmodule:: tueisec_myparsing.myparsing_ply
+
+.. autofunction:: tueisec_myparsing.myparsing_ply.parse_to_obj

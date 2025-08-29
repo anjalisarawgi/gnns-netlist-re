@@ -1,0 +1,40 @@
+tueisec\_myparsing.graph\_output\_file\_formats.GraphOutputFormat
+=================================================================
+
+.. currentmodule:: tueisec_myparsing.graph_output_file_formats
+
+.. autoclass:: GraphOutputFormat
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~GraphOutputFormat.get_filename
+      ~GraphOutputFormat.format_from_filename
+      ~GraphOutputFormat.write_graph
+      ~GraphOutputFormat.read_graph_from_filepath
+      ~GraphOutputFormat.known_extensions_globs
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~GraphOutputFormat.adjlist
+      ~GraphOutputFormat.gexf
+      ~GraphOutputFormat.gml
+      ~GraphOutputFormat.graphml
+      ~GraphOutputFormat.json
+      ~GraphOutputFormat.parquet
+      ~GraphOutputFormat.simpleParquet
+      ~GraphOutputFormat.gpickle
+   
+   

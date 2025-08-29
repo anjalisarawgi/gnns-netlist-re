@@ -1,0 +1,26 @@
+tueisec\_myparsing.pool\_wrapper.PoolOverride
+=============================================
+
+.. currentmodule:: tueisec_myparsing.pool_wrapper
+
+.. autoclass:: PoolOverride
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~PoolOverride.__init__
+      ~PoolOverride.close
+      ~PoolOverride.imap_unordered
+      ~PoolOverride.join
+      ~PoolOverride.terminate
+   
+   
+
+   
+   
+   

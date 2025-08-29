@@ -1,0 +1,49 @@
+re\_verilog2features.cluster\_csv\_file.CSVFile
+===============================================
+
+.. currentmodule:: re_verilog2features.cluster_csv_file
+
+.. autoclass:: CSVFile
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~CSVFile.__init__
+      ~CSVFile.build_info
+      ~CSVFile.from_file
+      ~CSVFile.from_iterrows
+      ~CSVFile.read_csvs_to_list
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~CSVFile.specimen_name
+      ~CSVFile.module_hierarchy
+      ~CSVFile.module_name
+      ~CSVFile.cluster_id
+      ~CSVFile.jaccard_index
+      ~CSVFile.base_design
+      ~CSVFile.tj_no
+      ~CSVFile.tj_status
+      ~CSVFile.top_module
+      ~CSVFile.frame
+      ~CSVFile.type
+      ~CSVFile.basename
+      ~CSVFile.id
+      ~CSVFile.ID_SEPARATOR
+      ~CSVFile.cluster_csv_re
+      ~CSVFile.design_name_re
+      ~CSVFile.partition_csv_re
+   
+   

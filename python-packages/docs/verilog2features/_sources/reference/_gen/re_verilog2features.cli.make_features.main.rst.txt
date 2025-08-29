@@ -1,0 +1,6 @@
+re\_verilog2features.cli.make\_features.main
+============================================
+
+.. currentmodule:: re_verilog2features.cli.make_features
+
+.. autofunction:: re_verilog2features.cli.make_features.main

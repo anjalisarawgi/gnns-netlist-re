@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>tueisec_myparsing.cli.cluster2verilog &#8212; TUEISEC_myparsing 0.0.1a25 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=c61080f6"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="tueisec_myparsing.cli.cluster2verilog.main" href="tueisec_myparsing.cli.cluster2verilog.main.html" />
+    <link rel="prev" title="tueisec_myparsing.cli.genus2hierarchy.main" href="tueisec_myparsing.cli.genus2hierarchy.main.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a25</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../tueisec_myparsing.html" accesskey="U">tueisec_myparsing</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-tueisec_myparsing.cli.cluster2verilog">
+<span id="tueisec-myparsing-cli-cluster2verilog"></span><h1>tueisec_myparsing.cli.cluster2verilog<a class="headerlink" href="#module-tueisec_myparsing.cli.cluster2verilog" title="Link to this heading">¶</a></h1>
+<p>Run hierarchy.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Synopsys:</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">cluster2verilog</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">c</span> <span class="n">CELL_LIB_PATH</span><span class="p">]</span>
+       <span class="p">[</span><span class="o">--</span><span class="n">logger</span> <span class="p">{</span><span class="n">info</span><span class="p">,</span><span class="n">debug</span><span class="p">,</span><span class="n">warning</span><span class="p">,</span><span class="n">error</span><span class="p">,</span><span class="n">critical</span><span class="p">}]</span>
+       <span class="n">original_verilog</span> <span class="n">cluster_path</span> <span class="n">output_file</span>
+
+<span class="n">Extract</span> <span class="n">a</span> <span class="n">module</span> <span class="kn">from</span><span class="w"> </span><span class="nn">a</span> <span class="n">netlist</span> <span class="n">according</span> <span class="n">to</span> <span class="n">a</span> <span class="n">cluster</span><span class="o">.</span>
+<span class="n">IMPORTANT</span><span class="p">:</span> <span class="n">A</span> <span class="n">special</span> <span class="n">yosys</span> <span class="n">module</span> <span class="n">must</span> <span class="n">be</span> <span class="n">used</span> <span class="n">to</span> <span class="n">support</span> <span class="s2">&quot;very-simple-lhs&quot;</span><span class="p">,</span> <span class="n">which</span> <span class="ow">is</span> <span class="n">used</span> <span class="n">by</span> <span class="n">cluster2verilog</span>
+<span class="n">Use</span> <span class="s2">&quot;module load yosys/0.19-RE-fsm-vslhs&quot;</span> <span class="k">for</span> <span class="n">that</span><span class="o">.</span>
+
+<span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="n">original_verilog</span>      <span class="n">original</span> <span class="n">verilog</span> <span class="n">netlist</span> <span class="n">to</span> <span class="n">be</span> <span class="n">read</span> <span class="n">by</span> <span class="n">yosys</span><span class="o">.</span>
+  <span class="n">cluster_path</span>          <span class="n">The</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="o">.</span><span class="n">pq</span> <span class="nb">format</span> <span class="k">as</span> <span class="n">output</span> <span class="n">by</span> <span class="n">run_clustering</span>
+  <span class="n">output_file</span>           <span class="n">The</span> <span class="n">file</span> <span class="n">name</span> <span class="n">of</span> <span class="n">the</span> <span class="n">verilog</span> <span class="n">file</span> <span class="n">to</span> <span class="n">write</span> <span class="n">to</span><span class="o">.</span>
+
+<span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+  <span class="o">-</span><span class="n">c</span> <span class="n">CELL_LIB_PATH</span><span class="p">,</span> <span class="o">--</span><span class="n">cell_lib_path</span> <span class="n">CELL_LIB_PATH</span>
+                        <span class="n">The</span> <span class="n">file</span> <span class="n">containing</span> <span class="n">the</span> <span class="n">cell</span> <span class="n">library</span><span class="o">.</span> <span class="n">Default</span><span class="p">:</span>
+                        <span class="o">/</span><span class="n">nas</span><span class="o">/</span><span class="n">ei</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">sec</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">qflow</span><span class="o">/</span><span class="n">qflow</span><span class="o">-</span><span class="mf">1.3</span><span class="o">-</span><span class="n">RE</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">qflow</span><span class="o">/</span><span class="n">tech</span><span class="o">/</span><span class="n">osu035</span><span class="o">/</span><span class="n">osu035_stdcells</span><span class="o">.</span><span class="n">lib</span>
+  <span class="o">--</span><span class="n">logger</span> <span class="p">{</span><span class="n">info</span><span class="p">,</span><span class="n">debug</span><span class="p">,</span><span class="n">warning</span><span class="p">,</span><span class="n">error</span><span class="p">,</span><span class="n">critical</span><span class="p">},</span> <span class="o">-</span><span class="n">l</span> <span class="p">{</span><span class="n">info</span><span class="p">,</span><span class="n">debug</span><span class="p">,</span><span class="n">warning</span><span class="p">,</span><span class="n">error</span><span class="p">,</span><span class="n">critical</span><span class="p">}</span>
+                        <span class="n">logger</span> <span class="n">level</span><span class="o">.</span> <span class="n">Default</span><span class="p">:</span> <span class="n">info</span>
+</pre></div>
+</div>
+</div>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.cli.cluster2verilog.main.html#tueisec_myparsing.cli.cluster2verilog.main" title="tueisec_myparsing.cli.cluster2verilog.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>([args])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../tueisec_myparsing.html">tueisec_myparsing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/tueisec_myparsing.cli.cluster2verilog.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tueisec_myparsing.cli.cluster2verilog.main.html" title="tueisec_myparsing.cli.cluster2verilog.main"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tueisec_myparsing.cli.genus2hierarchy.main.html" title="tueisec_myparsing.cli.genus2hierarchy.main"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

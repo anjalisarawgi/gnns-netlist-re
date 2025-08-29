@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Value.attr\_names
+==========================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoattribute:: tueisec_myparsing.synthed_verilog_ast.Value.attr_names

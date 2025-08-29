@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>re_verilog2features.graph_algo_func.nx2gt &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="re_verilog2features.graph_algo_func.nx2igraph" href="re_verilog2features.graph_algo_func.nx2igraph.html" />
+    <link rel="prev" title="re_verilog2features.graph_algo_func" href="re_verilog2features.graph_algo_func.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../re_verilog2features.html" >re_verilog2features</a> &#187;</li>
+          <li><a href="re_verilog2features.graph_algo_func.html" accesskey="U">re_verilog2features.graph_algo_func</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="re-verilog2features-graph-algo-func-nx2gt">
+<h1>re_verilog2features.graph_algo_func.nx2gt<a class="headerlink" href="#re-verilog2features-graph-algo-func-nx2gt" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="re_verilog2features.graph_algo_func.nx2gt">
+<span class="sig-prename descclassname"><span class="pre">re_verilog2features.graph_algo_func.</span></span><span class="sig-name descname"><span class="pre">nx2gt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nxG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labelname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'node_name'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">openmp_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">openmp_schedule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'guided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">openmp_chunks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/re_verilog2features/graph_algo_func.html#nx2gt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#re_verilog2features.graph_algo_func.nx2gt" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a networkx graph to a graph_tool graph</p>
+<p>This method is pretty stupid and does not convert
+anything else than graph structure and node names.</p>
+<p>In particular, this does not convert node attributes, edge weights etc.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method imports graph_tool.
+For further documentation of the <code class="docutils literal notranslate"><span class="pre">openmp_schedule</span></code> and <code class="docutils literal notranslate"><span class="pre">openmp_chunk</span></code>
+parameters, please see <a class="reference external" href="http://jakascorner.com/blog/2016/06/omp-for-scheduling.html">http://jakascorner.com/blog/2016/06/omp-for-scheduling.html</a></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nxG</strong> (<a class="reference external" href="https://networkx.org/documentation/stable/reference/classes/graph.html#networkx.Graph" title="(in NetworkX v3.5)"><em>networkx.Graph</em></a>) – networkx Graph to convert to a graph_tool graph</p></li>
+<li><p><strong>labelname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – graph_tool id’s nodes with integers. The node name must therefore
+be saved as a vertex property. Specify the vertex property name here and access
+the name later by <code class="docutils literal notranslate"><span class="pre">gtG.vp[&lt;labelname&gt;]</span></code>. defaults to “node_name”</p></li>
+<li><p><strong>openmp_threads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – This function imports graph_tool, maybe for the first time.
+As a safeguard, we should set the openmp threads (<em>multiplies by any
+multiprocessing!</em>) here. defaults to 1</p></li>
+<li><p><strong>openmp_schedule</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – This function imports graph_tool, maybe for the first time.
+As a safeguard, we should set the openmp schedule here, defaults to “guided”</p></li>
+<li><p><strong>openmp_chunks</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em>, </em><em>optional</em>) – This function imports graph_tool, maybe for the first time.
+As a safeguard, we should set the openmp chunks here, defaults to 1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">nxG</span></code> converted to a graph_tool graph</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://graph-tool.skewed.de/static/docs/stable/autosummary/graph_tool.Graph.html#graph_tool.Graph" title="(in graph-tool v2.98)">graph_tool.Graph</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../re_verilog2features.html">re_verilog2features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/re_verilog2features.graph_algo_func.nx2gt.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.graph_algo_func.nx2igraph.html" title="re_verilog2features.graph_algo_func.nx2igraph"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.graph_algo_func.html" title="re_verilog2features.graph_algo_func"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

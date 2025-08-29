@@ -1,0 +1,6 @@
+tueisec\_myparsing.pool\_wrapper.unhandle\_sigint\_and\_exec
+============================================================
+
+.. currentmodule:: tueisec_myparsing.pool_wrapper
+
+.. autofunction:: tueisec_myparsing.pool_wrapper.unhandle_sigint_and_exec

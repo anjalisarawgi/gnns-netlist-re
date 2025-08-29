@@ -1,0 +1,6 @@
+tueisec\_myparsing.netreplace.NetReplacer.visit
+===============================================
+
+.. currentmodule:: tueisec_myparsing.netreplace
+
+.. automethod:: tueisec_myparsing.netreplace.NetReplacer.visit

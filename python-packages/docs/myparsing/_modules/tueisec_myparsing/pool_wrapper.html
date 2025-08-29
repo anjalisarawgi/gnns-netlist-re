@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.pool_wrapper &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.pool_wrapper</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!usr/bin/ipython3</span>
+<span class="c1"># func.py</span>
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Pool Helpers</span>
+<span class="sd">============</span>
+
+<span class="sd">Helper functions for running long loops and multiprocessed loops. There is one</span>
+<span class="sd">version that does not produce a progress bar, as that might cause trouble.</span>
+
+<span class="sd">Typical usage as follows:</span>
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: HowTo multiprocess</span>
+
+<span class="sd">    from tueisec_myparsing.pool_wrapper import run_in_pool_with_progress_iter</span>
+
+<span class="sd">    # init function for every process. very_large_data (given as 42 below) has to be copied</span>
+<span class="sd">    # across memories of the main and worker process only once.</span>
+<span class="sd">    def init_huge_data(very_large_data):</span>
+<span class="sd">        global G_very_large_data</span>
+<span class="sd">        G_very_large_data = very_large_data</span>
+
+<span class="sd">    # the function that gets run by the workers</span>
+<span class="sd">    def runner(args):</span>
+<span class="sd">        global G_very_large_data</span>
+<span class="sd">        x, y, z = *args</span>
+<span class="sd">        return x*y + z*G_very_large_data</span>
+
+<span class="sd">    mult = []</span>
+<span class="sd">    # input some values in the list of params</span>
+<span class="sd">    for x, y, z in zip(range(100), range(100,1,-1), range(0,200,2)):</span>
+<span class="sd">        mult.append((x, y, z))</span>
+
+<span class="sd">    # Start the loop of execution</span>
+<span class="sd">    rval = run_in_pool_with_progress_iter(</span>
+<span class="sd">        runner,</span>
+<span class="sd">        mult,</span>
+<span class="sd">        processes=None,</span>
+<span class="sd">        abort_on_kint=False,</span>
+<span class="sd">        initializer=init_huge_data,</span>
+<span class="sd">        initargs=(42, )</span>
+<span class="sd">    )</span>
+
+<span class="sd">    # this will asynchronously print the return values as soon as they get available</span>
+<span class="sd">    for v in rval:</span>
+<span class="sd">        print(&quot;I received {}&quot;.format(v))</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">enlighten</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PoolOverride">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.PoolOverride.html#tueisec_myparsing.pool_wrapper.PoolOverride">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PoolOverride</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Override the pool and directly execute the function on the main process</span>
+
+<span class="sd">    This overrides the pool and diretly executes loop_function and</span>
+<span class="sd">    initializer on the main process.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PoolOverride.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.PoolOverride.__init__.html#tueisec_myparsing.pool_wrapper.PoolOverride.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Init the Pool</span>
+
+<span class="sd">        :param processes: Ignored, defaults to None</span>
+<span class="sd">        :type processes: Any, optional</span>
+<span class="sd">        :param initializer: If not ``None``, this function is executed during init</span>
+<span class="sd">            with ``*initargs``, defaults to None</span>
+<span class="sd">        :type initializer: Callable[[Any, ...], None], optional</span>
+<span class="sd">        :param initargs: Arguments to initializer, defaults to None</span>
+<span class="sd">        :type initargs: tuple[Any], optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">initializer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initializer</span><span class="p">(</span><span class="o">*</span><span class="n">initargs</span><span class="p">)</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="PoolOverride.imap_unordered">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.PoolOverride.imap_unordered.html#tueisec_myparsing.pool_wrapper.PoolOverride.imap_unordered">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">imap_unordered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute func with args</span>
+
+<span class="sd">        :param func: loop function to execute, defaults to None</span>
+<span class="sd">        :type func: Callable[[tuple[Any]], Any], optional</span>
+<span class="sd">        :param iterable: List of function parameters as tuples. each call to</span>
+<span class="sd">            ``loop_function`` receives vone element of this list., defaults to None</span>
+<span class="sd">        :type iterable: list[tuple[Any]], optional</span>
+<span class="sd">        :param chunksize: This param is ignored, defaults to 1</span>
+<span class="sd">        :type chunksize: int, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">iterable</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">func</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PoolOverride.close">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.PoolOverride.close.html#tueisec_myparsing.pool_wrapper.PoolOverride.close">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implement the needed pool API</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="PoolOverride.join">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.PoolOverride.join.html#tueisec_myparsing.pool_wrapper.PoolOverride.join">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implement the needed pool API</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="PoolOverride.terminate">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.PoolOverride.terminate.html#tueisec_myparsing.pool_wrapper.PoolOverride.terminate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Implement the needed pool API</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+<div class="viewcode-block" id="unhandle_sigint_and_exec">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.unhandle_sigint_and_exec.html#tueisec_myparsing.pool_wrapper.unhandle_sigint_and_exec">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unhandle_sigint_and_exec</span><span class="p">(</span><span class="n">initializer</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">initializer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">initializer</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapped</span></div>
+
+
+<div class="viewcode-block" id="run_in_pool_with_progress_iter">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.run_in_pool_with_progress_iter.html#tueisec_myparsing.pool_wrapper.run_in_pool_with_progress_iter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_in_pool_with_progress_iter</span><span class="p">(</span>
+    <span class="n">loop_function</span><span class="p">,</span>
+    <span class="n">loop_parameters</span><span class="p">,</span>
+    <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Processing:&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;designs&quot;</span><span class="p">,</span>
+    <span class="n">processes</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+    <span class="n">abort_on_kint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">initializer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">initargs</span><span class="o">=</span><span class="p">(),</span>
+    <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">no_signal_mod</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a loop function on a process pool with given input data and return an interator.</span>
+
+<span class="sd">    This helper function initializes a multiprocessing pool, displays a progress bar via</span>
+<span class="sd">    enlighten, catches the Keyboard interrupt so that the runners are terminated as well,</span>
+<span class="sd">    and breaks everything down on completion.</span>
+
+<span class="sd">    This function returns an iterator that yields the return values of the loop function.</span>
+
+<span class="sd">    :param loop_function: Function to loop through via multiprocessing. shall accept one</span>
+<span class="sd">        single parameter: a tuple that contains all loop-step parameters</span>
+<span class="sd">    :type loop_function: Callable[[tuple[Any]], Any]</span>
+<span class="sd">    :param loop_parameters: List of function parameters as tuples. each call to</span>
+<span class="sd">        ``loop_function`` receives one element of this list.</span>
+<span class="sd">    :type loop_parameters: list[tuple[Any]]</span>
+<span class="sd">    :param desc: Description to be displayed at the progress bar, defaults to &quot;Processing:&quot;</span>
+<span class="sd">    :type desc: str, optional</span>
+<span class="sd">    :param unit: Unit to be displayed at the progress bar, defaults to &quot;designs&quot;</span>
+<span class="sd">    :type unit: str, optional</span>
+<span class="sd">    :param processes: Number of processes, i.e. the number of workers, to start with</span>
+<span class="sd">        multiprocessing, defaults to 7. If ``None`` is given, all CPUs-1 will be used.</span>
+<span class="sd">    :type processes: int, optional</span>
+<span class="sd">    :param abort_on_kint: Specify if on Ctrl+C, this function throws a</span>
+<span class="sd">        :py:exc:`KeyboardInterrupt`, or catches it and only aborts the loop, defaults to True</span>
+<span class="sd">    :type abort_on_kint: bool, optional</span>
+<span class="sd">    :param initializer: function to be executed once at the initialization of the</span>
+<span class="sd">        worker processes. Especially, this can be used to init global variables per worker</span>
+<span class="sd">        process, that are then accessed in the loop_function each time, but only needs</span>
+<span class="sd">        to be transferred to the worker one, at the init. defaults to None</span>
+<span class="sd">    :type initializer: Callable[[Any, ...], None], optional</span>
+<span class="sd">    :param initargs: Tuple of arguments to the ``initializer`` function, the tuple will</span>
+<span class="sd">        be unpacked and given param by param to the initializer function, defaults to None</span>
+<span class="sd">    :type initargs: tuple[Any], optional</span>
+<span class="sd">    :raises KeyboardInterrupt: This function raises an :py:exc:`KeyboardInterrupt`</span>
+<span class="sd">        exception only if ``abort_on_kiint`` is ``True`` and Ctrl+C is pressed.</span>
+<span class="sd">    :return: This function returns an Iterator that yields the return values of the</span>
+<span class="sd">        ``loop_function`` unordered.</span>
+<span class="sd">    :rtype: iterator</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">Pool</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Pool</span>
+
+    <span class="k">if</span> <span class="n">processes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">processes</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">processes</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">Pool</span> <span class="o">=</span> <span class="n">PoolOverride</span>
+
+    <span class="n">manager</span> <span class="o">=</span> <span class="n">enlighten</span><span class="o">.</span><span class="n">get_manager</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">total</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">loop_parameters</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="c1"># loop_parameters has no length.</span>
+            <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+    <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)</span>
+        <span class="k">if</span> <span class="n">no_signal_mod</span><span class="p">:</span>
+            <span class="n">process_pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span>
+                <span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="n">initargs</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">process_pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span>
+                <span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">unhandle_sigint_and_exec</span><span class="p">(</span><span class="n">initializer</span><span class="p">),</span> <span class="n">initargs</span><span class="o">=</span><span class="n">initargs</span>
+            <span class="p">)</span>
+        <span class="c1"># signal.signal(signal.SIGINT, original_sigint_handler)</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing </span><span class="si">{}</span><span class="s2"> runners.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">processes</span><span class="p">))</span>
+
+        <span class="c1"># supply data to runner</span>
+        <span class="n">result_iter</span> <span class="o">=</span> <span class="n">process_pool</span><span class="o">.</span><span class="n">imap_unordered</span><span class="p">(</span>
+            <span class="n">func</span><span class="o">=</span><span class="n">loop_function</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="n">loop_parameters</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> subprocess runners started. Waiting for results...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">processes</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result_iter</span><span class="p">:</span>
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+            <span class="k">yield</span> <span class="n">item</span>
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">abort_on_kint</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="run_in_pool_with_progress">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.run_in_pool_with_progress.html#tueisec_myparsing.pool_wrapper.run_in_pool_with_progress">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_in_pool_with_progress</span><span class="p">(</span>
+    <span class="n">loop_function</span><span class="p">,</span>
+    <span class="n">loop_parameters</span><span class="p">,</span>
+    <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Processing:&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;designs&quot;</span><span class="p">,</span>
+    <span class="n">processes</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+    <span class="n">abort_on_kint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">initializer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">initargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a loop function on a process pool with given input data and return aggregated.</span>
+
+<span class="sd">    This helper function initializes a multiprocessing pool, displays a progress bar via</span>
+<span class="sd">    enlighten, catches the Keyboard interrupt so that the runners are terminated as well,</span>
+<span class="sd">    and breaks everything down on completion.</span>
+
+<span class="sd">    This function returns an list containing the return values of the loop function.</span>
+
+<span class="sd">    :param loop_function: Function to loop through via multiprocessing. shall accept one</span>
+<span class="sd">        single parameter: a tuple that contains all loop-step parameters</span>
+<span class="sd">    :type loop_function: Callable[[tuple[Any]], Any]</span>
+<span class="sd">    :param loop_parameters: List of function parameters as tuples. each call to</span>
+<span class="sd">        ``loop_function`` receives one element of this list.</span>
+<span class="sd">    :type loop_parameters: list[tuple[Any]]</span>
+<span class="sd">    :param desc: Description to be displayed at the progress bar, defaults to &quot;Processing:&quot;</span>
+<span class="sd">    :type desc: str, optional</span>
+<span class="sd">    :param unit: Unit to be displayed at the progress bar, defaults to &quot;designs&quot;</span>
+<span class="sd">    :type unit: str, optional</span>
+<span class="sd">    :param processes: Number of processes, i.e. the number of workers, to start with</span>
+<span class="sd">        multiprocessing, defaults to 7. If ``None`` is given, all CPUs-1 will be used.</span>
+<span class="sd">    :type processes: int, optional</span>
+<span class="sd">    :param abort_on_kint: Specify if on Ctrl+C, this function throws a</span>
+<span class="sd">        :py:exc:`KeyboardInterrupt`, or catches it and only aborts the loop, defaults to True</span>
+<span class="sd">    :type abort_on_kint: bool, optional</span>
+<span class="sd">    :param initializer: function to be executed once at the initialization of the</span>
+<span class="sd">        worker processes, defaults to None</span>
+<span class="sd">    :type initializer: Callable[[Any, ...], None], optional</span>
+<span class="sd">    :param initargs: Tuple of arguments to the ``initializer`` function, this will</span>
+<span class="sd">        be unpacked and given param by param to the initializer function, defaults to None</span>
+<span class="sd">    :type initargs: tuple[Any], optional</span>
+<span class="sd">    :raises KeyboardInterrupt: This function raises an :py:exc:`KeyboardInterrupt`</span>
+<span class="sd">        exception only if ``abort_on_kiint`` is ``True`` and Ctrl+C is pressed.</span>
+<span class="sd">    :return: This function returns a list containing the return values of the</span>
+<span class="sd">        ``loop_function`` unordered.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">Pool</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Pool</span>
+
+    <span class="k">if</span> <span class="n">processes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">processes</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">processes</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">Pool</span> <span class="o">=</span> <span class="n">PoolOverride</span>
+
+    <span class="n">manager</span> <span class="o">=</span> <span class="n">enlighten</span><span class="o">.</span><span class="n">get_manager</span><span class="p">()</span>
+
+    <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">loop_parameters</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">original_sigint_handler</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">)</span>
+        <span class="n">process_pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span>
+            <span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="n">initargs</span>
+        <span class="p">)</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">original_sigint_handler</span><span class="p">)</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing </span><span class="si">{}</span><span class="s2"> runners.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">processes</span><span class="p">))</span>
+
+        <span class="c1"># supply data to runner</span>
+        <span class="n">result_iter</span> <span class="o">=</span> <span class="n">process_pool</span><span class="o">.</span><span class="n">imap_unordered</span><span class="p">(</span>
+            <span class="n">func</span><span class="o">=</span><span class="n">loop_function</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="n">loop_parameters</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> subprocess runners started. Waiting for results...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">processes</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result_iter</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">abort_on_kint</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="run_in_pool_iter">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.run_in_pool_iter.html#tueisec_myparsing.pool_wrapper.run_in_pool_iter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_in_pool_iter</span><span class="p">(</span>
+    <span class="n">loop_function</span><span class="p">,</span>
+    <span class="n">loop_parameters</span><span class="p">,</span>
+    <span class="n">processes</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+    <span class="n">abort_on_kint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">initializer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">initargs</span><span class="o">=</span><span class="p">(),</span>
+    <span class="n">no_signal_mod</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a loop function on a process pool with given input data and return an interator.</span>
+
+<span class="sd">    This helper function initializes a multiprocessing pool,</span>
+<span class="sd">    catches the Keyboard interrupt so that the runners are terminated as well,</span>
+<span class="sd">    and breaks everything down on completion.</span>
+
+<span class="sd">    This function returns an iterator that yields the return values of the loop function.</span>
+
+<span class="sd">    :param loop_function: Function to loop through via multiprocessing. shall accept one</span>
+<span class="sd">        single parameter: a tuple that contains all loop-step parameters</span>
+<span class="sd">    :type loop_function: Callable[[tuple[Any]], Any]</span>
+<span class="sd">    :param loop_parameters: List of function parameters as tuples. each call to</span>
+<span class="sd">        ``loop_function`` receives one element of this list.</span>
+<span class="sd">    :type loop_parameters: list[tuple[Any]]</span>
+<span class="sd">    :param processes: Number of processes, i.e. the number of workers, to start with</span>
+<span class="sd">        multiprocessing, defaults to 7. If ``None`` is given, all CPUs-1 will be used.</span>
+<span class="sd">    :type processes: int, optional</span>
+<span class="sd">    :param abort_on_kint: Specify if on Ctrl+C, this function throws a</span>
+<span class="sd">        :py:exc:`KeyboardInterrupt`, or catches it and only aborts the loop, defaults to True</span>
+<span class="sd">    :type abort_on_kint: bool, optional</span>
+<span class="sd">    :param initializer: function to be executed once at the initialization of the</span>
+<span class="sd">        worker processes. Especially, this can be used to init global variables per worker</span>
+<span class="sd">        process, that are then accessed in the loop_function each time, but only needs</span>
+<span class="sd">        to be transferred to the worker one, at the init. defaults to None</span>
+<span class="sd">    :type initializer: Callable[[Any, ...], None], optional</span>
+<span class="sd">    :param initargs: Tuple of arguments to the ``initializer`` function, the tuple will</span>
+<span class="sd">        be unpacked and given param by param to the initializer function, defaults to None</span>
+<span class="sd">    :type initargs: tuple[Any], optional</span>
+<span class="sd">    :raises KeyboardInterrupt: This function raises an :py:exc:`KeyboardInterrupt`</span>
+<span class="sd">        exception only if ``abort_on_kiint`` is ``True`` and Ctrl+C is pressed.</span>
+<span class="sd">    :return: This function returns an Iterator that yields the return values of the</span>
+<span class="sd">        ``loop_function`` unordered.</span>
+<span class="sd">    :rtype: iterator</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">Pool</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Pool</span>
+
+    <span class="k">if</span> <span class="n">processes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">processes</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">processes</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">Pool</span> <span class="o">=</span> <span class="n">PoolOverride</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)</span>
+        <span class="k">if</span> <span class="n">no_signal_mod</span><span class="p">:</span>
+            <span class="n">process_pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span>
+                <span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="n">initargs</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">process_pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span>
+                <span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">unhandle_sigint_and_exec</span><span class="p">(</span><span class="n">initializer</span><span class="p">),</span> <span class="n">initargs</span><span class="o">=</span><span class="n">initargs</span>
+            <span class="p">)</span>
+        <span class="c1"># signal.signal(signal.SIGINT, original_sigint_handler)</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing </span><span class="si">{}</span><span class="s2"> runners.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">processes</span><span class="p">))</span>
+
+        <span class="c1"># supply data to runner</span>
+        <span class="n">result_iter</span> <span class="o">=</span> <span class="n">process_pool</span><span class="o">.</span><span class="n">imap_unordered</span><span class="p">(</span>
+            <span class="n">func</span><span class="o">=</span><span class="n">loop_function</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="n">loop_parameters</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> subprocess runners started. Waiting for results...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">processes</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result_iter</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">item</span>
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">abort_on_kint</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="draw_progress_bar">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.pool_wrapper.draw_progress_bar.html#tueisec_myparsing.pool_wrapper.draw_progress_bar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_progress_bar</span><span class="p">(</span><span class="n">percent</span><span class="p">,</span> <span class="n">barLen</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function draws simple progress bar. This function overwrites the current terminal line.</span>
+
+<span class="sd">    :param percent: Ration of completion to draw the progress bar for.</span>
+<span class="sd">    :type percent: float</span>
+<span class="sd">    :param barLen: length of progress bar in characters</span>
+<span class="sd">    :type barLen: int, optional</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">progress</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">barLen</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">barLen</span> <span class="o">*</span> <span class="n">percent</span><span class="p">):</span>
+            <span class="n">progress</span> <span class="o">+=</span> <span class="s2">&quot;=&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">progress</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;[ </span><span class="si">%s</span><span class="s2"> ] </span><span class="si">%.2f%%</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">progress</span><span class="p">,</span> <span class="n">percent</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

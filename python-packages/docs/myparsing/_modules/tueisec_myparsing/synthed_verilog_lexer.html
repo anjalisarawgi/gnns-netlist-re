@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.synthed_verilog_lexer &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.synthed_verilog_lexer</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">   Based on the verilog RTL parser by Shinya Takamaeda-Yamazaki and Contributors</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">ply.lex</span><span class="w"> </span><span class="kn">import</span> <span class="n">TOKEN</span><span class="p">,</span> <span class="n">lex</span>
+
+
+<div class="viewcode-block" id="VerilogLexer">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VerilogLexer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Verilog HDL Lexical Analayzer &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VerilogLexer.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.__init__.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error_func</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_func</span> <span class="o">=</span> <span class="n">error_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directives</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_nettype</span> <span class="o">=</span> <span class="s1">&#39;wire&#39;</span></div>
+
+
+<div class="viewcode-block" id="VerilogLexer.build">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.build.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.build">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lexer</span> <span class="o">=</span> <span class="n">lex</span><span class="p">(</span><span class="nb">object</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VerilogLexer.input">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.input.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.input">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VerilogLexer.reset_lineno">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.reset_lineno.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.reset_lineno">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_lineno</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="VerilogLexer.get_directives">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.get_directives.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.get_directives">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_directives</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directives</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VerilogLexer.get_default_nettype">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.get_default_nettype.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.get_default_nettype">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_default_nettype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_nettype</span></div>
+
+
+<div class="viewcode-block" id="VerilogLexer.token">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.token.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.token">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">token</span><span class="p">()</span></div>
+
+
+    <span class="n">keywords</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s1">&#39;MODULE&#39;</span><span class="p">,</span> <span class="s1">&#39;ENDMODULE&#39;</span><span class="p">,</span> 
+        <span class="c1"># &#39;BEGIN&#39;, &#39;END&#39;, &#39;GENERATE&#39;, &#39;ENDGENERATE&#39;, &#39;GENVAR&#39;,</span>
+        <span class="c1"># &#39;FUNCTION&#39;, &#39;ENDFUNCTION&#39;, &#39;TASK&#39;, &#39;ENDTASK&#39;,</span>
+        <span class="s1">&#39;INPUT&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;INOUT&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;OUTPUT&#39;</span><span class="p">,</span>
+        <span class="c1"># &#39;TRI&#39;, &#39;REG&#39;, &#39;LOGIC&#39;,</span>
+        <span class="s1">&#39;WIRE&#39;</span><span class="p">,</span>
+        <span class="c1"># &#39;INTEGER&#39;, &#39;REAL&#39;, &#39;SIGNED&#39;,</span>
+        <span class="c1"># &#39;PARAMETER&#39;, &#39;LOCALPARAM&#39;, &#39;SUPPLY0&#39;, &#39;SUPPLY1&#39;,</span>
+        <span class="s1">&#39;ASSIGN&#39;</span><span class="p">,</span>
+        <span class="c1"># &#39;ALWAYS&#39;, &#39;ALWAYS_FF&#39;, &#39;ALWAYS_COMB&#39;, &#39;SENS_OR&#39;, &#39;POSEDGE&#39;, &#39;NEGEDGE&#39;, &#39;INITIAL&#39;,</span>
+        <span class="c1"># &#39;IF&#39;, &#39;ELSE&#39;, &#39;FOR&#39;, &#39;WHILE&#39;, &#39;CASE&#39;, &#39;CASEX&#39;, &#39;UNIQUE&#39;, &#39;ENDCASE&#39;, &#39;DEFAULT&#39;,</span>
+        <span class="c1"># &#39;WAIT&#39;, &#39;FOREVER&#39;, &#39;DISABLE&#39;, &#39;FORK&#39;, &#39;JOIN&#39;,</span>
+    <span class="p">)</span>
+
+    <span class="n">reserved</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+        <span class="c1"># if keyword == &#39;SENS_OR&#39;:</span>
+        <span class="c1">#     reserved[&#39;or&#39;] = keyword</span>
+        <span class="c1"># else:</span>
+            <span class="n">reserved</span><span class="p">[</span><span class="n">keyword</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="n">keyword</span>
+
+    <span class="n">operators</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="c1"># &#39;PLUS&#39;, &#39;MINUS&#39;, &#39;POWER&#39;, </span>
+        <span class="s1">&#39;TIMES&#39;</span><span class="p">,</span> 
+        <span class="c1"># &#39;DIVIDE&#39;, &#39;MOD&#39;,</span>
+        <span class="c1"># &#39;NOT&#39;, &#39;OR&#39;, &#39;NOR&#39;, &#39;AND&#39;, &#39;NAND&#39;, &#39;XOR&#39;, &#39;XNOR&#39;,</span>
+        <span class="c1"># &#39;LOR&#39;, &#39;LAND&#39;, &#39;LNOT&#39;,</span>
+        <span class="c1"># &#39;LSHIFTA&#39;, &#39;RSHIFTA&#39;, &#39;LSHIFT&#39;, &#39;RSHIFT&#39;,</span>
+        <span class="c1"># &#39;LT&#39;, &#39;GT&#39;, &#39;LE&#39;, &#39;GE&#39;, &#39;EQ&#39;, &#39;NE&#39;, &#39;EQL&#39;, &#39;NEL&#39;,</span>
+        <span class="c1"># &#39;COND&#39;,  # ?</span>
+        <span class="s1">&#39;EQUALS&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">keywords</span> <span class="o">+</span> <span class="n">operators</span> <span class="o">+</span> <span class="p">(</span>
+        <span class="s1">&#39;ID&#39;</span><span class="p">,</span>
+        <span class="c1"># &#39;AT&#39;,</span>
+        <span class="s1">&#39;COMMA&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;COLON&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;SEMICOLON&#39;</span><span class="p">,</span> <span class="s1">&#39;DOT&#39;</span><span class="p">,</span>
+        <span class="c1"># &#39;PLUSCOLON&#39;, &#39;MINUSCOLON&#39;,</span>
+        <span class="s1">&#39;BIT_NUMBER&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;FLOATNUMBER&#39;</span><span class="p">,</span> <span class="s1">&#39;STRING_LITERAL&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;INTNUMBER_DEC&#39;</span><span class="p">,</span> <span class="s1">&#39;SIGNED_INTNUMBER_DEC&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;INTNUMBER_HEX&#39;</span><span class="p">,</span> <span class="s1">&#39;SIGNED_INTNUMBER_HEX&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;INTNUMBER_OCT&#39;</span><span class="p">,</span> <span class="s1">&#39;SIGNED_INTNUMBER_OCT&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;INTNUMBER_BIN&#39;</span><span class="p">,</span> <span class="s1">&#39;SIGNED_INTNUMBER_BIN&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;LPAREN&#39;</span><span class="p">,</span> <span class="s1">&#39;RPAREN&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;LBRACKET&#39;</span><span class="p">,</span> <span class="s1">&#39;RBRACKET&#39;</span><span class="p">,</span>
+        <span class="c1"># &#39;LBRACE&#39;, &#39;RBRACE&#39;,</span>
+        <span class="c1"># &#39;DELAY&#39;, &#39;DOLLER&#39;,</span>
+    <span class="p">)</span>
+
+    <span class="n">skipped</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s1">&#39;COMMENTOUT&#39;</span><span class="p">,</span> <span class="s1">&#39;LINECOMMENT&#39;</span><span class="p">,</span> <span class="s1">&#39;DIRECTIVE&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Ignore</span>
+    <span class="n">t_ignore</span> <span class="o">=</span> <span class="s1">&#39; </span><span class="se">\t</span><span class="s1">&#39;</span>
+
+    <span class="c1"># Directive</span>
+    <span class="n">directive</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;\`.*?\n&quot;&quot;&quot;</span>
+
+    <span class="n">ifdef_directive</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;\`ifdef (.|\n)*?\`endif&quot;&quot;&quot;</span>
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">ifdef_directive</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_IFDEF_DIRECTIVE</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directives</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">directive</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_DIRECTIVE</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directives</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># m = re.match(&quot;^`default_nettype\s+(.+)\n&quot;, t.value)</span>
+        <span class="c1"># if m:</span>
+        <span class="c1">#     self.default_nettype = m.group(1)</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Comment</span>
+    <span class="n">linecomment</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;//.*?\n&quot;&quot;&quot;</span>
+    <span class="n">commentout</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;/\*(.|\n)*?\*/&quot;&quot;&quot;</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">linecomment</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_LINECOMMENT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">commentout</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_COMMENTOUT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Operator</span>
+    <span class="c1"># t_LOR = r&#39;\|\|&#39;</span>
+    <span class="c1"># t_LAND = r&#39;\&amp;\&amp;&#39;</span>
+
+    <span class="c1"># t_NOR = r&#39;~\|&#39;</span>
+    <span class="c1"># t_NAND = r&#39;~\&amp;&#39;</span>
+    <span class="c1"># t_XNOR = r&#39;~\^&#39;</span>
+    <span class="c1"># t_OR = r&#39;\|&#39;</span>
+    <span class="c1"># t_AND = r&#39;\&amp;&#39;</span>
+    <span class="c1"># t_XOR = r&#39;\^&#39;</span>
+    <span class="c1"># t_LNOT = r&#39;!&#39;</span>
+    <span class="c1"># t_NOT = r&#39;~&#39;</span>
+
+    <span class="c1"># t_LSHIFTA = r&#39;&lt;&lt;&lt;&#39;</span>
+    <span class="c1"># t_RSHIFTA = r&#39;&gt;&gt;&gt;&#39;</span>
+    <span class="c1"># t_LSHIFT = r&#39;&lt;&lt;&#39;</span>
+    <span class="c1"># t_RSHIFT = r&#39;&gt;&gt;&#39;</span>
+
+    <span class="c1"># t_EQL = r&#39;===&#39;</span>
+    <span class="c1"># t_NEL = r&#39;!==&#39;</span>
+    <span class="c1"># t_EQ = r&#39;==&#39;</span>
+    <span class="c1"># t_NE = r&#39;!=&#39;</span>
+
+    <span class="c1"># t_LE = r&#39;&lt;=&#39;</span>
+    <span class="c1"># t_GE = r&#39;&gt;=&#39;</span>
+    <span class="c1"># t_LT = r&#39;&lt;&#39;</span>
+    <span class="c1"># t_GT = r&#39;&gt;&#39;</span>
+
+    <span class="c1"># t_POWER = r&#39;\*\*&#39;</span>
+    <span class="c1"># t_PLUS = r&#39;\+&#39;</span>
+    <span class="c1"># t_MINUS = r&#39;-&#39;</span>
+    <span class="n">t_TIMES</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\*&#39;</span>
+    <span class="c1"># t_DIVIDE = r&#39;/&#39;</span>
+    <span class="c1"># t_MOD = r&#39;%&#39;</span>
+
+    <span class="c1"># t_COND = r&#39;\?&#39;</span>
+    <span class="n">t_EQUALS</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;=&#39;</span>
+
+    <span class="c1"># t_PLUSCOLON = r&#39;\+:&#39;</span>
+    <span class="c1"># t_MINUSCOLON = r&#39;-:&#39;</span>
+
+    <span class="c1"># t_AT = r&#39;@&#39;</span>
+    <span class="n">t_COMMA</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;,&#39;</span>
+    <span class="n">t_SEMICOLON</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;;&#39;</span>
+    <span class="n">t_COLON</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;:&#39;</span>
+    <span class="n">t_DOT</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\.&#39;</span>
+
+    <span class="n">t_LPAREN</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\(&#39;</span>
+    <span class="n">t_RPAREN</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\)&#39;</span>
+    <span class="n">t_LBRACKET</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\[&#39;</span>
+    <span class="n">t_RBRACKET</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\]&#39;</span>
+    <span class="c1"># t_LBRACE = r&#39;\{&#39;</span>
+    <span class="c1"># t_RBRACE = r&#39;\}&#39;</span>
+
+    <span class="c1"># t_DELAY = r&#39;\#&#39;</span>
+    <span class="c1"># t_DOLLER = r&#39;\$&#39;</span>
+
+    <span class="n">bin_number</span> <span class="o">=</span> <span class="s1">&#39;[0-9]*</span><span class="se">\&#39;</span><span class="s1">[bB][0-1xXzZ?][0-1xXzZ?_]*&#39;</span>
+    <span class="n">signed_bin_number</span> <span class="o">=</span> <span class="s1">&#39;[0-9]*</span><span class="se">\&#39;</span><span class="s1">[sS][bB][0-1xZzZ?][0-1xXzZ?_]*&#39;</span>
+    <span class="n">octal_number</span> <span class="o">=</span> <span class="s1">&#39;[0-9]*</span><span class="se">\&#39;</span><span class="s1">[oO][0-7xXzZ?][0-7xXzZ?_]*&#39;</span>
+    <span class="n">signed_octal_number</span> <span class="o">=</span> <span class="s1">&#39;[0-9]*</span><span class="se">\&#39;</span><span class="s1">[sS][oO][0-7xXzZ?][0-7xXzZ?_]*&#39;</span>
+    <span class="n">hex_number</span> <span class="o">=</span> <span class="s1">&#39;[0-9]*</span><span class="se">\&#39;</span><span class="s1">[hH][0-9a-fA-FxXzZ?][0-9a-fA-FxXzZ?_]*&#39;</span>
+    <span class="n">signed_hex_number</span> <span class="o">=</span> <span class="s1">&#39;[0-9]*</span><span class="se">\&#39;</span><span class="s1">[sS][hH][0-9a-fA-FxXzZ?][0-9a-fA-FxXzZ?_]*&#39;</span>
+
+    <span class="n">decimal_number</span> <span class="o">=</span> <span class="s1">&#39;([0-9]*</span><span class="se">\&#39;</span><span class="s1">[dD][0-9xXzZ?][0-9xXzZ?_]*)|([0-9][0-9_]*)&#39;</span>
+    <span class="n">signed_decimal_number</span> <span class="o">=</span> <span class="s1">&#39;[0-9]*</span><span class="se">\&#39;</span><span class="s1">[sS][dD][0-9xXzZ?][0-9xXzZ?_]*&#39;</span>
+    <span class="n">bit_number</span> <span class="o">=</span> <span class="s1">&#39;-?[0-9]+&#39;</span>
+
+    <span class="n">exponent_part</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;([eE][-+]?[0-9]+)&quot;&quot;&quot;</span>
+    <span class="n">fractional_constant</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;([0-9]*\.[0-9]+)|([0-9]+\.)&quot;&quot;&quot;</span>
+    <span class="n">float_number</span> <span class="o">=</span> <span class="s1">&#39;((((&#39;</span> <span class="o">+</span> <span class="n">fractional_constant</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span> <span class="o">+</span> \
+        <span class="n">exponent_part</span> <span class="o">+</span> <span class="s1">&#39;?)|([0-9]+&#39;</span> <span class="o">+</span> <span class="n">exponent_part</span> <span class="o">+</span> <span class="s1">&#39;)))&#39;</span>
+
+    <span class="n">simple_escape</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;([a-zA-Z\\?&#39;&quot;])&quot;&quot;&quot;</span>
+    <span class="n">octal_escape</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;([0-7]{1,3})&quot;&quot;&quot;</span>
+    <span class="n">hex_escape</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;(x[0-9a-fA-F]+)&quot;&quot;&quot;</span>
+    <span class="n">escape_sequence</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;(\\(&quot;&quot;&quot;</span> <span class="o">+</span> <span class="n">simple_escape</span> <span class="o">+</span> <span class="s1">&#39;|&#39;</span> <span class="o">+</span> <span class="n">octal_escape</span> <span class="o">+</span> <span class="s1">&#39;|&#39;</span> <span class="o">+</span> <span class="n">hex_escape</span> <span class="o">+</span> <span class="s1">&#39;))&#39;</span>
+    <span class="n">string_char</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;([^&quot;\\\n]|&quot;&quot;&quot;</span> <span class="o">+</span> <span class="n">escape_sequence</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span>
+    <span class="n">string_literal</span> <span class="o">=</span> <span class="s1">&#39;&quot;&#39;</span> <span class="o">+</span> <span class="n">string_char</span> <span class="o">+</span> <span class="s1">&#39;*&quot;&#39;</span>
+
+    <span class="n">identifier</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;&quot;&quot;(([a-zA-Z_])([a-zA-Z_0-9$])*)|((\\\S)(\S)*)&quot;&quot;&quot;</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">string_literal</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_STRING_LITERAL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">float_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_FLOATNUMBER</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">signed_bin_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_SIGNED_INTNUMBER_BIN</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">bin_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_INTNUMBER_BIN</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">signed_octal_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_SIGNED_INTNUMBER_OCT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">octal_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_INTNUMBER_OCT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">signed_hex_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_SIGNED_INTNUMBER_HEX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">hex_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_INTNUMBER_HEX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">signed_decimal_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_SIGNED_INTNUMBER_DEC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">decimal_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_INTNUMBER_DEC</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">bit_number</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_BIT_NUMBER</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+    <span class="nd">@TOKEN</span><span class="p">(</span><span class="n">identifier</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_ID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reserved</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;ID&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+<div class="viewcode-block" id="VerilogLexer.t_NEWLINE">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.t_NEWLINE.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.t_NEWLINE">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_NEWLINE</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="sa">r</span><span class="s1">&#39;\n+&#39;</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="VerilogLexer.t_error">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.t_error.html#tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.t_error">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Illegal character </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">repr</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_tok_location</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_func</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">location</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">location</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_tok_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">lexpos</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lexdata</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">i</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">lexpos</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_tok_location</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_tok_column</span><span class="p">(</span><span class="n">token</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="dump_tokens">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_lexer.dump_tokens.html#tueisec_myparsing.synthed_verilog_lexer.dump_tokens">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dump_tokens</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">my_error_func</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+    <span class="n">lexer</span> <span class="o">=</span> <span class="n">VerilogLexer</span><span class="p">(</span><span class="n">error_func</span><span class="o">=</span><span class="n">my_error_func</span><span class="p">)</span>
+    <span class="n">lexer</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+    <span class="n">lexer</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Tokenize</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="n">lexer</span><span class="o">.</span><span class="n">token</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tok</span><span class="p">:</span>
+            <span class="k">break</span>  <span class="c1"># No more input</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> </span><span class="si">%d</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> </span><span class="si">%d</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span>
+                   <span class="p">(</span><span class="n">tok</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">tok</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">tok</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span> <span class="n">lexer</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">tok</span><span class="o">.</span><span class="n">lexpos</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

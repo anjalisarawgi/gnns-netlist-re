@@ -1,0 +1,6 @@
+tueisec\_myparsing.plylibparser.create\_parser
+==============================================
+
+.. currentmodule:: tueisec_myparsing.plylibparser
+
+.. autofunction:: tueisec_myparsing.plylibparser.create_parser

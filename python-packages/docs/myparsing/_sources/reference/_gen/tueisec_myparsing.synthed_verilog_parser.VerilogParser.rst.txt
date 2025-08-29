@@ -1,0 +1,89 @@
+tueisec\_myparsing.synthed\_verilog\_parser.VerilogParser
+=========================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. autoclass:: VerilogParser
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~VerilogParser.__init__
+      ~VerilogParser.create_decl
+      ~VerilogParser.get_default_nettype
+      ~VerilogParser.get_directives
+      ~VerilogParser.p_assignment
+      ~VerilogParser.p_const_expression_bitnum
+      ~VerilogParser.p_const_expression_intnum
+      ~VerilogParser.p_decl
+      ~VerilogParser.p_decl_width
+      ~VerilogParser.p_declname
+      ~VerilogParser.p_declnamelist
+      ~VerilogParser.p_declnamelist_one
+      ~VerilogParser.p_definition
+      ~VerilogParser.p_definition_pragma
+      ~VerilogParser.p_definitions
+      ~VerilogParser.p_definitions_one
+      ~VerilogParser.p_description
+      ~VerilogParser.p_empty
+      ~VerilogParser.p_error
+      ~VerilogParser.p_expression_const
+      ~VerilogParser.p_expression_id
+      ~VerilogParser.p_expression_partselect
+      ~VerilogParser.p_floatnumber
+      ~VerilogParser.p_identifier
+      ~VerilogParser.p_instance
+      ~VerilogParser.p_instance_body
+      ~VerilogParser.p_instance_port_arg_exp
+      ~VerilogParser.p_instance_port_arg_none
+      ~VerilogParser.p_instance_ports
+      ~VerilogParser.p_instance_ports_arg
+      ~VerilogParser.p_instance_ports_arg_one
+      ~VerilogParser.p_instance_ports_list_empty
+      ~VerilogParser.p_intnumber
+      ~VerilogParser.p_item
+      ~VerilogParser.p_items
+      ~VerilogParser.p_items_one
+      ~VerilogParser.p_lvalue_id
+      ~VerilogParser.p_lvalue_partselect
+      ~VerilogParser.p_moduledef
+      ~VerilogParser.p_moduledef_empty
+      ~VerilogParser.p_modulename
+      ~VerilogParser.p_parameterlist_empty
+      ~VerilogParser.p_paramlist_empty
+      ~VerilogParser.p_partselect_single
+      ~VerilogParser.p_portlist
+      ~VerilogParser.p_portlist_empty
+      ~VerilogParser.p_portlist_paren_empty
+      ~VerilogParser.p_portname
+      ~VerilogParser.p_ports
+      ~VerilogParser.p_ports_one
+      ~VerilogParser.p_pragma
+      ~VerilogParser.p_pragma_assign
+      ~VerilogParser.p_pragma_expression_floatnum
+      ~VerilogParser.p_pragma_expression_intnum
+      ~VerilogParser.p_pragma_expression_stringliteral
+      ~VerilogParser.p_rvalue
+      ~VerilogParser.p_sigtype_inout
+      ~VerilogParser.p_sigtype_input
+      ~VerilogParser.p_sigtype_output
+      ~VerilogParser.p_sigtype_wire
+      ~VerilogParser.p_sigtypes_one
+      ~VerilogParser.p_source_text
+      ~VerilogParser.p_source_text_empty
+      ~VerilogParser.p_standard_item
+      ~VerilogParser.p_stringliteral
+      ~VerilogParser.p_width
+      ~VerilogParser.parse
+      ~VerilogParser.typecheck_decl
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_lexer.VerilogLexer.build
+=============================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_lexer
+
+.. automethod:: tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.build

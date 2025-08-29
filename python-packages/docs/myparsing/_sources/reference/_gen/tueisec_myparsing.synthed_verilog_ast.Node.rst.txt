@@ -1,0 +1,24 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Node
+=============================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Node
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Node.__init__
+      ~Node.children
+      ~Node.show
+   
+   
+
+   
+   
+   

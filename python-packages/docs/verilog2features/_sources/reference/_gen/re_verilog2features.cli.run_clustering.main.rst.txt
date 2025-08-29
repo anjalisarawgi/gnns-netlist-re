@@ -1,0 +1,6 @@
+re\_verilog2features.cli.run\_clustering.main
+=============================================
+
+.. currentmodule:: re_verilog2features.cli.run_clustering
+
+.. autofunction:: re_verilog2features.cli.run_clustering.main

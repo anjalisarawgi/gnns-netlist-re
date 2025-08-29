@@ -1,0 +1,26 @@
+tueisec\_myparsing.netreplace.NetReplacer
+=========================================
+
+.. currentmodule:: tueisec_myparsing.netreplace
+
+.. autoclass:: NetReplacer
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~NetReplacer.__init__
+      ~NetReplacer.generic_visit
+      ~NetReplacer.visit
+      ~NetReplacer.visit_Identifier
+      ~NetReplacer.visit_Wire
+   
+   
+
+   
+   
+   

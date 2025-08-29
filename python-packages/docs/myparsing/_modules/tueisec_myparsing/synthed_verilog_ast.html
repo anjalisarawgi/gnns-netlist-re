@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.synthed_verilog_ast &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.synthed_verilog_ast</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">   Copyright 2013, Shinya Takamaeda-Yamazaki and Contributors</span>
+
+<span class="sd">   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="sd">   you may not use this file except in compliance with the License.</span>
+<span class="sd">   You may obtain a copy of the License at</span>
+
+<span class="sd">       http://www.apache.org/licenses/LICENSE-2.0</span>
+
+<span class="sd">   Unless required by applicable law or agreed to in writing, software</span>
+<span class="sd">   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="sd">   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="sd">   See the License for the specific language governing permissions and</span>
+<span class="sd">   limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.codegen</span><span class="w"> </span><span class="kn">import</span> <span class="n">ASTCodeGenerator</span>
+
+
+<div class="viewcode-block" id="Node">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Node.html#tueisec_myparsing.synthed_verilog_ast.Node">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Node</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Abstact class for every element in parser &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Node.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Node.children.html#tueisec_myparsing.synthed_verilog_ast.Node.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Node.show">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Node.show.html#tueisec_myparsing.synthed_verilog_ast.Node.show">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buf</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">attrnames</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">showlineno</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">lead</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">offset</span>
+        <span class="n">buf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">lead</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">attrnames</span><span class="p">:</span>
+                <span class="n">nvlist</span> <span class="o">=</span> <span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_names</span><span class="p">]</span>
+                <span class="n">attrstr</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">nvlist</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vlist</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_names</span><span class="p">]</span>
+                <span class="n">attrstr</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vlist</span><span class="p">)</span>
+            <span class="n">buf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">attrstr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">showlineno</span><span class="p">:</span>
+            <span class="n">buf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39; (at </span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span><span class="p">)</span>
+        <span class="n">buf</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">():</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">indent</span><span class="p">,</span> <span class="n">attrnames</span><span class="p">,</span> <span class="n">showlineno</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">self_attrs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_names</span><span class="p">])</span>
+        <span class="n">other_attrs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">getattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">attr_names</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">self_attrs</span> <span class="o">!=</span> <span class="n">other_attrs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">other_children</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">children</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">other_children</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">([</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_names</span><span class="p">]))</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">())</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">((</span><span class="n">s</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ASTCodeGenerator</span><span class="p">()</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<span class="c1"># ------------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="Source">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Source.html#tueisec_myparsing.synthed_verilog_ast.Source">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Source</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,)</span>
+
+<div class="viewcode-block" id="Source.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Source.__init__.html#tueisec_myparsing.synthed_verilog_ast.Source.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span></div>
+
+
+<div class="viewcode-block" id="Source.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Source.children.html#tueisec_myparsing.synthed_verilog_ast.Source.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Description">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Description.html#tueisec_myparsing.synthed_verilog_ast.Description">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Description</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Description.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Description.__init__.html#tueisec_myparsing.synthed_verilog_ast.Description.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">definitions</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">definitions</span> <span class="o">=</span> <span class="n">definitions</span></div>
+
+
+<div class="viewcode-block" id="Description.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Description.children.html#tueisec_myparsing.synthed_verilog_ast.Description.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">definitions</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">definitions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ModuleDef">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.ModuleDef.html#tueisec_myparsing.synthed_verilog_ast.ModuleDef">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModuleDef</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,)</span>
+
+<div class="viewcode-block" id="ModuleDef.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.ModuleDef.__init__.html#tueisec_myparsing.synthed_verilog_ast.ModuleDef.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">paramlist</span><span class="p">,</span> <span class="n">portlist</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="n">default_nettype</span><span class="o">=</span><span class="s1">&#39;wire&#39;</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paramlist</span> <span class="o">=</span> <span class="n">paramlist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">portlist</span> <span class="o">=</span> <span class="n">portlist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="n">items</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_nettype</span> <span class="o">=</span> <span class="n">default_nettype</span></div>
+
+
+<div class="viewcode-block" id="ModuleDef.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.ModuleDef.children.html#tueisec_myparsing.synthed_verilog_ast.ModuleDef.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paramlist</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paramlist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">portlist</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">portlist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Paramlist">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Paramlist.html#tueisec_myparsing.synthed_verilog_ast.Paramlist">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Paramlist</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Paramlist.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Paramlist.__init__.html#tueisec_myparsing.synthed_verilog_ast.Paramlist.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span></div>
+
+
+<div class="viewcode-block" id="Paramlist.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Paramlist.children.html#tueisec_myparsing.synthed_verilog_ast.Paramlist.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Portlist">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Portlist.html#tueisec_myparsing.synthed_verilog_ast.Portlist">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Portlist</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Portlist.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Portlist.__init__.html#tueisec_myparsing.synthed_verilog_ast.Portlist.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ports</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ports</span> <span class="o">=</span> <span class="n">ports</span></div>
+
+
+<div class="viewcode-block" id="Portlist.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Portlist.children.html#tueisec_myparsing.synthed_verilog_ast.Portlist.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ports</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ports</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Port">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Port.html#tueisec_myparsing.synthed_verilog_ast.Port">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Port</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">,)</span>
+
+<div class="viewcode-block" id="Port.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Port.__init__.html#tueisec_myparsing.synthed_verilog_ast.Port.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span></div>
+
+
+<div class="viewcode-block" id="Port.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Port.children.html#tueisec_myparsing.synthed_verilog_ast.Port.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Width">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Width.html#tueisec_myparsing.synthed_verilog_ast.Width">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Width</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Width.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Width.__init__.html#tueisec_myparsing.synthed_verilog_ast.Width.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msb</span><span class="p">,</span> <span class="n">lsb</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msb</span> <span class="o">=</span> <span class="n">msb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lsb</span> <span class="o">=</span> <span class="n">lsb</span></div>
+
+
+<div class="viewcode-block" id="Width.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Width.children.html#tueisec_myparsing.synthed_verilog_ast.Width.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">msb</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msb</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lsb</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lsb</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># class Length(Width):</span>
+<span class="c1">#     pass</span>
+
+
+<div class="viewcode-block" id="Identifier">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Identifier.html#tueisec_myparsing.synthed_verilog_ast.Identifier">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Identifier</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,)</span>
+
+    <span class="c1"># def __init__(self, name, scope=None, lineno=0):</span>
+<div class="viewcode-block" id="Identifier.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Identifier.__init__.html#tueisec_myparsing.synthed_verilog_ast.Identifier.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span></div>
+
+        <span class="c1"># self.scope = scope</span>
+
+<div class="viewcode-block" id="Identifier.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Identifier.children.html#tueisec_myparsing.synthed_verilog_ast.Identifier.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># if self.scope:</span>
+        <span class="c1">#     nodelist.append(self.scope)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="Value">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Value.html#tueisec_myparsing.synthed_verilog_ast.Value">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Value</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Value.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Value.__init__.html#tueisec_myparsing.synthed_verilog_ast.Value.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="Value.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Value.children.html#tueisec_myparsing.synthed_verilog_ast.Value.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Constant">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Constant.html#tueisec_myparsing.synthed_verilog_ast.Constant">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Constant</span><span class="p">(</span><span class="n">Value</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,)</span>
+
+<div class="viewcode-block" id="Constant.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Constant.__init__.html#tueisec_myparsing.synthed_verilog_ast.Constant.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="Constant.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Constant.children.html#tueisec_myparsing.synthed_verilog_ast.Constant.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="IntConst">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.IntConst.html#tueisec_myparsing.synthed_verilog_ast.IntConst">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IntConst</span><span class="p">(</span><span class="n">Constant</span><span class="p">):</span>
+    <span class="n">base_types</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;o&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__index__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bits</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+            <span class="n">base_string</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_types</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">base_string</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="mi">10</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__int__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__index__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="IntConst.bits">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.IntConst.bits.html#tueisec_myparsing.synthed_verilog_ast.IntConst.bits">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bits</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">bits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">]:</span>
+                    <span class="k">return</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;The value </span><span class="si">{}</span><span class="s2"> is not containing any bit information.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+            <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">bits</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">bits</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">bits</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">IntConst</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">FloatConst</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">IntConst</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">FloatConst</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Integral</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Real</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Complex</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">complex</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">+</span> <span class="nb">complex</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+
+
+<div class="viewcode-block" id="FloatConst">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.FloatConst.html#tueisec_myparsing.synthed_verilog_ast.FloatConst">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FloatConst</span><span class="p">(</span><span class="n">Constant</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="StringConst">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.StringConst.html#tueisec_myparsing.synthed_verilog_ast.StringConst">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StringConst</span><span class="p">(</span><span class="n">Constant</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="Variable">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Variable.html#tueisec_myparsing.synthed_verilog_ast.Variable">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Variable</span><span class="p">(</span><span class="n">Value</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;signed&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Variable.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Variable.__init__.html#tueisec_myparsing.synthed_verilog_ast.Variable.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">signed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signed</span> <span class="o">=</span> <span class="n">signed</span></div>
+
+
+<div class="viewcode-block" id="Variable.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Variable.children.html#tueisec_myparsing.synthed_verilog_ast.Variable.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Input">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Input.html#tueisec_myparsing.synthed_verilog_ast.Input">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Input</span><span class="p">(</span><span class="n">Variable</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="Output">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Output.html#tueisec_myparsing.synthed_verilog_ast.Output">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Output</span><span class="p">(</span><span class="n">Variable</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="Inout">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Inout.html#tueisec_myparsing.synthed_verilog_ast.Inout">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Inout</span><span class="p">(</span><span class="n">Variable</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<span class="c1"># class Tri(Variable):</span>
+<span class="c1">#     pass</span>
+
+
+<div class="viewcode-block" id="Wire">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Wire.html#tueisec_myparsing.synthed_verilog_ast.Wire">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Wire</span><span class="p">(</span><span class="n">Variable</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<span class="c1"># class Reg(Variable):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class WireArray(Variable):</span>
+<span class="c1">#     attr_names = (&#39;name&#39;, &#39;signed&#39;)</span>
+
+<span class="c1">#     def __init__(self, name, width, length, signed=False, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.width = width</span>
+<span class="c1">#         self.length = length</span>
+<span class="c1">#         self.signed = signed</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.width:</span>
+<span class="c1">#             nodelist.append(self.width)</span>
+<span class="c1">#         if self.length:</span>
+<span class="c1">#             nodelist.append(self.length)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class RegArray(Variable):</span>
+<span class="c1">#     attr_names = (&#39;name&#39;, &#39;signed&#39;)</span>
+
+<span class="c1">#     def __init__(self, name, width, length, signed=False, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.width = width</span>
+<span class="c1">#         self.length = length</span>
+<span class="c1">#         self.signed = signed</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.width:</span>
+<span class="c1">#             nodelist.append(self.width)</span>
+<span class="c1">#         if self.length:</span>
+<span class="c1">#             nodelist.append(self.length)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class Integer(Variable):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Real(Variable):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Genvar(Variable):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Ioport(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, first, second=None, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.first = first</span>
+<span class="c1">#         self.second = second</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.first:</span>
+<span class="c1">#             nodelist.append(self.first)</span>
+<span class="c1">#         if self.second:</span>
+<span class="c1">#             nodelist.append(self.second)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class Parameter(Node):</span>
+<span class="c1">#     attr_names = (&#39;name&#39;, &#39;signed&#39;)</span>
+
+<span class="c1">#     def __init__(self, name, value, width=None, signed=False, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.value = value</span>
+<span class="c1">#         self.width = width</span>
+<span class="c1">#         self.signed = signed</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.value:</span>
+<span class="c1">#             nodelist.append(self.value)</span>
+<span class="c1">#         if self.width:</span>
+<span class="c1">#             nodelist.append(self.width)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class Localparam(Parameter):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Supply(Parameter):</span>
+<span class="c1">#     pass</span>
+
+
+<div class="viewcode-block" id="Decl">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Decl.html#tueisec_myparsing.synthed_verilog_ast.Decl">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Decl</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Decl.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Decl.__init__.html#tueisec_myparsing.synthed_verilog_ast.Decl.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">list</span> <span class="o">=</span> <span class="nb">list</span></div>
+
+
+<div class="viewcode-block" id="Decl.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Decl.children.html#tueisec_myparsing.synthed_verilog_ast.Decl.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">list</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># class Concat(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, list, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.list = list</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.list:</span>
+<span class="c1">#             nodelist.extend(self.list)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class LConcat(Concat):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Repeat(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, value, times, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.value = value</span>
+<span class="c1">#         self.times = times</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.value:</span>
+<span class="c1">#             nodelist.append(self.value)</span>
+<span class="c1">#         if self.times:</span>
+<span class="c1">#             nodelist.append(self.times)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<div class="viewcode-block" id="Partselect">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Partselect.html#tueisec_myparsing.synthed_verilog_ast.Partselect">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Partselect</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Partselect.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Partselect.__init__.html#tueisec_myparsing.synthed_verilog_ast.Partselect.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">msb</span><span class="p">,</span> <span class="n">lsb</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="n">var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msb</span> <span class="o">=</span> <span class="n">msb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lsb</span> <span class="o">=</span> <span class="n">lsb</span></div>
+
+
+<div class="viewcode-block" id="Partselect.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Partselect.children.html#tueisec_myparsing.synthed_verilog_ast.Partselect.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">msb</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msb</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lsb</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lsb</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># class Pointer(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, var, ptr, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.var = var</span>
+<span class="c1">#         self.ptr = ptr</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.var:</span>
+<span class="c1">#             nodelist.append(self.var)</span>
+<span class="c1">#         if self.ptr:</span>
+<span class="c1">#             nodelist.append(self.ptr)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<div class="viewcode-block" id="Lvalue">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Lvalue.html#tueisec_myparsing.synthed_verilog_ast.Lvalue">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Lvalue</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Lvalue.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Lvalue.__init__.html#tueisec_myparsing.synthed_verilog_ast.Lvalue.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="n">var</span></div>
+
+
+<div class="viewcode-block" id="Lvalue.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Lvalue.children.html#tueisec_myparsing.synthed_verilog_ast.Lvalue.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Rvalue">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Rvalue.html#tueisec_myparsing.synthed_verilog_ast.Rvalue">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Rvalue</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Rvalue.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Rvalue.__init__.html#tueisec_myparsing.synthed_verilog_ast.Rvalue.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="n">var</span></div>
+
+
+<div class="viewcode-block" id="Rvalue.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Rvalue.children.html#tueisec_myparsing.synthed_verilog_ast.Rvalue.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># # ------------------------------------------------------------------------------</span>
+<span class="c1"># class Operator(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, left, right, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.left = left</span>
+<span class="c1">#         self.right = right</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.left:</span>
+<span class="c1">#             nodelist.append(self.left)</span>
+<span class="c1">#         if self.right:</span>
+<span class="c1">#             nodelist.append(self.right)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+<span class="c1">#     def __repr__(self):</span>
+<span class="c1">#         ret = &#39;(&#39; + self.__class__.__name__</span>
+<span class="c1">#         for c in self.children():</span>
+<span class="c1">#             ret += &#39; &#39; + c.__repr__()</span>
+<span class="c1">#         ret += &#39;)&#39;</span>
+<span class="c1">#         return ret</span>
+
+
+<span class="c1"># class UnaryOperator(Operator):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, right, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.right = right</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.right:</span>
+<span class="c1">#             nodelist.append(self.right)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># # Level 1 (Highest Priority)</span>
+<span class="c1"># class Uplus(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Uminus(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Ulnot(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Unot(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Uand(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Unand(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Uor(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Unor(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Uxor(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Uxnor(UnaryOperator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 2</span>
+<span class="c1"># class Power(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Times(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Divide(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Mod(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 3</span>
+<span class="c1"># class Plus(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Minus(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 4</span>
+<span class="c1"># class Sll(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Srl(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Sra(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 5</span>
+<span class="c1"># class LessThan(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class GreaterThan(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class LessEq(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class GreaterEq(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 6</span>
+<span class="c1"># class Eq(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class NotEq(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Eql(Operator):</span>
+<span class="c1">#     pass  # ===</span>
+
+
+<span class="c1"># class NotEql(Operator):</span>
+<span class="c1">#     pass  # !==</span>
+
+
+<span class="c1"># # Level 7</span>
+<span class="c1"># class And(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Xor(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Xnor(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 8</span>
+<span class="c1"># class Or(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 9</span>
+<span class="c1"># class Land(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 10</span>
+<span class="c1"># class Lor(Operator):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># # Level 11</span>
+<span class="c1"># class Cond(Operator):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, cond, true_value, false_value, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.cond = cond</span>
+<span class="c1">#         self.true_value = true_value</span>
+<span class="c1">#         self.false_value = false_value</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.cond:</span>
+<span class="c1">#             nodelist.append(self.cond)</span>
+<span class="c1">#         if self.true_value:</span>
+<span class="c1">#             nodelist.append(self.true_value)</span>
+<span class="c1">#         if self.false_value:</span>
+<span class="c1">#             nodelist.append(self.false_value)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<div class="viewcode-block" id="Assign">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Assign.html#tueisec_myparsing.synthed_verilog_ast.Assign">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Assign</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Assign.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Assign.__init__.html#tueisec_myparsing.synthed_verilog_ast.Assign.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">ldelay</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rdelay</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="n">left</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">right</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ldelay</span> <span class="o">=</span> <span class="n">ldelay</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rdelay</span> <span class="o">=</span> <span class="n">rdelay</span></div>
+
+
+<div class="viewcode-block" id="Assign.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Assign.children.html#tueisec_myparsing.synthed_verilog_ast.Assign.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ldelay</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ldelay</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rdelay</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rdelay</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># class Always(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, sens_list, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.sens_list = sens_list</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.sens_list:</span>
+<span class="c1">#             nodelist.append(self.sens_list)</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class AlwaysFF(Always):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class AlwaysComb(Always):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class SensList(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, list, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.list = list</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.list:</span>
+<span class="c1">#             nodelist.extend(self.list)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class Sens(Node):</span>
+<span class="c1">#     attr_names = (&#39;type&#39;,)</span>
+
+<span class="c1">#     def __init__(self, sig, type=&#39;posedge&#39;, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.sig = sig</span>
+<span class="c1">#         self.type = type  # &#39;posedge&#39;, &#39;negedge&#39;, &#39;level&#39;, &#39;all&#39; (*)</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.sig:</span>
+<span class="c1">#             nodelist.append(self.sig)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class Substitution(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, left, right, ldelay=None, rdelay=None, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.left = left</span>
+<span class="c1">#         self.right = right</span>
+<span class="c1">#         self.ldelay = ldelay</span>
+<span class="c1">#         self.rdelay = rdelay</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.left:</span>
+<span class="c1">#             nodelist.append(self.left)</span>
+<span class="c1">#         if self.right:</span>
+<span class="c1">#             nodelist.append(self.right)</span>
+<span class="c1">#         if self.ldelay:</span>
+<span class="c1">#             nodelist.append(self.ldelay)</span>
+<span class="c1">#         if self.rdelay:</span>
+<span class="c1">#             nodelist.append(self.rdelay)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class BlockingSubstitution(Substitution):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class NonblockingSubstitution(Substitution):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class IfStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, cond, true_statement, false_statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.cond = cond</span>
+<span class="c1">#         self.true_statement = true_statement</span>
+<span class="c1">#         self.false_statement = false_statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.cond:</span>
+<span class="c1">#             nodelist.append(self.cond)</span>
+<span class="c1">#         if self.true_statement:</span>
+<span class="c1">#             nodelist.append(self.true_statement)</span>
+<span class="c1">#         if self.false_statement:</span>
+<span class="c1">#             nodelist.append(self.false_statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class ForStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, pre, cond, post, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.pre = pre</span>
+<span class="c1">#         self.cond = cond</span>
+<span class="c1">#         self.post = post</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.pre:</span>
+<span class="c1">#             nodelist.append(self.pre)</span>
+<span class="c1">#         if self.cond:</span>
+<span class="c1">#             nodelist.append(self.cond)</span>
+<span class="c1">#         if self.post:</span>
+<span class="c1">#             nodelist.append(self.post)</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class WhileStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, cond, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.cond = cond</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.cond:</span>
+<span class="c1">#             nodelist.append(self.cond)</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class CaseStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, comp, caselist, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.comp = comp</span>
+<span class="c1">#         self.caselist = caselist</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.comp:</span>
+<span class="c1">#             nodelist.append(self.comp)</span>
+<span class="c1">#         if self.caselist:</span>
+<span class="c1">#             nodelist.extend(self.caselist)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class CasexStatement(CaseStatement):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class UniqueCaseStatement(CaseStatement):</span>
+<span class="c1">#     pass</span>
+
+
+<span class="c1"># class Case(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, cond, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.cond = cond</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.cond:</span>
+<span class="c1">#             nodelist.extend(self.cond)</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class Block(Node):</span>
+<span class="c1">#     attr_names = (&#39;scope&#39;,)</span>
+
+<span class="c1">#     def __init__(self, statements, scope=None, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.statements = statements</span>
+<span class="c1">#         self.scope = scope</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.statements:</span>
+<span class="c1">#             nodelist.extend(self.statements)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class Initial(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class EventStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, senslist, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.senslist = senslist</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.senslist:</span>
+<span class="c1">#             nodelist.append(self.senslist)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class WaitStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, cond, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.cond = cond</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.cond:</span>
+<span class="c1">#             nodelist.append(self.cond)</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class ForeverStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class DelayStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, delay, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.delay = delay</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.delay:</span>
+<span class="c1">#             nodelist.append(self.delay)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+<span class="c1"># -------------------------------------------------------------------------</span>
+<span class="c1"># Do not support multiple instances in one line.</span>
+<span class="c1"># -------------------------------------------------------------------------</span>
+<span class="c1"># class InstanceList(Node):</span>
+<span class="c1">#     attr_names = (&#39;module&#39;,)</span>
+
+<span class="c1">#     def __init__(self, module, parameterlist, instances, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.module = module</span>
+<span class="c1">#         self.parameterlist = parameterlist</span>
+<span class="c1">#         self.instances = instances</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.parameterlist:</span>
+<span class="c1">#             nodelist.extend(self.parameterlist)</span>
+<span class="c1">#         if self.instances:</span>
+<span class="c1">#             nodelist.extend(self.instances)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<div class="viewcode-block" id="Instance">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Instance.html#tueisec_myparsing.synthed_verilog_ast.Instance">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Instance</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;module&#39;</span><span class="p">)</span>
+
+    <span class="c1"># def __init__(self, module, name, portlist, parameterlist, array=None, lineno=0):</span>
+<div class="viewcode-block" id="Instance.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Instance.__init__.html#tueisec_myparsing.synthed_verilog_ast.Instance.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">portlist</span><span class="p">,</span> <span class="n">parameterlist</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">portlist</span> <span class="o">=</span> <span class="n">portlist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameterlist</span> <span class="o">=</span> <span class="n">parameterlist</span></div>
+
+        <span class="c1"># self.array = array</span>
+
+<div class="viewcode-block" id="Instance.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Instance.children.html#tueisec_myparsing.synthed_verilog_ast.Instance.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># if self.array:</span>
+        <span class="c1">#     nodelist.append(self.array)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameterlist</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameterlist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">portlist</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">portlist</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># class ParamArg(Node):</span>
+<span class="c1">#     attr_names = (&#39;paramname&#39;,)</span>
+
+<span class="c1">#     def __init__(self, paramname, argname, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.paramname = paramname</span>
+<span class="c1">#         self.argname = argname</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.argname:</span>
+<span class="c1">#             nodelist.append(self.argname)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<div class="viewcode-block" id="PortArg">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.PortArg.html#tueisec_myparsing.synthed_verilog_ast.PortArg">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PortArg</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;portname&#39;</span><span class="p">,)</span>
+
+<div class="viewcode-block" id="PortArg.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.PortArg.__init__.html#tueisec_myparsing.synthed_verilog_ast.PortArg.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">portname</span><span class="p">,</span> <span class="n">argname</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">portname</span> <span class="o">=</span> <span class="n">portname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">argname</span> <span class="o">=</span> <span class="n">argname</span></div>
+
+
+<div class="viewcode-block" id="PortArg.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.PortArg.children.html#tueisec_myparsing.synthed_verilog_ast.PortArg.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">argname</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">argname</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># class Function(Node):</span>
+<span class="c1">#     attr_names = (&#39;name&#39;,)</span>
+
+<span class="c1">#     def __init__(self, name, retwidth, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.retwidth = retwidth</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.retwidth:</span>
+<span class="c1">#             nodelist.append(self.retwidth)</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.extend(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+<span class="c1">#     def __repr__(self):</span>
+<span class="c1">#         return self.name.__repr__()</span>
+
+
+<span class="c1"># class FunctionCall(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, name, args, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.args = args</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.name:</span>
+<span class="c1">#             nodelist.append(self.name)</span>
+<span class="c1">#         if self.args:</span>
+<span class="c1">#             nodelist.extend(self.args)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+<span class="c1">#     def __repr__(self):</span>
+<span class="c1">#         return self.name.__repr__()</span>
+
+
+<span class="c1"># class Task(Node):</span>
+<span class="c1">#     attr_names = (&#39;name&#39;,)</span>
+
+<span class="c1">#     def __init__(self, name, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.extend(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class TaskCall(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, name, args, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.args = args</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.name:</span>
+<span class="c1">#             nodelist.append(self.name)</span>
+<span class="c1">#         if self.args:</span>
+<span class="c1">#             nodelist.extend(self.args)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class GenerateStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, items, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.items = items</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.items:</span>
+<span class="c1">#             nodelist.extend(self.items)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class SystemCall(Node):</span>
+<span class="c1">#     attr_names = (&#39;syscall&#39;,)</span>
+
+<span class="c1">#     def __init__(self, syscall, args, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.syscall = syscall</span>
+<span class="c1">#         self.args = args</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.args:</span>
+<span class="c1">#             nodelist.extend(self.args)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+<span class="c1">#     def __repr__(self):</span>
+<span class="c1">#         ret = []</span>
+<span class="c1">#         ret.append(&#39;(&#39;)</span>
+<span class="c1">#         ret.append(&#39;$&#39;)</span>
+<span class="c1">#         ret.append(self.syscall)</span>
+<span class="c1">#         for a in self.args:</span>
+<span class="c1">#             ret.append(&#39; &#39;)</span>
+<span class="c1">#             ret.append(str(a))</span>
+<span class="c1">#         ret.append(&#39;)&#39;)</span>
+<span class="c1">#         return &#39;&#39;.join(ret)</span>
+
+
+<span class="c1"># class IdentifierScopeLabel(Node):</span>
+<span class="c1">#     attr_names = (&#39;name&#39;, &#39;loop&#39;)</span>
+
+<span class="c1">#     def __init__(self, name, loop=None, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.name = name</span>
+<span class="c1">#         self.loop = loop</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class IdentifierScope(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, labellist, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.labellist = labellist</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.labellist:</span>
+<span class="c1">#             nodelist.extend(self.labellist)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<div class="viewcode-block" id="Pragma">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Pragma.html#tueisec_myparsing.synthed_verilog_ast.Pragma">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pragma</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">()</span>
+
+<div class="viewcode-block" id="Pragma.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Pragma.__init__.html#tueisec_myparsing.synthed_verilog_ast.Pragma.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span></div>
+
+
+<div class="viewcode-block" id="Pragma.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.Pragma.children.html#tueisec_myparsing.synthed_verilog_ast.Pragma.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entry</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PragmaEntry">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.PragmaEntry.html#tueisec_myparsing.synthed_verilog_ast.PragmaEntry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PragmaEntry</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">attr_names</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="p">)</span>
+
+<div class="viewcode-block" id="PragmaEntry.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.PragmaEntry.__init__.html#tueisec_myparsing.synthed_verilog_ast.PragmaEntry.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lineno</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lineno</span> <span class="o">=</span> <span class="n">lineno</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="PragmaEntry.children">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.synthed_verilog_ast.PragmaEntry.children.html#tueisec_myparsing.synthed_verilog_ast.PragmaEntry.children">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">nodelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># class Disable(Node):</span>
+<span class="c1">#     attr_names = (&#39;dest&#39;,)</span>
+
+<span class="c1">#     def __init__(self, dest, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.dest = dest</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class ParallelBlock(Node):</span>
+<span class="c1">#     attr_names = (&#39;scope&#39;,)</span>
+
+<span class="c1">#     def __init__(self, statements, scope=None, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.statements = statements</span>
+<span class="c1">#         self.scope = scope</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.statements:</span>
+<span class="c1">#             nodelist.extend(self.statements)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class SingleStatement(Node):</span>
+<span class="c1">#     attr_names = ()</span>
+
+<span class="c1">#     def __init__(self, statement, lineno=0):</span>
+<span class="c1">#         self.lineno = lineno</span>
+<span class="c1">#         self.statement = statement</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         if self.statement:</span>
+<span class="c1">#             nodelist.append(self.statement)</span>
+<span class="c1">#         return tuple(nodelist)</span>
+
+
+<span class="c1"># class EmbeddedCode(Node):</span>
+<span class="c1">#     attr_names = (&#39;code&#39;,)</span>
+
+<span class="c1">#     def __init__(self, code, lineno=0):</span>
+<span class="c1">#         self.code = code</span>
+
+<span class="c1">#     def children(self):</span>
+<span class="c1">#         nodelist = []</span>
+<span class="c1">#         return tuple(nodelist)</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

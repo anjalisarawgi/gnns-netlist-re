@@ -1,0 +1,6 @@
+re\_verilog2features.graph\_algo\_func.sparse\_katz\_centrality\_numpy
+======================================================================
+
+.. currentmodule:: re_verilog2features.graph_algo_func
+
+.. autofunction:: re_verilog2features.graph_algo_func.sparse_katz_centrality_numpy

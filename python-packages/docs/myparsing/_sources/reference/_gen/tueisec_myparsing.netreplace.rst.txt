@@ -1,0 +1,30 @@
+﻿tueisec\_myparsing.netreplace
+=============================
+
+.. automodule:: tueisec_myparsing.netreplace
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      replace_nets
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+    :toctree: .
+   
+      NetReplacer
+   
+   
+
+   
+   
+   

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>re_verilog2features.cli.make_hasegawa_df &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper" href="re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper.html" />
+    <link rel="prev" title="re_verilog2features.cli.run_clustering.main" href="re_verilog2features.cli.run_clustering.main.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../re_verilog2features.html" accesskey="U">re_verilog2features</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-re_verilog2features.cli.make_hasegawa_df">
+<span id="re-verilog2features-cli-make-hasegawa-df"></span><h1>re_verilog2features.cli.make_hasegawa_df<a class="headerlink" href="#module-re_verilog2features.cli.make_hasegawa_df" title="Link to this heading">¶</a></h1>
+<p>Run feature generation.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Synopsys:</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>usage: make_hasegawa_features [-h] [--cores CORES] [--ap_cores AP_CORES]
+  -o OUTPUT_PATH [-l CELL_LIBRARY] [--smallest_first] [--debug]
+
+Run feature generation.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --cores CORES         Cores to use for parallelization. Default = 1
+  --ap_cores AP_CORES   Cores to use for ARPACK. Multiplies by --cores! Default = 1
+  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+                        The filepath where output df will be stored. Filename will
+                        be defined by input path. Remember to set your wanted output
+                        format with `-t`.
+  -l CELL_LIBRARY, --cell_library CELL_LIBRARY
+                        The cell library name to use. Default: osu035
+  --smallest_first      By default, the largest designs will be converted first.
+                        With this flag, convert the smallest first. More success,
+                        but large things may come late and badly.
+  --debug               Enable debug output
+
+Please note that make_hasegawa_features accepts multiple paths and/or folders with
+its `designs` argument. Please do not start multiple instances of this executable,
+but start one instance and supply it with all the graphs you want to generate
+features for. This is most efficient.
+</pre></div>
+</div>
+</div>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper.html#re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper" title="re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calc_hasegawa_wrapper</span></code></a>(args)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.cli.make_hasegawa_df.glob_list_of_design_paths.html#re_verilog2features.cli.make_hasegawa_df.glob_list_of_design_paths" title="re_verilog2features.cli.make_hasegawa_df.glob_list_of_design_paths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">glob_list_of_design_paths</span></code></a>(design_path_list)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.cli.make_hasegawa_df.load_cells.html#re_verilog2features.cli.make_hasegawa_df.load_cells" title="re_verilog2features.cli.make_hasegawa_df.load_cells"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_cells</span></code></a>(args)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.cli.make_hasegawa_df.main.html#re_verilog2features.cli.make_hasegawa_df.main" title="re_verilog2features.cli.make_hasegawa_df.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.cli.make_hasegawa_df.semaphored.html#re_verilog2features.cli.make_hasegawa_df.semaphored" title="re_verilog2features.cli.make_hasegawa_df.semaphored"><code class="xref py py-obj docutils literal notranslate"><span class="pre">semaphored</span></code></a>(designs_sorted, semaphore)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.cli.make_hasegawa_df.skip_existing_designs.html#re_verilog2features.cli.make_hasegawa_df.skip_existing_designs" title="re_verilog2features.cli.make_hasegawa_df.skip_existing_designs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_existing_designs</span></code></a>(designs_iter, output_path)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../re_verilog2features.html">re_verilog2features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/re_verilog2features.cli.make_hasegawa_df.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper.html" title="re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.cli.run_clustering.main.html" title="re_verilog2features.cli.run_clustering.main"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+tueisec\_myparsing.parsed\_verilog.ParsedVerilog.rev\_lookup
+============================================================
+
+.. currentmodule:: tueisec_myparsing.parsed_verilog
+
+.. automethod:: tueisec_myparsing.parsed_verilog.ParsedVerilog.rev_lookup

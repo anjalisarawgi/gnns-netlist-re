@@ -1,0 +1,71 @@
+.. module:: tueisec_myparsing
+
+tueisec_myparsing
+=================
+
+Helper methods for parsing verilog netlists to a python datastructure
+
+API
+---
+
+.. autosummary::
+    :toctree: _gen/
+
+    tueisec_myparsing.codegen
+    tueisec_myparsing.defines
+    tueisec_myparsing.graph_output_file_formats
+    tueisec_myparsing.myparsing_ply
+    tueisec_myparsing.netreplace
+    tueisec_myparsing.parsed_verilog_ply
+    tueisec_myparsing.pool_wrapper
+    tueisec_myparsing.synthed_verilog_ast
+    tueisec_myparsing.synthed_verilog_lexer
+    tueisec_myparsing.synthed_verilog_parser
+    tueisec_myparsing.verilog_parsing_errors
+
+Commandline Interface
+---------------------
+
+.. autosummary::
+    :toctree: _gen/
+
+    tueisec_myparsing.cli.helpers
+    tueisec_myparsing.cli.prepare_generic_cells
+    tueisec_myparsing.cli.run_hierarchy
+    tueisec_myparsing.cli.run_write_adjlist
+    tueisec_myparsing.cli.verilog_statistics
+    tueisec_myparsing.cli.verilog2graph
+    tueisec_myparsing.cli.genus2hierarchy
+    tueisec_myparsing.cli.cluster2verilog
+    tueisec_myparsing.cli.hierarchy2verilog
+ 
+
+Undocumented Modules
+--------------------
+
+These modules are currently basically undocumented.
+
+.. autosummary::
+    :toctree: _gen/
+
+    tueisec_myparsing.eda_helper_functions
+    tueisec_myparsing.liberty_parsing
+    tueisec_myparsing.myparsing_bench
+    tueisec_myparsing.plylibparser
+    tueisec_myparsing.stateful_verilog_parsing_helpers
+
+Legacy
+------
+
+These are unmaintained legacy interfaces. Do not use in new code!
+
+.. autosummary::
+    :toctree: _gen/
+
+    tueisec_myparsing.myparsing
+    tueisec_myparsing.parsed_verilog
+
+
+.. testsetup::
+
+    from tueisec_myparsing import *

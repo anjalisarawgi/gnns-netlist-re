@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.scoap.run_and_parse_tmax &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.scoap.run_and_parse_tmax</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">stat</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">REPORT_PINS_SCRIPT</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span> <span class="s2">&quot;report_pins_local.tcl&quot;</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="call_tmax">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.run_and_parse_tmax.call_tmax.html#re_verilog2features.scoap.run_and_parse_tmax.call_tmax">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">call_tmax</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">reportpath</span><span class="p">,</span> <span class="n">topname</span><span class="p">,</span> <span class="n">libPath</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;generate a scriptfile in tempdir and then call tmax with the right commands.</span>
+
+<span class="sd">    :param filename: filepath of the verilog infile</span>
+<span class="sd">    :type filename: str</span>
+<span class="sd">    :param reportpath: Filename for the report outputfile.</span>
+<span class="sd">    :type reportpath: str</span>
+<span class="sd">    :param topname: Name of the topmodule, tmax needs this to parse the verilog</span>
+<span class="sd">    :type topname: str</span>
+<span class="sd">    :param libPath: verilog file that tmax reads as a cell library,</span>
+<span class="sd">      defaults to LIB_PATH_DEFAULT</span>
+<span class="sd">    :type libPath: str, optional</span>
+<span class="sd">    :return: reportpath</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Writing shell file&quot;</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># x.append(&quot;cd {}\n&quot;.format(os.path.dirname(outfilepath)))</span>
+    <span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;module load synopsys/tx/F-2011.09-SP3</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="s2">&quot;tmax -shell </span><span class="si">{}</span><span class="s2"> -env VPATH &#39;</span><span class="si">{}</span><span class="s2">&#39; -env TOPNAME &#39;</span><span class="si">{}</span><span class="s2">&#39; &quot;</span>
+        <span class="s2">&quot;-env LIBPATH &#39;</span><span class="si">{}</span><span class="s2">&#39; &gt; </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">REPORT_PINS_SCRIPT</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">topname</span><span class="p">,</span> <span class="n">libPath</span><span class="p">,</span> <span class="n">reportpath</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w+&quot;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.sh&quot;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">,)</span> <span class="k">as</span> <span class="n">tmpfile</span><span class="p">:</span>
+        <span class="n">tmpfile</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">tmpfile</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IXUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IRUSR</span><span class="p">)</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Calling tmax&quot;</span><span class="p">)</span>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tmpfile</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmpfile</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="analyse_report">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.run_and_parse_tmax.analyse_report.html#re_verilog2features.scoap.run_and_parse_tmax.analyse_report">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">analyse_report</span><span class="p">(</span><span class="n">reportpath</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyze the reportfile generated by tmax</span>
+
+<span class="sd">    :param reportpath: path of the report file</span>
+<span class="sd">    :type reportpath: str or path that can be `open`-ed</span>
+<span class="sd">    :return: scoap dataframe</span>
+<span class="sd">    :rtype: pandas.DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">reportpath</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+    <span class="c1"># Extrahieren der benötigten Informationen aus der report-Datei und</span>
+    <span class="c1"># ergänzen um Informationen der mod_sig-Datei</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">tmp_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rn</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">report</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot; I &quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;---&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;()&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">rn</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot; I &quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="p">):</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)]</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+                <span class="n">cc0</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># 1. Wert</span>
+                <span class="n">cc1</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># 2. Wert</span>
+                <span class="n">co</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># 3. Wert</span>
+                <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;...&quot;</span><span class="p">):</span>
+                    <span class="n">ursprung</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">3</span> <span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;...&quot;</span><span class="p">)]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ursprung</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">3</span> <span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;/n&quot;</span><span class="p">)]</span>
+                <span class="k">if</span> <span class="n">cc0</span> <span class="o">!=</span> <span class="s2">&quot;*&quot;</span> <span class="ow">and</span> <span class="n">cc1</span> <span class="o">!=</span> <span class="s2">&quot;*&quot;</span> <span class="ow">and</span> <span class="n">cc0</span> <span class="o">!=</span> <span class="s2">&quot;M&quot;</span> <span class="ow">and</span> <span class="n">cc1</span> <span class="o">!=</span> <span class="s2">&quot;M&quot;</span><span class="p">:</span>
+                    <span class="n">cc</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">cc0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">cc1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">cc0</span> <span class="o">==</span> <span class="s2">&quot;M&quot;</span><span class="p">:</span>
+                        <span class="n">cc0</span> <span class="o">=</span> <span class="n">cc</span> <span class="o">=</span> <span class="mi">295000</span>
+                    <span class="k">if</span> <span class="n">cc1</span> <span class="o">==</span> <span class="s2">&quot;M&quot;</span><span class="p">:</span>
+                        <span class="n">cc1</span> <span class="o">=</span> <span class="n">cc</span> <span class="o">=</span> <span class="mi">295000</span>
+                    <span class="k">if</span> <span class="n">cc0</span> <span class="o">==</span> <span class="s2">&quot;*&quot;</span><span class="p">:</span>
+                        <span class="n">cc0</span> <span class="o">=</span> <span class="n">cc</span> <span class="o">=</span> <span class="mi">300000</span>
+                    <span class="k">if</span> <span class="n">cc1</span> <span class="o">==</span> <span class="s2">&quot;*&quot;</span><span class="p">:</span>
+                        <span class="n">cc1</span> <span class="o">=</span> <span class="n">cc</span> <span class="o">=</span> <span class="mi">300000</span>
+                <span class="k">if</span> <span class="n">co</span> <span class="o">==</span> <span class="s2">&quot;M&quot;</span><span class="p">:</span>
+                    <span class="n">co</span> <span class="o">=</span> <span class="mi">295000</span>
+                <span class="k">elif</span> <span class="n">co</span> <span class="o">==</span> <span class="s2">&quot;*&quot;</span><span class="p">:</span>
+                    <span class="n">co</span> <span class="o">=</span> <span class="mi">300000</span>  <span class="c1"># math.inf</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">co</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">co</span><span class="p">)</span>
+                <span class="n">tmp_data</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ursprung</span><span class="p">,</span> <span class="n">cc0</span><span class="p">,</span> <span class="n">cc1</span><span class="p">,</span> <span class="n">cc</span><span class="p">,</span> <span class="n">co</span><span class="p">))</span>
+                <span class="n">rn</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">elif</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;PO (_PO)&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rn</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">r</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;report_primi&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">co_cc_pairs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
+        <span class="n">tmp_data</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cell&quot;</span><span class="p">,</span> <span class="s2">&quot;CC0&quot;</span><span class="p">,</span> <span class="s2">&quot;CC1&quot;</span><span class="p">,</span> <span class="s2">&quot;CC&quot;</span><span class="p">,</span> <span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="s2">&quot;cell&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">co_cc_pairs</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

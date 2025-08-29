@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.parsed_verilog &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.parsed_verilog</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pprint</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.stateful_verilog_parsing_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">VerilogMultilineJoiner</span><span class="p">,</span>
+    <span class="n">VerilogCommentRemover</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.verilog_parsing_errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ASTParsingError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.defines</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MODULE_NAME_RE</span><span class="p">,</span>
+    <span class="n">PARSE_ASSIGN_RE</span><span class="p">,</span>
+    <span class="n">MODULE_INSTANTIATION_LINE_RE</span><span class="p">,</span>
+    <span class="n">CONNECTIONS_RE</span><span class="p">,</span>
+    <span class="n">CONST_EXPRESSION_RE</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ParsedVerilog">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.html#tueisec_myparsing.parsed_verilog.ParsedVerilog">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParsedVerilog</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Object representing a verilog file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ParsedVerilog.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.__init__.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">netlist_file</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the ParsedVerilog by parsing a source file</span>
+
+<span class="sd">        :param netlist_file: Path to a verilog file</span>
+<span class="sd">        :type netlist_file: str</span>
+<span class="sd">        :param cell_lib: parsed cell library</span>
+<span class="sd">        :type cell_lib: object</span>
+<span class="sd">        :return: A new ParsedVerilog file</span>
+<span class="sd">        :rtype: parsed_verilog.ParsedVerilog</span>
+
+<span class="sd">        :ivar netlist_file_path: The netlist file this object was parsed from</span>
+<span class="sd">        :ivar cell_lib: The cell library this object was parsed with.</span>
+<span class="sd">        :ivar graph: </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">netlist_file_path</span> <span class="o">=</span> <span class="n">netlist_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cell_lib</span> <span class="o">=</span> <span class="n">cell_lib</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_types</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">module_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parseVerilogToData</span><span class="p">(</span>
+            <span class="n">netlist_file</span><span class="p">,</span> <span class="n">cell_lib</span>
+        <span class="p">)</span>  <span class="c1"># FIXME: Better return names for global lookup</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nets_to_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rev_lookup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.get_graph_with_types_in_names">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.get_graph_with_types_in_names.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.get_graph_with_types_in_names">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_graph_with_types_in_names</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">node_types</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepend node types for all non I/O nodes that do not have that name already</span>
+
+<span class="sd">        This operation is quite expensive. Consider</span>
+<span class="sd">        using :py:func:`get_networkx_graph` with the `node_types` option set.</span>
+
+<span class="sd">        :param graph: graph to operate on</span>
+<span class="sd">        :type graph: dict</span>
+<span class="sd">        :param node_types: node_types dict for graph</span>
+<span class="sd">        :type graph: dict</span>
+<span class="sd">        :return: returns a dict adjlist graph where anonymous nodes are prepended with their node types</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">old_node_new_node</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+        <span class="n">new_graph</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INPUT_&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OUTPUT_&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">node_types</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="ow">in</span> <span class="n">node</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">old_node_new_node</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_types</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">+</span> <span class="n">node</span>
+
+        <span class="k">for</span> <span class="n">old_node</span><span class="p">,</span> <span class="n">new_node</span> <span class="ow">in</span> <span class="n">old_node_new_node</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">new_graph</span><span class="p">[</span><span class="n">new_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_graph</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_node</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">adjlist</span> <span class="ow">in</span> <span class="n">new_graph</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">adjlist</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">old_node_new_node</span><span class="p">[</span><span class="n">old_node</span><span class="p">]</span> <span class="k">if</span> <span class="n">old_node</span> <span class="ow">in</span> <span class="n">old_node_new_node</span> <span class="k">else</span> <span class="n">old_node</span> <span class="k">for</span> <span class="n">old_node</span> <span class="ow">in</span> <span class="n">adjlist</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">new_graph</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.get_networkx_graph">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.get_networkx_graph.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.get_networkx_graph">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_networkx_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">node_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">node_celltype_attr_name</span><span class="o">=</span><span class="s2">&quot;node_type&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the adjlist-dict to a networkx graph</span>
+
+<span class="sd">        .. note::</span>
+
+<span class="sd">            This imports networkx!</span>
+<span class="sd">        </span>
+<span class="sd">        :param graph: adjlist as returned from parseVerilogToData()</span>
+<span class="sd">        :type graph: dict[str, list[str]]</span>
+<span class="sd">        :param node_types: Dictionary of nodes and their cell types, as returned from parseVerilogToData(), defaults to None</span>
+<span class="sd">        :type node_types: dict[str, str], optional</span>
+<span class="sd">        :param node_celltype_attr_name: Name of the attribute added to the nx graph, defaults to &quot;node_type&quot;</span>
+<span class="sd">        :type node_celltype_attr_name: str, optional</span>
+<span class="sd">        :return: returns a :py:class:`networkx.DiGraph` representing the netlist</span>
+<span class="sd">        :rtype: networkx.DiGraph</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+        <span class="k">if</span> <span class="n">node_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+            <span class="n">nx</span><span class="o">.</span><span class="n">set_node_attributes</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">node_types</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">node_celltype_attr_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">G</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ParsedVerilog.rev_lookup">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.rev_lookup.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.rev_lookup">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rev_lookup</span><span class="p">(</span><span class="n">nodes_lookup</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a dictionary of driving nodes for nets by reversing the nodes dictionary.</span>
+
+<span class="sd">        :param nodes_lookup: dictionary of nodes</span>
+<span class="sd">        :type nodes_lookup: dict</span>
+<span class="sd">        :return: dictionary mapping nets to driving nodes</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">###FIXME: gnd and vdd nodes?</span>
+        <span class="n">net_to_node_lookup</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># fixme</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># only one output per node</span>
+
+        <span class="k">for</span> <span class="n">inst</span> <span class="ow">in</span> <span class="n">nodes_lookup</span><span class="p">:</span>
+
+            <span class="n">net</span> <span class="o">=</span> <span class="n">nodes_lookup</span><span class="p">[</span><span class="n">inst</span><span class="p">][</span><span class="s2">&quot;dest&quot;</span><span class="p">][</span><span class="n">output</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">net_to_node_lookup</span><span class="p">[</span><span class="n">net</span><span class="p">]</span> <span class="o">=</span> <span class="n">inst</span>
+        <span class="k">return</span> <span class="n">net_to_node_lookup</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.parseVerilogToData">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.parseVerilogToData.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.parseVerilogToData">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parseVerilogToData</span><span class="p">(</span><span class="n">verilog_file</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;parses the verilog file two times:</span>
+
+<span class="sd">        1) all nets and thier destination are retrieved</span>
+<span class="sd">        2) all nodes are scanned for thier connections</span>
+
+<span class="sd">        returns:</span>
+<span class="sd">            graph: Dct {Node_name: [List of Destinations]</span>
+<span class="sd">            nets: Dict {netname : [List of Destinations]</span>
+<span class="sd">            nodes: Dict {Node_name : [List of outputs]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># first build nets</span>
+        <span class="n">module_name</span><span class="p">,</span> <span class="n">in_nodes</span><span class="p">,</span> <span class="n">out_nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">net_drivers</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">build_nets</span><span class="p">(</span><span class="n">verilog_file</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+
+        <span class="c1"># then build nodes</span>
+        <span class="n">graph</span><span class="p">,</span> <span class="n">node_types</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">build_nodes</span><span class="p">(</span><span class="n">verilog_file</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">in_nodes</span><span class="p">,</span> <span class="n">net_drivers</span><span class="p">,</span> <span class="n">out_nodes</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">graph</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="p">(</span><span class="n">in_nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">out_nodes</span><span class="p">),</span> <span class="n">node_types</span><span class="p">,</span> <span class="n">module_name</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.build_nets">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.build_nets.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.build_nets">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_nets</span><span class="p">(</span><span class="n">verilog_file_path</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+
+        <span class="n">in_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">out_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">nets</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">net_drivers</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">module_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">comment_remover</span> <span class="o">=</span> <span class="n">VerilogCommentRemover</span><span class="p">()</span>
+        <span class="n">multiline_joiner</span> <span class="o">=</span> <span class="n">VerilogMultilineJoiner</span><span class="p">(</span><span class="n">verilog_file_path</span><span class="p">)</span>
+        <span class="c1"># node_joiner = VerilogInstanceStatementJoiner(verilog_file_path, ParsedVerilog.AddNet_helper)</span>
+        <span class="n">assign_later</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">verilog_file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">v_file</span><span class="p">:</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v_file</span><span class="p">):</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">comment_remover</span><span class="o">.</span><span class="n">handle_comments</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">multiline_joiner</span><span class="o">.</span><span class="n">handle_line</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">module_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                            <span class="n">verilog_file_path</span><span class="p">,</span>
+                            <span class="n">line</span><span class="p">,</span>
+                            <span class="n">i</span><span class="p">,</span>
+                            <span class="s2">&quot;Multiple Modules in one file.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">module_name_match</span> <span class="o">=</span> <span class="n">MODULE_NAME_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module_name_match</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                            <span class="n">verilog_file_path</span><span class="p">,</span>
+                            <span class="n">line</span><span class="p">,</span>
+                            <span class="n">i</span><span class="p">,</span>
+                            <span class="s2">&quot;Module line without a module name.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">module_name</span> <span class="o">=</span> <span class="n">module_name_match</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;endmodule&quot;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;input &quot;</span><span class="p">):</span>
+                    <span class="n">net</span><span class="p">,</span> <span class="n">node</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">create_nets_expl</span><span class="p">(</span>
+                        <span class="n">line</span><span class="p">,</span>
+                        <span class="s2">&quot;input &quot;</span><span class="p">,</span>
+                        <span class="n">net_drivers</span><span class="p">,</span>
+                        <span class="n">verilog_file_path</span><span class="p">,</span>
+                        <span class="n">i</span>
+                    <span class="p">)</span>
+                    <span class="n">nets</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+
+                    <span class="n">in_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;output &quot;</span><span class="p">):</span>
+                    <span class="n">net</span><span class="p">,</span> <span class="n">node</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">create_nets_expl</span><span class="p">(</span>
+                        <span class="n">line</span><span class="p">,</span>
+                        <span class="s2">&quot;output &quot;</span><span class="p">,</span>
+                        <span class="n">net_drivers</span><span class="p">,</span>
+                        <span class="n">verilog_file_path</span><span class="p">,</span>
+                        <span class="n">i</span>
+                    <span class="p">)</span>
+                    <span class="n">nets</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+
+                    <span class="n">out_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;wire &quot;</span><span class="p">):</span>
+                    <span class="c1"># net, node = create_nets_expl(line, &quot;wire &quot;)</span>
+                    <span class="c1"># nets.update(net)</span>
+                    <span class="c1"># nodes.update(node)</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;inout&quot;</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                        <span class="n">verilog_file_path</span><span class="p">,</span>
+                        <span class="n">line</span><span class="p">,</span>
+                        <span class="n">i</span><span class="p">,</span>
+                        <span class="s2">&quot;inouts are not supported&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;assign&quot;</span><span class="p">):</span>
+                    <span class="c1"># fixme: horrible horrible horrible hack</span>
+                    <span class="c1"># basically, just a wire between inst and net name</span>
+                    <span class="n">matches</span> <span class="o">=</span> <span class="n">PARSE_ASSIGN_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                            <span class="n">verilog_file_path</span><span class="p">,</span>
+                            <span class="n">line</span><span class="p">,</span>
+                            <span class="n">i</span><span class="p">,</span>
+                            <span class="s2">&quot;Assign statement not parseable.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">a_dest_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;a_dest&quot;</span><span class="p">)</span>
+                    <span class="n">a_src_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;a_src&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">CONST_EXPRESSION_RE</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">a_src_name</span><span class="p">):</span>
+                        <span class="c1"># Postpone this assignment after everything else has been parsed:</span>
+                        <span class="n">assign_later</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">line</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">a_dest_name</span><span class="p">,</span> <span class="n">a_src_name</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="s2">&quot;Constant assignments not supported by parsing. &quot;</span>
+                            <span class="s2">&quot;This is not a problem, if the assignment only &quot;</span>
+                            <span class="s2">&quot;handles the `gnd` and `vdd` wires, as you can &quot;</span>
+                            <span class="s2">&quot;later identify these nets by yourself. &quot;</span>
+                            <span class="s2">&quot;Assignment &#39;</span><span class="si">{}</span><span class="s2">&#39; in &#39;</span><span class="si">{}</span><span class="s2">&#39;:</span><span class="si">{}</span><span class="s2"> will be ignored!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                                <span class="n">verilog_file_path</span><span class="p">,</span>
+                                <span class="n">i</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># else we have an instantiation statement:</span>
+                    <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">AddNet_helper</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">verilog_file_path</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">net_drivers</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">line</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">a_dest_name</span><span class="p">,</span> <span class="n">a_src_name</span> <span class="ow">in</span> <span class="n">assign_later</span><span class="p">:</span>
+            <span class="n">o_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">a_dest_name</span>
+            <span class="k">if</span> <span class="n">o_name</span> <span class="ow">in</span> <span class="n">out_nodes</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">a_src_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nets</span><span class="p">:</span>
+                    <span class="n">nets</span><span class="p">[</span><span class="n">a_src_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">o_name</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">nets</span><span class="p">[</span><span class="n">a_src_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">o_name</span><span class="p">)</span>
+                <span class="c1"># important: update out_nodes here, else the net names don&#39;t match up</span>
+                <span class="n">pin_name</span> <span class="o">=</span> <span class="n">out_nodes</span><span class="p">[</span><span class="n">o_name</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">out_nodes</span><span class="p">[</span><span class="n">o_name</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">((</span><span class="n">pin_name</span><span class="p">,</span> <span class="n">a_dest_name</span><span class="p">))</span>
+                <span class="n">out_nodes</span><span class="p">[</span><span class="n">o_name</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pin_name</span><span class="p">,</span> <span class="n">a_src_name</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># a_dest_name is not an Output. Treat a_dest_name as an alias of a_src_name.</span>
+                <span class="c1"># Thus, the driver of a_src_name shall be the driver of a_dest_name.</span>
+                <span class="c1"># And anything driven by a_dest_name is now driven by a_src_name.</span>
+                <span class="c1">#</span>
+                <span class="c1"># In this stage, we only have the nets and the individual nodes, so</span>
+                <span class="c1"># we only have to update the src of all nodes driven by a_dest_name,</span>
+                <span class="c1"># and check if any node already drives a_dest_name</span>
+                <span class="k">if</span> <span class="n">a_dest_name</span> <span class="ow">in</span> <span class="n">net_drivers</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span><span class="n">verilog_file_path</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;Assignment invalid. Assigning a net to an already driven net.&quot;</span><span class="p">)</span>
+                <span class="c1"># get nodes driven by a_dest_name</span>
+                <span class="n">nodes_list</span> <span class="o">=</span> <span class="n">nets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">a_dest_name</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_list</span><span class="p">:</span>
+                    <span class="n">info</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">pin</span><span class="p">,</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="n">src</span> <span class="o">==</span> <span class="n">a_dest_name</span><span class="p">:</span>
+                            <span class="c1"># this node is driven by a_dest_name. Shall now be driven by a_src_name</span>
+                            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">((</span><span class="n">pin</span><span class="p">,</span> <span class="n">src</span><span class="p">))</span>
+                            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pin</span><span class="p">,</span> <span class="n">a_src_name</span><span class="p">))</span>
+                <span class="c1"># alias a_dest_name and a_src_name by merging their driven nodes:</span>
+                <span class="n">new_driven_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_list</span> <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nets</span><span class="p">[</span><span class="n">a_src_name</span><span class="p">]]</span>
+                <span class="n">new_driven_nodes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">nets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">a_src_name</span><span class="p">,</span> <span class="p">[]))</span>
+                <span class="c1"># do not modify self.nets[a_dest_name] here, we need to know which nodes are</span>
+                <span class="c1"># driven by a_dest_name</span>
+                <span class="n">nets</span><span class="p">[</span><span class="n">a_src_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_driven_nodes</span>
+
+        <span class="k">return</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">in_nodes</span><span class="p">,</span> <span class="n">out_nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">net_drivers</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.build_nodes">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.build_nodes.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.build_nodes">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_nodes</span><span class="p">(</span><span class="n">verilog_file</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">in_nodes</span><span class="p">,</span> <span class="n">net_divers</span><span class="p">,</span> <span class="n">out_nodes</span><span class="p">):</span>
+        <span class="n">node_types</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">comment_remover</span> <span class="o">=</span> <span class="n">VerilogCommentRemover</span><span class="p">()</span>
+        <span class="n">multiline_joiner</span> <span class="o">=</span> <span class="n">VerilogMultilineJoiner</span><span class="p">(</span><span class="n">verilog_file</span><span class="p">)</span>
+        <span class="c1"># node_joiner = VerilogInstanceStatementJoiner(verilog_file, ParsedVerilog.AddNode_helper)</span>
+        <span class="n">assign_later</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">verilog_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">v_file</span><span class="p">:</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v_file</span><span class="p">):</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">comment_remover</span><span class="o">.</span><span class="n">handle_comments</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">multiline_joiner</span><span class="o">.</span><span class="n">handle_line</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;module&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;endmodule&quot;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;input &quot;</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">graph</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">AddInput</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;not connected in the graph.&quot;</span><span class="p">):</span>
+                            <span class="c1"># input is not connected =&gt; delete from nets and nodes:</span>
+                            <span class="n">net_name</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="n">node_name</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                            <span class="n">nets</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">net_name</span><span class="p">)</span>
+                            <span class="n">in_nodes</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">e</span>
+
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;output &quot;</span><span class="p">):</span>
+                    <span class="n">graph</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">AddOutput</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;wire &quot;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;assign &quot;</span><span class="p">):</span>
+                    <span class="c1"># if assign, update graph:</span>
+                    <span class="n">matches</span> <span class="o">=</span> <span class="n">PARSE_ASSIGN_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                            <span class="n">verilog_file_path</span><span class="p">,</span>
+                            <span class="n">line</span><span class="p">,</span>
+                            <span class="n">i</span><span class="p">,</span>
+                            <span class="s2">&quot;Assign statement not parseable.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">a_dest_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;a_dest&quot;</span><span class="p">)</span>
+                    <span class="n">a_src_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;a_src&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">CONST_EXPRESSION_RE</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">a_src_name</span><span class="p">):</span>
+                        <span class="c1"># Postpone this assignment after everything else has been parsed:</span>
+                        <span class="n">assign_later</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">line</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">a_dest_name</span><span class="p">,</span> <span class="n">a_src_name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">graph</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">AddNode_helper</span><span class="p">(</span>
+                        <span class="n">line</span><span class="p">,</span> <span class="n">verilog_file</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">node_types</span>
+                    <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">line</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">a_dest_name</span><span class="p">,</span> <span class="n">a_src_name</span> <span class="ow">in</span> <span class="n">assign_later</span><span class="p">:</span>
+            <span class="c1"># we now have to build the graph for all nodes that are driven by</span>
+            <span class="c1"># a_dest_name, because they are actually driven by a_src_name&#39;s driver</span>
+            <span class="n">nodes_list</span> <span class="o">=</span> <span class="n">nets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">a_dest_name</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_list</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">info</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">info</span> <span class="o">=</span> <span class="n">out_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+                <span class="n">driver_node</span> <span class="o">=</span> <span class="n">net_drivers</span><span class="p">[</span><span class="n">a_src_name</span><span class="p">]</span>
+                <span class="c1"># build path from a_src_name&#39;s driver to node</span>
+                <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">driver_node</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">graph</span><span class="p">,</span> <span class="n">node_types</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.create_nets_expl">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.create_nets_expl.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.create_nets_expl">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_nets_expl</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">net_drivers</span><span class="p">,</span> <span class="n">verilog_file</span><span class="p">,</span> <span class="n">lineno</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;parses all nodes for explicitly declared wires/nets.</span>
+<span class="sd">        That are &quot;wire&quot;, &quot;inputs&quot; and &quot;outputs&quot;. &quot;inouts&quot; are not supported&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">prefix</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;inout&quot;</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;Inouts are not supported&quot;</span><span class="p">)</span>
+
+        <span class="n">nets</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">):]</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">c_line</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">):</span>
+                <span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+                <span class="n">lh</span> <span class="o">=</span> <span class="n">lh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">rh</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">rh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+
+                <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                <span class="n">lh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lh</span><span class="p">)</span>
+                <span class="n">rh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rh</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">lh</span> <span class="o">&lt;</span> <span class="n">rh</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                        <span class="k">if</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;output &quot;</span><span class="p">:</span>
+                            <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                            <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PO&quot;</span>
+                            <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                            <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                            <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;input &quot;</span><span class="p">:</span>
+                            <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                            <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PI&quot;</span>
+                            <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                            <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                            <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                            <span class="k">if</span> <span class="n">net_name</span> <span class="ow">in</span> <span class="n">net_drivers</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                                    <span class="n">verilog_file</span><span class="p">,</span>
+                                    <span class="n">line</span><span class="p">,</span>
+                                    <span class="n">lineno</span><span class="p">,</span>
+                                    <span class="s2">&quot;This instance drives a net (</span><span class="si">{}</span><span class="s2">) that is already driven!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                        <span class="n">net_name</span>
+                                    <span class="p">)</span>
+                                <span class="p">)</span>
+                            <span class="n">net_drivers</span><span class="p">[</span><span class="n">net_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_name</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                        <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                            <span class="p">{</span>
+                                <span class="n">node_name</span><span class="p">:</span> <span class="p">{</span>
+                                    <span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">node_type</span><span class="p">,</span>
+                                    <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span>
+                                    <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">,</span>
+                                <span class="p">}</span>
+                            <span class="p">}</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rh</span><span class="p">,</span> <span class="n">lh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                        <span class="k">if</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;output &quot;</span><span class="p">:</span>
+                            <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                            <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PO&quot;</span>
+                            <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                            <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                            <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;input &quot;</span><span class="p">:</span>
+                            <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                            <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PI&quot;</span>
+                            <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                            <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                            <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                        <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                            <span class="p">{</span>
+                                <span class="n">node_name</span><span class="p">:</span> <span class="p">{</span>
+                                    <span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">node_type</span><span class="p">,</span>
+                                    <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span>
+                                    <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">,</span>
+                                <span class="p">}</span>
+                            <span class="p">}</span>
+                        <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">net_name</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>  <span class="c1"># JB</span>
+                <span class="k">if</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;output &quot;</span><span class="p">:</span>
+                    <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                    <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PO&quot;</span>
+                    <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                    <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                    <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;input &quot;</span><span class="p">:</span>
+                    <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                    <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PI&quot;</span>
+                    <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                    <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                    <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+
+                <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="n">node_name</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">node_type</span><span class="p">,</span>
+                            <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span>
+                            <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">,</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+            <span class="c1">## careful, return in for loop #return is now no longer in for loop - don&#39;t know why this was originally done.</span>
+        <span class="k">return</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.create_nets_impl">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.create_nets_impl.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.create_nets_impl">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_nets_impl</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">net_drivers</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;parses all nodes for implicitly declared wires/nets&quot;&quot;&quot;</span>
+        <span class="n">nets</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">MODULE_INSTANTIATION_LINE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">cell_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;cell_name&quot;</span><span class="p">)</span>
+        <span class="n">inst_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;inst_name&quot;</span><span class="p">)</span>
+        <span class="n">connections</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;connections&quot;</span><span class="p">)</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">CONNECTIONS_RE</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">connections</span><span class="p">)</span>
+
+        <span class="n">node_src</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+            <span class="n">pin_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;pin_name&quot;</span><span class="p">)</span>
+            <span class="n">net_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;net_name&quot;</span><span class="p">)</span>
+            <span class="c1"># ~ input()</span>
+            <span class="k">if</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;input&quot;</span><span class="p">:</span>
+                <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_name</span><span class="p">)</span>
+                <span class="n">node_src</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pin_name</span><span class="p">,</span> <span class="n">net_name</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span>
+                <span class="n">node_dest</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pin_name</span><span class="p">,</span> <span class="n">net_name</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">net_name</span> <span class="ow">in</span> <span class="n">net_drivers</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">line</span><span class="p">,</span>
+                        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;This instance drives a node that is already driven!&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">net_drivers</span><span class="p">[</span><span class="n">net_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inst_name</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span>
+                    <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">line</span><span class="p">,</span>
+                    <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Cell lib for instance </span><span class="si">{}</span><span class="s2"> of type </span><span class="si">{}</span><span class="s2"> has other direction than input or output for pin </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">inst_name</span><span class="p">,</span>
+                        <span class="n">cell_name</span><span class="p">,</span>
+                        <span class="n">pin_name</span><span class="p">,</span>
+                    <span class="p">))</span>
+                <span class="k">pass</span>
+
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">inst_name</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">cell_name</span><span class="p">,</span> <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.AddNode">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.AddNode.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.AddNode">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">AddNode</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">net_dict</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function to add a node to the graph&quot;&quot;&quot;</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">MODULE_INSTANTIATION_LINE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="n">cell_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;cell_name&quot;</span><span class="p">)</span>
+        <span class="n">inst_name</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;inst_name&quot;</span><span class="p">)</span>
+        <span class="n">connections</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;connections&quot;</span><span class="p">)</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">CONNECTIONS_RE</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">connections</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+            <span class="n">pin_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;pin_name&quot;</span><span class="p">)</span>
+            <span class="n">net_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">&quot;net_name&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;output&quot;</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">net_name</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;UNCONNECTED&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+            <span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]:</span>
+                        <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">inst_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">net_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">inst_name</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s2">&quot;The pin </span><span class="si">{}</span><span class="s2"> of cell </span><span class="si">{}</span><span class="s2"> is connected to an unknown net </span><span class="si">{}</span><span class="s2">. Added that net. Probably this pin is dangling!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">pin_name</span><span class="p">,</span> <span class="n">inst_name</span><span class="p">,</span> <span class="n">net_name</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">graph</span><span class="p">,</span> <span class="p">{</span><span class="n">inst_name</span><span class="p">:</span> <span class="n">cell_name</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.AddInput">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.AddInput.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.AddInput">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">AddInput</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">net_dict</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function to add primary inputs to the graph&quot;&quot;&quot;</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;input &quot;</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">):]</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">c_line</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">):</span>
+                <span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+                <span class="n">lh</span> <span class="o">=</span> <span class="n">lh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">rh</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">rh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+
+                <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                <span class="n">lh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lh</span><span class="p">)</span>
+                <span class="n">rh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rh</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">lh</span> <span class="o">&lt;</span> <span class="n">rh</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="k">for</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]:</span>
+                            <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rh</span><span class="p">,</span> <span class="n">lh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="k">for</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]:</span>
+                            <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">net_name</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+                <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                <span class="n">destinations</span> <span class="o">=</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">destinations</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]:</span>
+                        <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># this is a dead, nonconnected input</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Error: input </span><span class="si">{}</span><span class="s2"> is not connected in the graph.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">net_name</span>
+                        <span class="p">),</span>
+                        <span class="n">net_name</span><span class="p">,</span>
+                        <span class="n">node_name</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">graph</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.AddOutput">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.AddOutput.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.AddOutput">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">AddOutput</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">net_dict</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Helper function to add extra nodes for the primary outputs&quot;&quot;&quot;</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;output &quot;</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">):]</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">c_line</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">):</span>
+                <span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+                <span class="n">lh</span> <span class="o">=</span> <span class="n">lh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">rh</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">rh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+
+                <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                <span class="n">lh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lh</span><span class="p">)</span>
+                <span class="n">rh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rh</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">lh</span> <span class="o">&lt;</span> <span class="n">rh</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rh</span><span class="p">,</span> <span class="n">lh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">net_name</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>  <span class="c1"># JB</span>
+                <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="k">return</span> <span class="n">graph</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.AddNet_helper">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.AddNet_helper.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.AddNet_helper">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">AddNet_helper</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">net_drivers</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the found net line to the nets and nodes dict&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">net</span><span class="p">,</span> <span class="n">node</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">create_nets_impl</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">net_drivers</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">nets</span><span class="p">:</span>
+                <span class="n">nets</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nets</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ParsedVerilog.AddNode_helper">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.parsed_verilog.ParsedVerilog.AddNode_helper.html#tueisec_myparsing.parsed_verilog.ParsedVerilog.AddNode_helper">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">AddNode_helper</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">node_types</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the found net line to the nets and nodes dict&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">graph</span><span class="p">,</span> <span class="n">node_type</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">AddNode</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+            <span class="n">node_types</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node_type</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ASTParsingError</span><span class="o">.</span><span class="n">old_api</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">lineno</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">graph</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

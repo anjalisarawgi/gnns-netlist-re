@@ -1,0 +1,30 @@
+=====
+Usage
+=====
+
+To use TUEISEC_myparsing in a project::
+
+    import tueisec_myparsing
+
+Typically, when you want to replace an already imported local :code:`myparsing`, use:::
+
+    import tueisec_myparsing.myparsing_ply as myparsing
+
+Logging Configuration
+---------------------
+
+If you want to see some detailed feedback from logging in this module, you probably have to configure the logging module appropriately::
+
+    parsing_logger = logging.getLogger("tueisec_myparsing")
+    parsing_logger.setLevel(logging.INFO)
+
+If you configure logging for this module to DEBUG, you will see progress bars for some internal steps popping up.
+
+.. note::
+
+    Have a look at the :py:func:`cli.helpers.setup_cli <tueisec_myparsing.cli.helpers.setup_cli>` for a ready-made logging setup.
+
+.. note::
+
+    If you need to disable specific annoying warnings of the parser, you can write a :py:class:`logging.Filter`, as explained here
+    https://stackoverflow.com/questions/879732/logging-with-filters.

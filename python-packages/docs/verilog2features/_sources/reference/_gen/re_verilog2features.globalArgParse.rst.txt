@@ -1,0 +1,33 @@
+﻿re\_verilog2features.globalArgParse
+===================================
+
+.. automodule:: re_verilog2features.globalArgParse
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      file_exists
+      folder_exists_w
+      init_global_parser
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+    :toctree: .
+   
+      CustomParser
+      MultilineFormatter
+   
+   
+
+   
+   
+   

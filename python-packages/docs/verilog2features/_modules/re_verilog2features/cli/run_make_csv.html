@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.cli.run_make_csv &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.cli.run_make_csv</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;Run feature generation. DEPRECATED!</span>
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: Synopsys:</span>
+
+<span class="sd">    usage: run_make_csv [-h] [--cores CORES] [--gt_cores GT_CORES]</span>
+<span class="sd">                        [--ap_cores AP_CORES] [-o OUTPUT_PATH] [-l CELL_LIBRARY]</span>
+<span class="sd">                        (--use_nx | --use_fastest) [--overwrite]</span>
+<span class="sd">                        [--smallest_first] [--eigs_tolerance EIGS_TOLERANCE]</span>
+<span class="sd">                        [-f FILENAME] [--use_node_types] [--debug]</span>
+<span class="sd">                        designs [designs ...]</span>
+
+<span class="sd">    Run feature generation depending on process. DEPRECATED!</span>
+
+<span class="sd">    positional arguments:</span>
+<span class="sd">    designs               Paths or folders where adjacency lists are located</span>
+<span class="sd">                          (*.txt/*.graphml.gz). Note that the designs will be</span>
+<span class="sd">                          sorted by file size, as it is more efficient to handle</span>
+<span class="sd">                          large files first.</span>
+
+<span class="sd">    optional arguments:</span>
+<span class="sd">    -h, --help            show this help message and exit</span>
+<span class="sd">    --cores CORES         Cores to use for processing</span>
+<span class="sd">    --gt_cores GT_CORES   Cores to use for graphtool. Multiplies by --cores!</span>
+<span class="sd">                          Default = 1</span>
+<span class="sd">    --ap_cores AP_CORES   Cores to use for ARPACK. Multiplies by --cores!</span>
+<span class="sd">                          Default = 1</span>
+<span class="sd">    -o OUTPUT_PATH, --output_path OUTPUT_PATH</span>
+<span class="sd">                          The folder where output files will be stored in a</span>
+<span class="sd">                          subfolder depending on process name and adjlist</span>
+<span class="sd">                          folder. Default: outputFiles/{}/csvs_{}/</span>
+<span class="sd">    -l CELL_LIBRARY, --cell_library CELL_LIBRARY</span>
+<span class="sd">                          The cell library name to use. Default: osu035</span>
+<span class="sd">    --use_nx              Use networkx for graph calculations. slower, but less</span>
+<span class="sd">                          bugs</span>
+<span class="sd">    --use_fastest         Use a melange of graph libraries for graph</span>
+<span class="sd">                          calculations. faster, but maybe some bugs</span>
+<span class="sd">    --overwrite           Overwrite designs if already in %output_path%</span>
+<span class="sd">    --smallest_first      By default, the largest designs will be converted</span>
+<span class="sd">                          first. With this flag, convert the smallest first.</span>
+<span class="sd">                          More success, but large things may come late and badly</span>
+<span class="sd">    --eigs_tolerance EIGS_TOLERANCE</span>
+<span class="sd">                          By default, the eigenvector centrality uses machine</span>
+<span class="sd">                          precision as tolerance for eigenvector caluclation.</span>
+<span class="sd">                          This is precise, but takes time. Specify another</span>
+<span class="sd">                          tolerance with this flag.</span>
+<span class="sd">    -f FILENAME, --additional_features FILENAME</span>
+<span class="sd">                          specify a Python file that contains a function</span>
+<span class="sd">                          `compute_additional_features(graph, result,</span>
+<span class="sd">                          design_file)` for the computation of additional</span>
+<span class="sd">                          features. This option can be used multiple times.</span>
+<span class="sd">    --use_node_types      Use node types as written by `run_write_adjlist</span>
+<span class="sd">                          --write_node_types`. Careful: This reads</span>
+<span class="sd">                          `*.graphml.gz` files, not `*.txt` files.</span>
+
+<span class="sd">    main:</span>
+<span class="sd">    --debug               Enable debug output</span>
+
+<span class="sd">    Please note that run_make_csv accepts multiple paths and/or folders with its</span>
+<span class="sd">    `designs` argument. Please do not start multiple instances of this executable,</span>
+<span class="sd">    but start one instance and supply it with all the netlists you want to</span>
+<span class="sd">    generate features for. This is most efficient.</span>
+
+<span class="sd">    Recommended settings for gt_cores and ap_cores is more than 1! Please still</span>
+<span class="sd">    make sure that you never exceed your alotted core limit with</span>
+<span class="sd">    `gt_cores`*`cores` or `ap_cores`*`cores`!</span>
+
+<span class="sd">.. note::</span>
+
+<span class="sd">    an additional features file might look like this:</span>
+
+<span class="sd">    .. code-block::</span>
+<span class="sd">        :caption: count_keyinputs.py</span>
+
+<span class="sd">        def compute_additional_features(graph, result, design_file):</span>
+<span class="sd">            inputs = [x for x, y in dict(graph.in_degree()).items() if y == 0]</span>
+<span class="sd">            key_inputs = [x for x in inputs if &quot;keyinput&quot; in x]</span>
+<span class="sd">            normal_inputs = [x for x in inputs if x not in key_inputs]</span>
+<span class="sd">            result[&quot;nr_key_inputs&quot;] = len(key_inputs)</span>
+<span class="sd">            result[&quot;nr_normal_inputs&quot;] = len(normal_inputs)</span>
+<span class="sd">            return result</span>
+
+<span class="sd">.. warning::</span>
+
+<span class="sd">    This tool is deprecated. Use :py:mod:`make_features` for future work!</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span>
+
+<span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">init_global_parser</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run feature generation depending on process. DEPRECATED!&quot;</span><span class="p">,</span>
+    <span class="n">epilog</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        Please note that run_make_csv accepts multiple paths</span>
+<span class="s2">        and/or folders with its `designs` argument.</span>
+<span class="s2">        Please do not start multiple instances of this executable, but</span>
+<span class="s2">        start one instance and supply it with all the netlists you want</span>
+<span class="s2">        to generate features for. This is most efficient.</span>
+<span class="s2">        |n</span>
+<span class="s2">        Recommended settings for gt_cores and ap_cores is more than 1! Please</span>
+<span class="s2">        still make sure that you never exceed your alotted core limit with</span>
+<span class="s2">        `gt_cores`*`cores` or `ap_cores`*`cores`!</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.read_adjlist_and_make_csv</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_csv</span>  <span class="c1"># noqa: E402</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.cli.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_cli</span>  <span class="c1"># noqa: E402</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>  <span class="c1"># noqa: E402</span>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.run_make_csv.main.html#re_verilog2features.cli.run_make_csv.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;##########################################################&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING! THIS TOOL IS DEPRECATED AND WILL BE DELETED SOON!&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;USE make_features INSTEAD!&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;##########################################################&quot;</span><span class="p">)</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--debug&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable debug output&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">parse_args_main</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span>
+            <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span>
+            <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;re_verilog2features&quot;</span><span class="p">,</span> <span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span>
+            <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+            <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;re_verilog2features&quot;</span><span class="p">,</span> <span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="n">make_csv</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+tueisec\_myparsing.myparsing.parse\_it
+======================================
+
+.. currentmodule:: tueisec_myparsing.myparsing
+
+.. autofunction:: tueisec_myparsing.myparsing.parse_it

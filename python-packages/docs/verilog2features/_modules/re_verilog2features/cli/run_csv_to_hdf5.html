@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.cli.run_csv_to_hdf5 &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.cli.run_csv_to_hdf5</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;convert from csv to hdf5. DEPRECATED!</span>
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: Synopsys:</span>
+
+<span class="sd">    usage: run_csv_to_hdf5 [-h] [--debug] [-c CSV_ROOT_PATH] [-o OUTPUT_PATH]</span>
+<span class="sd">                       [--overwrite] [-l CELL_LIBRARY]</span>
+
+<span class="sd">    Convert csv-files to hdf5.</span>
+
+<span class="sd">    optional arguments:</span>
+<span class="sd">    -h, --help            show this help message and exit</span>
+<span class="sd">    -c CSV_ROOT_PATH, --csv_root_path CSV_ROOT_PATH</span>
+<span class="sd">                            The folder where csv files will be available in</span>
+<span class="sd">                            subfolders. Default: outputFiles/{}/</span>
+<span class="sd">    -o OUTPUT_PATH, --output_path OUTPUT_PATH</span>
+<span class="sd">                            The folder where output files will be stored in a</span>
+<span class="sd">                            subfolder depending on process. Default:</span>
+<span class="sd">                            outputFiles/{}/hdf5_all_graph.hdf5</span>
+<span class="sd">    --overwrite           Overwrite hdf5 files.</span>
+<span class="sd">    -l CELL_LIBRARY, --cell_library CELL_LIBRARY</span>
+<span class="sd">                            The cell library name to use. Default: osu035</span>
+
+<span class="sd">    main:</span>
+<span class="sd">    --debug               Enable debug output</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span><span class="w"> </span><span class="kn">import</span> <span class="n">folder_exists_w</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.cluster_csv_file</span><span class="w"> </span><span class="kn">import</span> <span class="n">CSVFileContainer</span><span class="p">,</span> <span class="n">CSVType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.cli.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_cli</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">init_global_parser</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Convert csv-files to hdf5.&quot;</span>
+<span class="p">)</span>
+
+<span class="n">csv_path_default</span> <span class="o">=</span> <span class="s2">&quot;outputFiles/</span><span class="si">{}</span><span class="s2">/&quot;</span>
+<span class="n">output_path_default</span> <span class="o">=</span> <span class="s2">&quot;outputFiles/</span><span class="si">{}</span><span class="s2">/hdf5_all_graph.hdf5&quot;</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="perform_conversion">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.run_csv_to_hdf5.perform_conversion.html#re_verilog2features.cli.run_csv_to_hdf5.perform_conversion">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">perform_conversion</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main worker function. Too small to require a submodule.</span>
+<span class="sd">    </span>
+<span class="sd">    Reads all csvs, concats each csv in one category to one big pandas table and writes all pandas tables into one big hdf5 file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">GLOBAL_PARSER</span> <span class="o">=</span>  <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span>
+
+    <span class="n">csv_path</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">csv_root_path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">cell_library</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">no_design</span><span class="p">:</span>
+        <span class="n">design_csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">csv_path</span><span class="p">,</span> <span class="s2">&quot;csvs_design_graph&quot;</span><span class="p">)</span>
+    <span class="n">partition_csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">csv_path</span><span class="p">,</span> <span class="s2">&quot;csvs_partition_graph&quot;</span><span class="p">)</span>
+    <span class="n">clustered_csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">csv_path</span><span class="p">,</span> <span class="s2">&quot;csvs_clustered_graph&quot;</span><span class="p">)</span>
+    <span class="n">small_csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">csv_path</span><span class="p">,</span> <span class="s2">&quot;csvs_small_graph&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">no_design</span><span class="p">:</span>
+        <span class="n">csv_file_container</span> <span class="o">=</span> <span class="n">CSVFileContainer</span><span class="p">(</span>
+            <span class="n">design_graph</span><span class="o">=</span><span class="n">design_csv_path</span><span class="p">,</span>
+            <span class="n">partition_graph</span><span class="o">=</span><span class="n">partition_csv_path</span><span class="p">,</span>
+            <span class="n">cluster_graph</span><span class="o">=</span><span class="n">clustered_csv_path</span><span class="p">,</span>
+            <span class="n">small</span><span class="o">=</span><span class="n">small_csv_path</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">csv_file_container</span> <span class="o">=</span> <span class="n">CSVFileContainer</span><span class="p">(</span>
+            <span class="n">partition_graph</span><span class="o">=</span><span class="n">partition_csv_path</span><span class="p">,</span>
+            <span class="n">cluster_graph</span><span class="o">=</span><span class="n">clustered_csv_path</span><span class="p">,</span>
+            <span class="n">small</span><span class="o">=</span><span class="n">small_csv_path</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">HDFStore</span><span class="p">(</span>
+        <span class="n">path</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">cell_library</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">CSVType</span><span class="o">.</span><span class="n">__members__</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">csvs</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">csv_file_container</span><span class="p">,</span> <span class="s2">&quot;all_&quot;</span> <span class="o">+</span> <span class="n">t</span> <span class="o">+</span> <span class="s2">&quot;_files&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">data_frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+                <span class="n">data_frame</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;fixed&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">data_frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">f</span><span class="o">.</span><span class="n">frame</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">csvs</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="n">data_frame</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;fixed&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.cli.run_csv_to_hdf5.main.html#re_verilog2features.cli.run_csv_to_hdf5.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--debug&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable debug output&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+
+    <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--csv_root_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The folder where csv files will be available in subfolders. Default: &quot;</span>
+        <span class="o">+</span> <span class="n">csv_path_default</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">csv_path_default</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="n">folder_exists_w</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--output_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The folder where output files will be stored in a subfolder depending on process. Default: &quot;</span>
+        <span class="o">+</span> <span class="n">output_path_default</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">output_path_default</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--overwrite&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overwrite hdf5 files.&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--no_design&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Do not read design_graph.&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-l&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--cell_library&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The cell library name to use. Default: osu035&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;osu035&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># must be imported here, becuase this influences the sorting of the required arguments</span>
+
+    <span class="n">GLOBAL_PARSER</span> <span class="o">=</span> <span class="n">re_verilog2features</span><span class="o">.</span><span class="n">globalArgParse</span><span class="o">.</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">parse_args_main</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span>
+            <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span>
+            <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;re_verilog2features&quot;</span><span class="p">,</span> <span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span>
+            <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+            <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;re_verilog2features&quot;</span><span class="p">,</span> <span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="n">perform_conversion</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

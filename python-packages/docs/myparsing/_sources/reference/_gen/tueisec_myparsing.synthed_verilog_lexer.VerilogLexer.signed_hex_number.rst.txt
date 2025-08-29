@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_lexer.VerilogLexer.signed\_hex\_number
+===========================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_lexer
+
+.. autoattribute:: tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.signed_hex_number

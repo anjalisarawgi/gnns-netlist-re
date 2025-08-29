@@ -1,0 +1,25 @@
+﻿tueisec\_myparsing.cli.prepare\_generic\_cells
+==============================================
+
+.. automodule:: tueisec_myparsing.cli.prepare_generic_cells
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      get_var_from_tcsh
+      main
+      prepare
+   
+   
+
+   
+   
+   
+
+   
+   
+   

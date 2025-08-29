@@ -1,0 +1,6 @@
+re\_verilog2features.cli.run\_csv\_to\_hdf5.main
+================================================
+
+.. currentmodule:: re_verilog2features.cli.run_csv_to_hdf5
+
+.. autofunction:: re_verilog2features.cli.run_csv_to_hdf5.main

@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Identifier
+===================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Identifier
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Identifier.__init__
+      ~Identifier.children
+      ~Identifier.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Identifier.attr_names
+   
+   

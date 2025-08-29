@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.verilog2graph.write\_graph
+=================================================
+
+.. currentmodule:: tueisec_myparsing.cli.verilog2graph
+
+.. autofunction:: tueisec_myparsing.cli.verilog2graph.write_graph

@@ -1,0 +1,6 @@
+tueisec\_myparsing.codegen.ConvertVisitor.generic\_visit
+========================================================
+
+.. currentmodule:: tueisec_myparsing.codegen
+
+.. automethod:: tueisec_myparsing.codegen.ConvertVisitor.generic_visit

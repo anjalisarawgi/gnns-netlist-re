@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_lexer.dump\_tokens
+=======================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_lexer
+
+.. autofunction:: tueisec_myparsing.synthed_verilog_lexer.dump_tokens

@@ -1,0 +1,6 @@
+tueisec\_myparsing.eda\_helper\_functions.LibertyBoolExprLexer.OPERATORS
+========================================================================
+
+.. currentmodule:: tueisec_myparsing.eda_helper_functions
+
+.. autoattribute:: tueisec_myparsing.eda_helper_functions.LibertyBoolExprLexer.OPERATORS

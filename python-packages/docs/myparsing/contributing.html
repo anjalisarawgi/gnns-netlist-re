@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Contributing &#8212; TUEISEC_myparsing 0.0.1a25 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="_static/documentation_options.js?v=c61080f6"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Authors" href="authors.html" />
+    <link rel="prev" title="Glossary" href="glossary.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="index.html">TUEISEC_myparsing-0.0.1a25</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Link to this heading">¶</a></h1>
+<p>Contributions are welcome, and they are greatly appreciated! Every
+little bit helps, and credit will always be given.</p>
+<section id="bug-reports">
+<h2>Bug reports<a class="headerlink" href="#bug-reports" title="Link to this heading">¶</a></h2>
+<p>When <a class="reference external" href="https://git-int.aisec.fraunhofer.de/hws/tools/chip_reverse_engineering/tum_re_parsing/-/issues">reporting a bug</a> please include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Your operating system name and version.</p></li>
+<li><p>Any details about your local setup that might be helpful in troubleshooting.</p></li>
+<li><p>Detailed steps to reproduce the bug.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="documentation-improvements">
+<h2>Documentation improvements<a class="headerlink" href="#documentation-improvements" title="Link to this heading">¶</a></h2>
+<p>TUEISEC_myparsing could always use more documentation, whether as part of the
+official TUEISEC_myparsing docs or in docstrings. Feel free to send us your data.</p>
+</section>
+<section id="feature-requests-and-feedback">
+<h2>Feature requests and feedback<a class="headerlink" href="#feature-requests-and-feedback" title="Link to this heading">¶</a></h2>
+<p>The best way to send feedback is to send us an email.</p>
+<p>If you want to, you can also file an issue at hhttps://git-int.aisec.fraunhofer.de/hws/tools/chip_reverse_engineering/tum_re_parsing/-/issues.</p>
+<p>If you are proposing a feature:</p>
+<ul class="simple">
+<li><p>Explain in detail how it would work.</p></li>
+<li><p>Keep the scope as narrow as possible, to make it easier to implement.</p></li>
+</ul>
+</section>
+<section id="version-bumping">
+<h2>Version bumping<a class="headerlink" href="#version-bumping" title="Link to this heading">¶</a></h2>
+<p>To version bump this pacakge, follow this steps.</p>
+<ol class="arabic simple">
+<li><p>update <code class="file docutils literal notranslate"><span class="pre">CHANGELOG.rst</span></code> to include the new version <strong>and stage it</strong></p></li>
+<li><p>update <code class="file docutils literal notranslate"><span class="pre">../synthesis/CHANGELOG.rst</span></code> <strong>and stage it</strong>. If you do not have any changes, use the</p></li>
+</ol>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">empty changelog template:</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-rst notranslate"><div class="highlight"><pre><span></span><span class="gh">x.x.x (xxxx-xx-xx)</span>
+<span class="gh">-----------------------</span>
+
+<span class="gh">Changed:</span>
+<span class="gh">########</span>
+
+<span class="m">*</span> nothing
+</pre></div>
+</div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p><strong class="command">cd</strong> to repo root and run:</p></li>
+</ol>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Version bump command:</span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bump2version<span class="w"> </span>build<span class="w"> </span>--allow-dirty
+</pre></div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This will commit! This will tag! This will commit anything in your staging area (there shall only be the two CHANGELOGs)</p>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>upload to gitlab with</p></li>
+</ol>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">version upload command:</span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>push
+git<span class="w"> </span>push<span class="w"> </span>--tags
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#bug-reports">Bug reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-improvements">Documentation improvements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#feature-requests-and-feedback">Feature requests and feedback</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-bumping">Version bumping</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/contributing.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="authors.html" title="Authors"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="glossary.html" title="Glossary"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

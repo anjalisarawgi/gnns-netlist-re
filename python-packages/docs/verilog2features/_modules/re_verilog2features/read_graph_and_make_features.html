@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.read_graph_and_make_features &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.read_graph_and_make_features</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span><span class="w"> </span><span class="kn">import</span> <span class="n">GLOBAL_PARSER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span><span class="w"> </span><span class="kn">import</span> <span class="n">file_exists</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.graph_output_file_formats</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphOutputFormat</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">enlighten</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>  <span class="c1"># sphinx barrier, because GLOBAL_PARSER will fail to import</span>
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;designs&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;(Nested) folders where graph files are located. &quot;</span>
+        <span class="s2">&quot;This application can read (txt, gml, graphml, gexf, pq, json). &quot;</span>
+        <span class="s2">&quot;Note that the designs will be sorted by file size, &quot;</span>
+        <span class="s2">&quot;as it is more efficient to handle large files first.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--cores&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cores to use for processing&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--gt_cores&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cores to use for graphtool. Multiplies by --cores! Default = 1&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--ap_cores&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cores to use for ARPACK. Multiplies by --cores! Default = 1&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--output_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The filepath where output df will be stored. &quot;</span>
+        <span class="s2">&quot;Filename will be defined by input path. &quot;</span>
+        <span class="s2">&quot;Remember to set your wanted output format with `-t`.&quot;</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-t&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--output-type&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The output filetype. &quot;</span>
+        <span class="s2">&quot;Two formats are supported: &quot;</span>
+        <span class="s2">&quot;Parquet (pq) is recommended, fast and compressed. &quot;</span>
+        <span class="s2">&quot;CSV (csv) is old, slow and uncompressed. &quot;</span>
+        <span class="s2">&quot;All rows created from one input filepath will be put into a single &quot;</span>
+        <span class="s2">&quot;output file.&quot;</span><span class="p">,</span>
+        <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;pq&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-l&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--cell_library&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The cell library name to use. Default: osu035&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;osu035&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">group</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--use_nx&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use networkx for graph calculations. slower, but less bugs&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--use_fastest&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use a melange of graph libraries for graph calculations. faster, &quot;</span>
+        <span class="s2">&quot;but maybe some bugs. Needs graphtool!&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--use_ig&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use igraph and networkx for graph calculations. Faster, than nx alone,&quot;</span>
+        <span class="s2">&quot;a tad slower than use_fastest, but no graphtool requirement!&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--smallest_first&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;By default, the largest designs will be converted first. &quot;</span>
+        <span class="s2">&quot;With this flag, convert the smallest first. More success, but large &quot;</span>
+        <span class="s2">&quot;things may come late and badly&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_false&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--eigs_tolerance&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;By default, the eigenvector centrality uses machine precision &quot;</span>
+        <span class="s2">&quot;as tolerance for eigenvector caluclation. This is precise, but takes time. &quot;</span>
+        <span class="s2">&quot;Specify another tolerance with this flag.&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-f&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--additional_features&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;specify a Python file that contains a function &quot;</span>
+        <span class="s2">&quot;`compute_additional_features(graph, result, design_file)` &quot;</span>
+        <span class="s2">&quot;for the computation of additional features. &quot;</span>
+        <span class="s2">&quot;This option can be used multiple times.&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;append&quot;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;FILENAME&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="n">file_exists</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--use_node_types&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use node types if available in your input format. This will &quot;</span>
+        <span class="s2">&quot;trigger a ValueError and abort if your format does not carry node &quot;</span>
+        <span class="s2">&quot;type info.&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># TODO: Future possibility.</span>
+    <span class="c1"># GLOBAL_PARSER.add_argument(</span>
+    <span class="c1">#     &quot;--append&quot;,</span>
+    <span class="c1">#     help=&quot;Add new rows to an existing file. &quot;</span>
+    <span class="c1">#     &quot;ATTENTION, this method is pretty dumb: It checks if the &quot;</span>
+    <span class="c1">#     &quot;file exists, and if so, will read it, append data and write back. &quot;</span>
+    <span class="c1">#     &quot;No check for existing rows is done! This is quite memory-consuming, &quot;</span>
+    <span class="c1">#     &quot;because appending means concatenating new rows to the old file data.&quot;</span>
+    <span class="c1"># )</span>
+
+<span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;GLOBAL_PARSER unitialized. Are you really sure that you init&#39;ed it?&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="multi_run_wrapper">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.read_graph_and_make_features.multi_run_wrapper.html#re_verilog2features.read_graph_and_make_features.multi_run_wrapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">multi_run_wrapper</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">get_results</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_results">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.read_graph_and_make_features.get_results.html#re_verilog2features.read_graph_and_make_features.get_results">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_results</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+    <span class="c1"># I admmit, this is ugly BUT: We have to set this env variable before</span>
+    <span class="c1"># importing any thing like numpy, else the env variable has no effect on</span>
+    <span class="c1"># arpack. Thus THE IMPORTS MUST STAY HERE.</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OPENBLAS_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">ap_cores</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;NUMEXPR_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;8&quot;</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_data</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">read_graph_from_filepath</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># This happens for parquet files which are no edgelists. Ignore these</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Could not parse </span><span class="si">{}</span><span class="s2">. Ignoring&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">):</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Design </span><span class="si">{}</span><span class="s2"> is empty. Ignoring&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">use_node_types</span><span class="p">:</span>
+        <span class="n">nodeTypes</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;nodeType&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">nodeTypes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Graph data for </span><span class="si">{}</span><span class="s2"> does not contain `nodeType`s&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">nodeTypes</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">create_data</span><span class="o">.</span><span class="n">node_type_ratios</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">nodeTypes</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">use_nx</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">create_data</span><span class="o">.</span><span class="n">graph_tests_nx</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">use_fastest</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">create_data</span><span class="o">.</span><span class="n">graph_tests</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">use_ig</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">create_data</span><span class="o">.</span><span class="n">graph_tests_ig</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;This should not happen&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Failure in </span><span class="si">{}</span><span class="s2"> due to: &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">),</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">create_data</span><span class="o">.</span><span class="n">input_output_analysis</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">additional_features</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">additional_features</span><span class="p">):</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span>
+                <span class="s2">&quot;additional_features_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">filename</span>
+            <span class="p">)</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+            <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">compute_additional_features</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">filepath</span><span class="p">)</span>
+
+    <span class="n">design_name</span> <span class="o">=</span> <span class="n">filepath</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;finished getting stats for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span>
+
+    <span class="n">df_design</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">design_name</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df_design</span>  <span class="c1"># , design_name.split(&quot;/&quot;)[0]</span></div>
+
+
+
+<div class="viewcode-block" id="make_features">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.read_graph_and_make_features.make_features.html#re_verilog2features.read_graph_and_make_features.make_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_features</span><span class="p">():</span>
+    <span class="n">known_extensions_globs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">known_extensions_globs</span><span class="p">())</span>
+
+    <span class="n">Pool</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Pool</span>
+    <span class="n">original_sigint_handler</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">)</span>
+    <span class="n">process_pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">cores</span><span class="p">,)</span>
+    <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">original_sigint_handler</span><span class="p">)</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing </span><span class="si">{}</span><span class="s2"> runners.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">cores</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">manager</span> <span class="o">=</span> <span class="n">enlighten</span><span class="o">.</span><span class="n">get_manager</span><span class="p">()</span>
+
+        <span class="n">progress_bar_d</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">),</span>
+            <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Processing:&quot;</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;graph paths&quot;</span><span class="p">,</span>
+            <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">progress_bar_d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span> <span class="o">=</span> <span class="p">[</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">design_path</span> <span class="ow">in</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">design_path</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">outfilepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_type</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">outfilepath</span><span class="p">):</span>
+                <span class="c1"># TODO: future work.</span>
+                <span class="c1"># if GLOBAL_PARSER.append:</span>
+                <span class="c1">#     glob_path = os.path.join(</span>
+                <span class="c1">#         design_path,</span>
+                <span class="c1">#         &quot;partitionCluster_{}&quot;.format(GLOBAL_PARSER.append),</span>
+                <span class="c1">#         &quot;**&quot;,</span>
+                <span class="c1">#         file_name</span>
+                <span class="c1">#     )</span>
+                <span class="c1"># else:</span>
+                <span class="c1">#     glogger.error(</span>
+                <span class="c1">#         &quot;Found {}, will ignore this design. If you do not want that, &quot;</span>
+                <span class="c1">#         &quot;delete the file by yourself. You can also use --append, &quot;</span>
+                <span class="c1">#         &quot;but read the --help output first.&quot;.format(</span>
+                <span class="c1">#             os.path.join(</span>
+                <span class="c1">#                 GLOBAL_PARSER.output_path,</span>
+                <span class="c1">#                 os.path.basename(design_path) + &quot;.pq&quot;</span>
+                <span class="c1">#             )</span>
+                <span class="c1">#         )</span>
+                <span class="c1">#     )</span>
+                <span class="c1">#     continue</span>
+                <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2">, will ignore this filepath. If you do not want &quot;</span>
+                    <span class="s2">&quot;that, delete the file.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outfilepath</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Now globbing </span><span class="si">{}</span><span class="s2">. This may take a while&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">add_designs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">eg</span> <span class="ow">in</span> <span class="n">known_extensions_globs</span><span class="p">:</span>
+                <span class="n">glob_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">design_path</span><span class="p">,</span> <span class="s2">&quot;**&quot;</span><span class="p">,</span> <span class="n">eg</span><span class="p">)</span>
+                <span class="n">add_designs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">glob_path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> graphs in </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">add_designs</span><span class="p">),</span> <span class="n">design_path</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">add_designs</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">graph</span> <span class="o">=</span> <span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">read_graph_from_filepath</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="c1"># This means that the path is not a graph file itself</span>
+                    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Could not parse </span><span class="si">{}</span><span class="s2">. It is neither a folder of &quot;</span>
+                        <span class="s2">&quot;graphs, nor a graph itself. Ignoring the path&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">add_designs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span>
+                    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Found 1 graph in </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># sort the designs by size, so that the largest or smallest designs</span>
+            <span class="c1"># are handled first.</span>
+            <span class="c1"># This improves computation time. Thanks @thielepaul</span>
+            <span class="n">add_designs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="n">add_designs</span><span class="p">,</span>
+                <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+                <span class="n">reverse</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">smallest_first</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">mult</span> <span class="o">=</span> <span class="p">((</span><span class="n">des</span><span class="p">,)</span> <span class="k">for</span> <span class="n">des</span> <span class="ow">in</span> <span class="n">add_designs</span><span class="p">)</span>
+            <span class="n">progress_bar_c</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span>
+                <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">add_designs</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Processing:&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;graphs&quot;</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+            <span class="n">progress_bar_c</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># TODO: Maybe submit everything, and have a thread that saves</span>
+            <span class="c1"># periodically (configurable interval)</span>
+            <span class="c1"># for parquet good idea is to save after xyz rows (100/1000?)</span>
+            <span class="c1"># = row grouping</span>
+            <span class="n">dfs</span> <span class="o">=</span> <span class="n">process_pool</span><span class="o">.</span><span class="n">imap_unordered</span><span class="p">(</span>
+                <span class="n">func</span><span class="o">=</span><span class="n">multi_run_wrapper</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="n">mult</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">pbarwrapper</span><span class="p">(</span><span class="n">dfs</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;simple generator decorator that updates the progress bar c upon yield</span>
+
+<span class="sd">                :param dfs: iterable</span>
+<span class="sd">                :type dfs: Iterable</span>
+<span class="sd">                :yield: item of iterable `dfs`</span>
+<span class="sd">                :rtype: Any</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dfs</span><span class="p">:</span>
+                    <span class="n">progress_bar_c</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+                    <span class="k">yield</span> <span class="n">df</span>
+                <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Now storing </span><span class="si">{}</span><span class="s2">. This may take a while&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># TODO: Implement append</span>
+            <span class="c1"># if GLOBAL_PARSER.append:</span>
+            <span class="c1">#     oldtable = pd.read_parquet(outpath)</span>
+            <span class="c1">#     pd.concat(itertools.chain([oldtable], pbarwrapper(dfs)), axis=0).to_parquet(</span>
+            <span class="c1">#         outpath, engine=&quot;pyarrow&quot;, compression=&quot;snappy&quot;</span>
+            <span class="c1">#     )</span>
+            <span class="c1"># else:</span>
+            <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_type</span> <span class="o">==</span> <span class="s2">&quot;pq&quot;</span><span class="p">:</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">pbarwrapper</span><span class="p">(</span><span class="n">dfs</span><span class="p">),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span>
+                    <span class="n">outfilepath</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;pyarrow&quot;</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s2">&quot;snappy&quot;</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_type</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">pbarwrapper</span><span class="p">(</span><span class="n">dfs</span><span class="p">),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outfilepath</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Unknown output format </span><span class="si">{}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_type</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Storing for </span><span class="si">{}</span><span class="s2"> finished.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">design_path</span><span class="p">))</span>
+            <span class="n">progress_bar_c</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">progress_bar_d</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">process_pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="n">progress_bar_d</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">manager</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="append_to_parquet_table">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.read_graph_and_make_features.append_to_parquet_table.html#re_verilog2features.read_graph_and_make_features.append_to_parquet_table">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">append_to_parquet_table</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="n">writer_dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method writes/append dataframes in parquet format.</span>
+
+<span class="sd">    This method is used to write pandas DataFrame as pyarrow Table in parquet format.</span>
+<span class="sd">    If the methods is invoked with writer, it appends dataframe to the already</span>
+<span class="sd">    written pyarrow table.</span>
+
+<span class="sd">    :param dataframe: pd.DataFrame to be written in parquet format.</span>
+<span class="sd">    :param filepath: target file location for parquet file.</span>
+<span class="sd">    :param writer_dict: dict of ParquetWriter objects per filepath.</span>
+<span class="sd">        Will be filled with created ParquetWriters per filepath</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">writer_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Warning. Found </span><span class="si">{}</span><span class="s2">, will append. If you do not want that, &quot;</span>
+                <span class="s2">&quot;delete the file by yourself&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">writer_dict</span><span class="p">[</span><span class="n">filepath</span><span class="p">]</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">ParquetWriter</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">table</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">writer_dict</span><span class="p">[</span><span class="n">filepath</span><span class="p">]</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">write_table</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

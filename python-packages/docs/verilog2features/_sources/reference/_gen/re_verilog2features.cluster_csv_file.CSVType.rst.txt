@@ -1,0 +1,25 @@
+re\_verilog2features.cluster\_csv\_file.CSVType
+===============================================
+
+.. currentmodule:: re_verilog2features.cluster_csv_file
+
+.. autoclass:: CSVType
+
+   
+
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~CSVType.design_graph
+      ~CSVType.partition_graph
+      ~CSVType.cluster_graph
+      ~CSVType.small
+   
+   

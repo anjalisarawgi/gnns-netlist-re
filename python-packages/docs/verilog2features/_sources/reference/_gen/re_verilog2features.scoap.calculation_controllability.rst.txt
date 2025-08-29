@@ -1,0 +1,45 @@
+﻿re\_verilog2features.scoap.calculation\_controllability
+=======================================================
+
+.. automodule:: re_verilog2features.scoap.calculation_controllability
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      and_function
+      aoi21_function
+      aoi22_function
+      calculation_controllability
+      dff_function
+      dffrs_function
+      input_nodes_values
+      input_nodes_values_3
+      input_nodes_values_aoi_oai
+      input_nodes_values_dff
+      input_nodes_values_dffrs
+      input_nodes_values_mux
+      mux2x1_function
+      nand2_function
+      nand3_function
+      nor2_function
+      nor3_function
+      not_function
+      oai21_function
+      oai22_function
+      or_function
+      xnor_function
+      xor_function
+   
+   
+
+   
+   
+   
+
+   
+   
+   

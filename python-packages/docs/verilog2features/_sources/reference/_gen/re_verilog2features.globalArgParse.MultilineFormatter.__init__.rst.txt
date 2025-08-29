@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.MultilineFormatter.\_\_init\_\_
+===================================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. automethod:: re_verilog2features.globalArgParse.MultilineFormatter.__init__

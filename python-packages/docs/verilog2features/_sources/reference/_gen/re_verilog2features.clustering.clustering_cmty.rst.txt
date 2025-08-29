@@ -1,0 +1,27 @@
+﻿re\_verilog2features.clustering.clustering\_cmty
+================================================
+
+.. automodule:: re_verilog2features.clustering.clustering_cmty
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      CmtyGirvanNewmanStep
+      UpdateDeg
+      buildG
+      cluster
+      runGirvanNewman
+   
+   
+
+   
+   
+   
+
+   
+   
+   

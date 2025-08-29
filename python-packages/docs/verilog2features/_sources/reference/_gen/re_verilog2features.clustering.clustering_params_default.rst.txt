@@ -1,0 +1,16 @@
+﻿re\_verilog2features.clustering.clustering\_params\_default
+===========================================================
+
+.. automodule:: re_verilog2features.clustering.clustering_params_default
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   

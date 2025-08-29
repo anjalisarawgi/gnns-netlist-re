@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.plylibparser &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.plylibparser</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ply.lex</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lex</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ply.yacc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yacc</span>
+
+<span class="c1">########################################################################</span>
+<span class="c1"># partly based on PLY documentations, partly based on pydotlib.py file</span>
+<span class="c1">########################################################################</span>
+
+<span class="n">reserved</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;library&quot;</span><span class="p">:</span> <span class="s2">&quot;LIBRARY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cell&quot;</span><span class="p">:</span> <span class="s2">&quot;CELL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;test_cell&quot;</span><span class="p">:</span> <span class="s2">&quot;TESTCELL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pin&quot;</span><span class="p">:</span> <span class="s2">&quot;PIN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;DIRECTION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="s2">&quot;INPUT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="s2">&quot;OUTPUT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;inout&quot;</span><span class="p">:</span> <span class="s2">&quot;INOUT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;internal&quot;</span><span class="p">:</span> <span class="s2">&quot;INTERNAL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;FUNCTION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;state_function&quot;</span><span class="p">:</span> <span class="s2">&quot;STATE_FUNCTION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ff&quot;</span><span class="p">:</span> <span class="s2">&quot;FF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;latch&quot;</span><span class="p">:</span> <span class="s2">&quot;LATCH&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;clocked_on&quot;</span><span class="p">:</span> <span class="s2">&quot;CLOCKED_ON&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;next_state&quot;</span><span class="p">:</span> <span class="s2">&quot;NEXT_STATE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;enable&quot;</span><span class="p">:</span> <span class="s2">&quot;ENABLE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;data_in&quot;</span><span class="p">:</span> <span class="s2">&quot;DATA_IN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;clear&quot;</span><span class="p">:</span> <span class="s2">&quot;CLEAR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;preset&quot;</span><span class="p">:</span> <span class="s2">&quot;PRESET&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;clear_preset_var1&quot;</span><span class="p">:</span> <span class="s2">&quot;CLEAR_PRESET_VAR1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;clear_preset_var2&quot;</span><span class="p">:</span> <span class="s2">&quot;CLEAR_PRESET_VAR2&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;three_state&quot;</span><span class="p">:</span> <span class="s2">&quot;THREE_STATE&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># List of token names.   This is always required</span>
+<span class="n">tokens</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;NUMBER&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LRB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RRB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LCB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RCB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COLON&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COMMA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COMMADOT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;STRING&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;WORDS&quot;</span><span class="p">,</span>
+<span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">reserved</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="create_lexer">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.plylibparser.create_lexer.html#tueisec_myparsing.plylibparser.create_lexer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_lexer</span><span class="p">():</span>
+
+    <span class="c1"># Regular expression rules for simple tokens</span>
+    <span class="n">t_LRB</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\(&quot;</span>
+    <span class="n">t_RRB</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\)&quot;</span>
+    <span class="n">t_LCB</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\{&quot;</span>
+    <span class="n">t_RCB</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\}&quot;</span>
+    <span class="n">t_COLON</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;:&quot;</span>
+    <span class="n">t_COMMA</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;,&quot;</span>
+    <span class="n">t_COMMADOT</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;;&quot;</span>
+    <span class="n">t_NUMBER</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;[-+]?([0-9]+\.?[0-9]*([Ee][-+]?[0-9]+)?|[0-9]*\.[0-9]*([Ee][-+]?[0-9]+)?)&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Find all strings und cut off &quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_STRING</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="sa">r</span><span class="s1">&#39;&quot;[^&quot;]*&quot;&#39;</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+        <span class="c1"># Find rest of words and check for reserved ones</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_WORDS</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="sa">r</span><span class="s2">&quot;[a-zA-Z_][0-9a-zA-Z_\-$]*&quot;</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">reserved</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;WORDS&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">t</span>
+
+        <span class="c1"># Ignore comments</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_COMMENT</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="c1"># ~ r&#39;/\*[^(\*/)]*\*/&#39;</span>
+        <span class="sa">r</span><span class="s2">&quot;/\*(.|\n)*?\*/&quot;</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+        <span class="c1"># Define a rule so we can track line numbers</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_newline</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="sa">r</span><span class="s2">&quot;\n+|</span><span class="se">\\</span><span class="s2">\n+&quot;</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span> <span class="o">+=</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># A string containing ignored characters (spaces and tabs)</span>
+
+    <span class="n">t_ignore</span> <span class="o">=</span> <span class="s2">&quot; </span><span class="se">\t</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Error handling rule</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">t_error</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Illegal character &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Build the lexer</span>
+
+    <span class="k">return</span> <span class="n">lex</span><span class="o">.</span><span class="n">lex</span><span class="p">(</span>
+        <span class="n">reflags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>  <span class="c1"># debug kann auch entfert werden</span></div>
+
+
+
+<div class="viewcode-block" id="create_parser">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.plylibparser.create_parser.html#tueisec_myparsing.plylibparser.create_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_parser</span><span class="p">():</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_library</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;library : LIBRARY LRB wordorstring RRB LCB attributes RCB&quot;</span>
+        <span class="n">wholeLib</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholeLib</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholeLib</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">wholeLib</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_wordorstring</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;wordorstring : WORDS </span>
+<span class="sd">            | STRING&quot;&quot;&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_attributes</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;attributes : oneattribute attributes&quot;</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">att</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">att</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">att</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_attributes_c</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;attributesC : oneattributeC attributesC&quot;</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">att</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">att</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">att</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_attributes_empty</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;attributes :&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_attributes_c_empty</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;attributesC :&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_oneattribute</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;oneattribute : oneitemA</span>
+<span class="sd">			| moreitemA</span>
+<span class="sd">			| specialitem&quot;&quot;&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_oneattribute_c</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;oneattributeC : oneitemA</span>
+<span class="sd">			| moreitemA</span>
+<span class="sd">			| specialitemC&quot;&quot;&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_oneitemA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;oneitemA : WORDS COLON argEnd&quot;</span>
+        <span class="n">attsingle</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attsingle</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attsingle</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_arg</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;arg : argwo&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_argEnd</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;argEnd : argwo COMMADOT&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_argwo</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;argwo : NUMBER</span>
+<span class="sd">			| STRING</span>
+<span class="sd">			| WORDS</span>
+<span class="sd">			| NUMBER WORDS</span>
+<span class="sd">			| fixset</span>
+<span class="sd">            | reserved&quot;&quot;&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># nicht so super prezise: falls man die Einheiten bei NUMBER WORDS will, muss man noch was ändern....</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_fixset</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;fixset : CLEAR</span>
+<span class="sd">			| PRESET&quot;&quot;&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_reserved</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;reserved : LIBRARY</span>
+<span class="sd">            | CELL</span>
+<span class="sd">            | PIN</span>
+<span class="sd">            | DIRECTION</span>
+<span class="sd">            | INPUT</span>
+<span class="sd">            | OUTPUT</span>
+<span class="sd">            | INOUT</span>
+<span class="sd">            | INTERNAL</span>
+<span class="sd">            | FUNCTION</span>
+<span class="sd">            | STATE_FUNCTION</span>
+<span class="sd">            | FF</span>
+<span class="sd">            | LATCH</span>
+<span class="sd">            | CLOCKED_ON</span>
+<span class="sd">            | NEXT_STATE</span>
+<span class="sd">            | ENABLE</span>
+<span class="sd">            | DATA_IN</span>
+<span class="sd">            | CLEAR</span>
+<span class="sd">            | PRESET</span>
+<span class="sd">            | CLEAR_PRESET_VAR1</span>
+<span class="sd">            | CLEAR_PRESET_VAR2</span>
+<span class="sd">            | THREE_STATE&quot;&quot;&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_moreitemA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;moreitemA : WORDS LRB arg args RRB child&quot;</span>
+        <span class="n">attpl</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">argpl</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">argpl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">argpl</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">attpl</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attpl</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;args&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">argpl</span>
+        <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">attpl</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;child&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attpl</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_child</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;child : LCB attributes RCB&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_child_dummy</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;child : COMMADOT&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_arg_empty</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;arg :&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_args_empty</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;args :&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_args</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;args : COMMA arg args&quot;</span>
+        <span class="n">argex</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">argex</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">argex</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">argex</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_pins</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitemC : PIN LRB wordorstring RRB LCB attributes RCB&quot;</span>
+        <span class="n">wholePin</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholePin</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholePin</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">wholePin</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;pinAttr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">wholePin</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_direction</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : DIRECTION COLON DirDef COMMADOT&quot;</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">direction</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">direction</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_DirDef</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;DirDef : INPUT</span>
+<span class="sd">			| OUTPUT</span>
+<span class="sd">			| INOUT</span>
+<span class="sd">			| INTERNAL</span>
+<span class="sd">			| STRING&quot;&quot;&quot;</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_cell</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : CELL LRB wordorstring RRB LCB attributesC RCB&quot;</span>
+        <span class="n">wholeCell</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholeCell</span><span class="p">[</span><span class="s2">&quot;cell&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholeCell</span><span class="p">[</span><span class="s2">&quot;cell&quot;</span><span class="p">][</span><span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">wholeCell</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_function</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : FUNCTION COLON STRING COMMADOT&quot;</span>
+        <span class="n">fun</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">fun</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">fun</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_statefunction</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : STATE_FUNCTION COLON STRING COMMADOT&quot;</span>
+        <span class="n">fun</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">fun</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">fun</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_ffA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitemC : FF LRB arg args RRB LCB attributes RCB&quot;</span>
+        <span class="n">ffs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">ffs</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ffs</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;arguments&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ffs</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;arguments&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">ffs</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;attributes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ffs</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_nextstateA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : NEXT_STATE COLON argEnd&quot;</span>
+        <span class="n">attnext</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attnext</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attnext</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_clockedonA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : CLOCKED_ON COLON argEnd&quot;</span>
+        <span class="n">attclock</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attclock</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attclock</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_clearA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : CLEAR COLON argEnd&quot;</span>
+        <span class="n">attclear</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attclear</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attclear</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_presetA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : PRESET COLON argEnd&quot;</span>
+        <span class="n">attpreset</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attpreset</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attpreset</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_clearpresetvar1A</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : CLEAR_PRESET_VAR1 COLON argEnd&quot;</span>
+        <span class="n">attclear1</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attclear1</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attclear1</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_clearpresetvar2A</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : CLEAR_PRESET_VAR2 COLON argEnd&quot;</span>
+        <span class="n">attclear2</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attclear2</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attclear2</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_threestateA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : THREE_STATE COLON argEnd&quot;</span>
+        <span class="n">attthree</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attthree</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attthree</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_latchA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitemC : LATCH LRB arg args RRB LCB attributes RCB&quot;</span>
+        <span class="n">latch</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">latch</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">latch</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;arguments&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">latch</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;arguments&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">latch</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]][</span><span class="s2">&quot;attributes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">latch</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_datainA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : DATA_IN COLON argEnd&quot;</span>
+        <span class="n">attdat</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attdat</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attdat</span>
+        <span class="c1"># ~ print(t)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_enableA</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitem : ENABLE COLON argEnd&quot;</span>
+        <span class="n">attenab</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">attenab</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">attenab</span>
+        <span class="c1"># ~ print(t)</span>
+
+        <span class="c1"># Error rule for syntax errors</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_testCell</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="s2">&quot;specialitemC : TESTCELL LRB RRB LCB attributesC RCB&quot;</span>
+        <span class="n">wholeCell</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholeCell</span><span class="p">[</span><span class="s2">&quot;test_cell&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">wholeCell</span><span class="p">[</span><span class="s2">&quot;test_cell&quot;</span><span class="p">][</span><span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">wholeCell</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">p_error</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">t</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Syntax error at &#39;</span><span class="si">{}</span><span class="s2">&#39; parsed as type &#39;</span><span class="si">{}</span><span class="s2">&#39; in line </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">lexer</span><span class="o">.</span><span class="n">lineno</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Syntax error at end of input. Probably a closing brace is missing...&quot;</span><span class="p">)</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">pdb</span>
+
+        <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+        <span class="n">yacc</span><span class="o">.</span><span class="n">errok</span><span class="p">()</span>
+
+        <span class="c1"># Build the parser</span>
+
+    <span class="k">return</span> <span class="n">yacc</span><span class="o">.</span><span class="n">yacc</span><span class="p">()</span></div>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

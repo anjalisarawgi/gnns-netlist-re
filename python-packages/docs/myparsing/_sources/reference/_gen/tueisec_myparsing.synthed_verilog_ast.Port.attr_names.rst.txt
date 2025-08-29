@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Port.attr\_names
+=========================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoattribute:: tueisec_myparsing.synthed_verilog_ast.Port.attr_names

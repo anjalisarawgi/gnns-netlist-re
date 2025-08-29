@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.cli.verilog2graph &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.cli.verilog2graph</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;Create a graph from verilog with additional attributes.</span>
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: Synopsys:</span>
+
+<span class="sd">    usage: verilog2graph [-h] [--debug] [-l CELL_LIBRARY] [-o OUTPUT_PATH]</span>
+<span class="sd">                         [--cores CORES] [--sia SIA] [--vparsing-debug]</span>
+<span class="sd">                         [--do-not-zip] [--overwrite]</span>
+<span class="sd">                         [--output_info {plain,prepend_types,write_node_type,complete_data}]</span>
+<span class="sd">                         [--output_format {adjlist,gexf,gml,graphml,json}]</span>
+<span class="sd">                         designs [designs ...]</span>
+
+<span class="sd">    Create a graph from verilog with additional attributes.</span>
+
+<span class="sd">    positional arguments:</span>
+<span class="sd">    designs               Specify the designs (*.v) to be parsed as command line</span>
+<span class="sd">                          arguments. Either submit a folder name, single, or</span>
+<span class="sd">                          multiple file names.</span>
+
+<span class="sd">    optional arguments:</span>
+<span class="sd">    -h, --help            show this help message and exit</span>
+<span class="sd">    -l CELL_LIBRARY, --cell_library CELL_LIBRARY</span>
+<span class="sd">                          The cell library path to use. Default: /nas/ei/share/s</span>
+<span class="sd">                          ec/tools/qflow/qflow-1.3-RE/share/qflow/tech/osu035/os</span>
+<span class="sd">                          u035_stdcells.lib</span>
+<span class="sd">    -o OUTPUT_PATH, --output_path OUTPUT_PATH</span>
+<span class="sd">                          The folder where output files will be stored.You may</span>
+<span class="sd">                          use {}, which is replaced with the process name.</span>
+<span class="sd">                          Default is: outputFiles/{}/design_graph/</span>
+<span class="sd">    --cores CORES         Cores to use for processing. Default is all cores</span>
+<span class="sd">    --sia SIA             Deprecated option kept for compatibility. Do not use.</span>
+<span class="sd">    --vparsing-debug      Activate debug output of verilog parsing.</span>
+<span class="sd">    --do-not-zip          No zipping of output files</span>
+<span class="sd">    --overwrite           Overwrite existing files.</span>
+<span class="sd">    --output_info {plain,prepend_types,write_node_type,complete_data}</span>
+<span class="sd">                          If `plain`, only nodes and edges are in the graph.</span>
+<span class="sd">                          This is the default. If `prepend_types`, the graph</span>
+<span class="sd">                          nodes will be prepended with the node types, if the</span>
+<span class="sd">                          node type is not yet in the node name. Careful: this</span>
+<span class="sd">                          is a expensive operation. Consider using a more</span>
+<span class="sd">                          complex graph storage format where storing node data</span>
+<span class="sd">                          is possible. If `write_node_type`, the graph nodes get</span>
+<span class="sd">                          an attribute &quot;nodeType&quot; that contains the cell type.</span>
+<span class="sd">                          Careful, output can not be an adjlist any more, but</span>
+<span class="sd">                          any other format. If `complete_data`, the graph</span>
+<span class="sd">                          contains as much data as possible, as parsed from the</span>
+<span class="sd">                          verilog file. Be Careful, output can not be an adjlist</span>
+<span class="sd">                          any more, but any other format.</span>
+<span class="sd">    --output_format {adjlist,gexf,gml,graphml,json}</span>
+<span class="sd">                          Choose the output format wisely.</span>
+
+<span class="sd">    main:</span>
+<span class="sd">    --debug               Enable debug output</span>
+
+<span class="sd">&quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">argparse</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArgumentParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tueisec_myparsing.myparsing_ply</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">myparsing</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.verilog_parsing_errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ASTParsingError</span><span class="p">,</span>
+    <span class="n">VerilogParsingError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.graph_output_file_formats</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphOutputFormat</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.pool_wrapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_in_pool_with_progress</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_cli</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">cell_library_default</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;/nas/ei/share/sec/tools/qflow/qflow-1.3-RE/&quot;</span>
+    <span class="s2">&quot;share/qflow/tech/osu035/osu035_stdcells.lib&quot;</span>
+<span class="p">)</span>
+<span class="n">output_path_default</span> <span class="o">=</span> <span class="s2">&quot;outputFiles/</span><span class="si">{}</span><span class="s2">/design_graph/&quot;</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Create a graph from verilog with additional attributes.&quot;</span>
+<span class="p">)</span>
+<span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+<span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--debug&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable debug output&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;designs&quot;</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Specify the designs (*.v) to be parsed as command line arguments.&quot;</span>
+    <span class="s2">&quot; Either submit a folder name, single, or multiple file names.&quot;</span><span class="p">,</span>
+    <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;-l&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--cell_library&quot;</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The cell library path to use. Default: &quot;</span> <span class="o">+</span> <span class="n">cell_library_default</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">cell_library_default</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--output_path&quot;</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The folder where output files will be stored.&quot;</span>
+    <span class="s2">&quot;You may use </span><span class="si">{}</span><span class="s2">, which is replaced with the process name. Default is: &quot;</span>
+    <span class="o">+</span> <span class="n">output_path_default</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">output_path_default</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--cores&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cores to use for processing. Default is all cores&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span>
+<span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--sia&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Deprecated option kept for compatibility. Do not use.&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">bool</span>
+<span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--vparsing-debug&quot;</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Activate debug output of verilog parsing.&quot;</span><span class="p">,</span>
+    <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--do-not-zip&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;No zipping of output files&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--overwrite&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overwrite existing files.&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="OutputInformation">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.verilog2graph.OutputInformation.html#tueisec_myparsing.cli.verilog2graph.OutputInformation">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OutputInformation</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">plain</span> <span class="o">=</span> <span class="s2">&quot;plain&quot;</span>
+    <span class="n">prepend_types</span> <span class="o">=</span> <span class="s2">&quot;prepend_types&quot;</span>
+    <span class="n">write_node_type</span> <span class="o">=</span> <span class="s2">&quot;write_node_type&quot;</span>
+    <span class="n">complete_data</span> <span class="o">=</span> <span class="s2">&quot;complete_data&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span></div>
+
+
+
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--output_info&quot;</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If `plain`, only nodes and edges are in the graph. This is the default.&quot;</span>
+    <span class="s2">&quot;                                                                          &quot;</span>
+    <span class="s2">&quot;If `prepend_types`, the graph nodes will be prepended with the node types, &quot;</span>
+    <span class="s2">&quot;if the node type is not yet in the node name. Careful: this is a &quot;</span>
+    <span class="s2">&quot;expensive operation. Consider using a more complex graph storage format &quot;</span>
+    <span class="s2">&quot;where storing node data is possible.&quot;</span>
+    <span class="s2">&quot;                                                                          &quot;</span>
+    <span class="s2">&quot;If `write_node_type`, the graph nodes get an attribute &#39;nodeType&#39; that &quot;</span>
+    <span class="s2">&quot;contains the cell type. &quot;</span>
+    <span class="s2">&quot;Careful, output can not be an adjlist any more, but any other format.&quot;</span>
+    <span class="s2">&quot;                                                                          &quot;</span>
+    <span class="s2">&quot;If `complete_data`, the graph contains as much data as possible, as parsed &quot;</span>
+    <span class="s2">&quot;from the verilog file. &quot;</span>
+    <span class="s2">&quot;Be Careful, output can not be an adjlist any more, but any other format.&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">OutputInformation</span><span class="o">.</span><span class="n">plain</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">OutputInformation</span><span class="p">,</span>
+    <span class="n">choices</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">OutputInformation</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--output_format&quot;</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Choose the output format wisely.&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">adjlist</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">GraphOutputFormat</span><span class="p">,</span>
+    <span class="n">choices</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">GraphOutputFormat</span><span class="p">),</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.verilog2graph.main.html#tueisec_myparsing.cli.verilog2graph.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">GLOBAL_PARSER</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">setup_cli</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span> <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_info</span> <span class="o">==</span> <span class="n">OutputInformation</span><span class="o">.</span><span class="n">write_node_type</span>
+        <span class="ow">or</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_info</span> <span class="o">==</span> <span class="n">OutputInformation</span><span class="o">.</span><span class="n">complete_data</span>
+    <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_format</span> <span class="o">==</span> <span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">adjlist</span> <span class="ow">or</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_format</span> <span class="o">==</span> <span class="n">GraphOutputFormat</span><span class="o">.</span><span class="n">simpleParquet</span><span class="p">):</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+            <span class="s2">&quot;If you want to have complex data, choose a complex output format, please.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">exit</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">design_path</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span>
+        <span class="k">if</span> <span class="n">design_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.v&quot;</span><span class="p">):</span>
+            <span class="n">designs</span> <span class="o">=</span> <span class="p">[</span><span class="n">design_path</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">designs</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">design_path</span><span class="p">,</span> <span class="s2">&quot;*.v&quot;</span><span class="p">))</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> designs.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">designs</span><span class="p">)))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">designs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">design_path</span> <span class="ow">in</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">designs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">design_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.v&quot;</span><span class="p">):</span>
+                <span class="n">designs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">design_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">add_designs</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">design_path</span><span class="p">,</span> <span class="s2">&quot;*.v&quot;</span><span class="p">))</span>
+                <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> designs in </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">add_designs</span><span class="p">),</span> <span class="n">design_path</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">designs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">add_designs</span><span class="p">)</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> designs&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">designs</span><span class="p">)))</span>
+    <span class="n">libPath</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">cell_library</span>
+    <span class="n">cell_lib_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">libPath</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">sia</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Space is and is deprecated, as the root cause was fixed. Ignoring it!&quot;</span><span class="p">)</span>
+
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_path</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cell_lib_name</span><span class="p">))</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">vparsing_debug</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">vparsing_debug</span>
+    <span class="n">output_info</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_info</span>
+    <span class="n">output_format</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_format</span>
+    <span class="n">overwrite_adj</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">overwrite</span>
+    <span class="n">do_not_zip</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">do_not_zip</span>
+
+    <span class="n">mult</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">design_file</span> <span class="ow">in</span> <span class="n">designs</span><span class="p">:</span>
+        <span class="n">mult</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">design_file</span><span class="p">,</span>
+                <span class="n">libPath</span><span class="p">,</span>
+                <span class="n">output_path</span><span class="p">,</span>
+                <span class="n">vparsing_debug</span><span class="p">,</span>
+                <span class="n">output_info</span><span class="p">,</span>
+                <span class="n">output_format</span><span class="p">,</span>
+                <span class="n">overwrite_adj</span><span class="p">,</span>
+                <span class="n">do_not_zip</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">run_in_pool_with_progress</span><span class="p">(</span>
+        <span class="n">output_graph</span><span class="p">,</span> <span class="n">mult</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">abort_on_kint</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="output_graph">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.verilog2graph.output_graph.html#tueisec_myparsing.cli.verilog2graph.output_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">output_graph</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="p">(</span>
+        <span class="n">design_file</span><span class="p">,</span>
+        <span class="n">libPath</span><span class="p">,</span>
+        <span class="n">output_path</span><span class="p">,</span>
+        <span class="n">vparsing_debug</span><span class="p">,</span>
+        <span class="n">output_info</span><span class="p">,</span>
+        <span class="n">output_format</span><span class="p">,</span>
+        <span class="n">overwrite_adj</span><span class="p">,</span>
+        <span class="n">do_not_zip</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">args</span>
+    <span class="n">design_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">design_file</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">out_file_name</span> <span class="o">=</span> <span class="n">output_format</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">design_name</span><span class="p">),</span> <span class="n">do_not_zip</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_file_name</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite_adj</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Outfile </span><span class="si">{}</span><span class="s2"> already exists. Skipping. Use --overwrite to overwrite.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">design_name</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">add_const_as_input</span> <span class="o">=</span> <span class="n">output_info</span> <span class="o">==</span> <span class="n">OutputInformation</span><span class="o">.</span><span class="n">complete_data</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">parsed_verilog</span> <span class="o">=</span> <span class="n">myparsing</span><span class="o">.</span><span class="n">parse_to_obj</span><span class="p">(</span>
+            <span class="n">design_file</span><span class="p">,</span>
+            <span class="n">libPath</span><span class="p">,</span>
+            <span class="n">vparsing_debug</span><span class="o">=</span><span class="n">vparsing_debug</span><span class="p">,</span>
+            <span class="n">add_const_as_input</span><span class="o">=</span><span class="n">add_const_as_input</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">ASTParsingError</span><span class="p">,</span> <span class="n">VerilogParsingError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Exception while parsing </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">design_file</span><span class="p">),</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">output_info</span> <span class="o">==</span> <span class="n">OutputInformation</span><span class="o">.</span><span class="n">prepend_types</span><span class="p">:</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">(</span><span class="n">parsed_verilog</span><span class="o">.</span><span class="n">get_graph_with_types_in_names</span><span class="p">())</span>
+        <span class="n">write_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">design_name</span><span class="p">,</span> <span class="n">output_format</span><span class="p">,</span> <span class="n">do_not_zip</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">elif</span> <span class="n">output_info</span> <span class="o">==</span> <span class="n">OutputInformation</span><span class="o">.</span><span class="n">write_node_type</span><span class="p">:</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">get_networkx_graph</span><span class="p">(</span><span class="n">node_types</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">write_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">design_name</span><span class="p">,</span> <span class="n">output_format</span><span class="p">,</span> <span class="n">do_not_zip</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">elif</span> <span class="n">output_info</span> <span class="o">==</span> <span class="n">OutputInformation</span><span class="o">.</span><span class="n">complete_data</span><span class="p">:</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">get_networkx_graph</span><span class="p">(</span><span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">write_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">design_name</span><span class="p">,</span> <span class="n">output_format</span><span class="p">,</span> <span class="n">do_not_zip</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">get_networkx_graph</span><span class="p">()</span>
+        <span class="n">write_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">design_name</span><span class="p">,</span> <span class="n">output_format</span><span class="p">,</span> <span class="n">do_not_zip</span><span class="p">)</span>
+        <span class="k">return</span></div>
+
+
+
+<div class="viewcode-block" id="write_graph">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.verilog2graph.write_graph.html#tueisec_myparsing.cli.verilog2graph.write_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="nb">format</span><span class="p">,</span> <span class="n">do_not_zip</span><span class="p">):</span>
+    <span class="nb">format</span><span class="o">.</span><span class="n">write_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">do_not_zip</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

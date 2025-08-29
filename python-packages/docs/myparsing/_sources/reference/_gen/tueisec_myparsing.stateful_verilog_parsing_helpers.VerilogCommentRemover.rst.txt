@@ -1,0 +1,34 @@
+tueisec\_myparsing.stateful\_verilog\_parsing\_helpers.VerilogCommentRemover
+============================================================================
+
+.. currentmodule:: tueisec_myparsing.stateful_verilog_parsing_helpers
+
+.. autoclass:: VerilogCommentRemover
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~VerilogCommentRemover.__init__
+      ~VerilogCommentRemover.handle_comments
+      ~VerilogCommentRemover.reset
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~VerilogCommentRemover.strippable_comments_re
+      ~VerilogCommentRemover.line_ends_with_comment_re
+      ~VerilogCommentRemover.line_starts_with_comment_re
+      ~VerilogCommentRemover.line_has_inline_comment_re
+   
+   

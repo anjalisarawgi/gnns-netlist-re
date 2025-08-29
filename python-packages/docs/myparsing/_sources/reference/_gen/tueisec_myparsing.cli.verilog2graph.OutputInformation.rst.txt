@@ -1,0 +1,25 @@
+tueisec\_myparsing.cli.verilog2graph.OutputInformation
+======================================================
+
+.. currentmodule:: tueisec_myparsing.cli.verilog2graph
+
+.. autoclass:: OutputInformation
+
+   
+
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~OutputInformation.plain
+      ~OutputInformation.prepend_types
+      ~OutputInformation.write_node_type
+      ~OutputInformation.complete_data
+   
+   

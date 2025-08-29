@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.CustomParser.format\_usage
+==============================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. automethod:: re_verilog2features.globalArgParse.CustomParser.format_usage

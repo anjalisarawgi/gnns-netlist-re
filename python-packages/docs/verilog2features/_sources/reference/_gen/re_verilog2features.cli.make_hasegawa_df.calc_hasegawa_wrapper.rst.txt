@@ -1,0 +1,6 @@
+re\_verilog2features.cli.make\_hasegawa\_df.calc\_hasegawa\_wrapper
+===================================================================
+
+.. currentmodule:: re_verilog2features.cli.make_hasegawa_df
+
+.. autofunction:: re_verilog2features.cli.make_hasegawa_df.calc_hasegawa_wrapper

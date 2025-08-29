@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.hierarchy2verilog.main
+=============================================
+
+.. currentmodule:: tueisec_myparsing.cli.hierarchy2verilog
+
+.. autofunction:: tueisec_myparsing.cli.hierarchy2verilog.main

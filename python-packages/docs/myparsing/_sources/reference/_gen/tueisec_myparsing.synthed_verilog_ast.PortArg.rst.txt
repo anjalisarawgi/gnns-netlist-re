@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.PortArg
+================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: PortArg
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~PortArg.__init__
+      ~PortArg.children
+      ~PortArg.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~PortArg.attr_names
+   
+   

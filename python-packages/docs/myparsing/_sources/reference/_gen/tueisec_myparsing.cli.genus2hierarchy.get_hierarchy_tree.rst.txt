@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.genus2hierarchy.get\_hierarchy\_tree
+===========================================================
+
+.. currentmodule:: tueisec_myparsing.cli.genus2hierarchy
+
+.. autofunction:: tueisec_myparsing.cli.genus2hierarchy.get_hierarchy_tree

@@ -1,0 +1,35 @@
+﻿tueisec\_myparsing.codegen
+==========================
+
+.. automodule:: tueisec_myparsing.codegen
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      del_paren
+      del_space
+      escape
+      getfilename
+      indent_multiline_assign
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+    :toctree: .
+   
+      ASTCodeGenerator
+      ConvertVisitor
+   
+   
+
+   
+   
+   

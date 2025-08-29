@@ -1,0 +1,24 @@
+﻿re\_verilog2features.cli.run\_csv\_to\_hdf5
+===========================================
+
+.. automodule:: re_verilog2features.cli.run_csv_to_hdf5
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+      perform_conversion
+   
+   
+
+   
+   
+   
+
+   
+   
+   

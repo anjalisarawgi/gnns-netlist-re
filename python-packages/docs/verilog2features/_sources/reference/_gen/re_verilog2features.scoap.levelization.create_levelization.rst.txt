@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.levelization.create\_levelization
+============================================================
+
+.. currentmodule:: re_verilog2features.scoap.levelization
+
+.. autofunction:: re_verilog2features.scoap.levelization.create_levelization

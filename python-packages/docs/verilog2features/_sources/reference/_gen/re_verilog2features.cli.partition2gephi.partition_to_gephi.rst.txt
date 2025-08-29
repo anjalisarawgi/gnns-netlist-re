@@ -1,0 +1,6 @@
+re\_verilog2features.cli.partition2gephi.partition\_to\_gephi
+=============================================================
+
+.. currentmodule:: re_verilog2features.cli.partition2gephi
+
+.. autofunction:: re_verilog2features.cli.partition2gephi.partition_to_gephi

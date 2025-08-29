@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.scoap.calculation_observability &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.scoap.calculation_observability</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Function for calculating CO for every gate&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">enlighten</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+
+<div class="viewcode-block" id="calculation_observability">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.calculation_observability.html#re_verilog2features.scoap.calculation_observability.calculation_observability">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculation_observability</span><span class="p">(</span><span class="n">levels_co</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outputlist</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;input: the levelized gates in a list, position of gate in list stands for level</span>
+<span class="sd">       output: CC0 for gate</span>
+<span class="sd">       output: CC0 for gate&quot;&quot;&quot;</span>
+    <span class="c1"># from the highest level to the lowest</span>
+
+    <span class="n">levels</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">levels_co</span><span class="p">)</span>
+    <span class="c1"># stem is correct because 0 is always minimum</span>
+    <span class="k">for</span> <span class="n">gate</span> <span class="ow">in</span> <span class="n">outputlist</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">levels</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+            <span class="c1"># print(edge[(0)])</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span>
+
+    <span class="n">data_stabilized</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">())</span>
+
+    <span class="n">man</span> <span class="o">=</span> <span class="n">enlighten</span><span class="o">.</span><span class="n">get_manager</span><span class="p">()</span>
+    <span class="n">ticks</span> <span class="o">=</span> <span class="n">man</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;COIter:&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;iterations&quot;</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">while</span> <span class="p">(</span>
+        <span class="nb">hash</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+        <span class="o">!=</span> <span class="n">data_stabilized</span>
+    <span class="p">):</span>
+        <span class="n">ticks</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="n">data_stabilized</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span>
+            <span class="nb">frozenset</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="n">tacks</span> <span class="o">=</span> <span class="n">man</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Iterating levels:&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;levels&quot;</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">gate</span> <span class="ow">in</span> <span class="n">levels</span><span class="p">:</span>
+            <span class="n">tacks</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OUTPUT&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;nodeType&quot;</span><span class="p">)</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="n">gate</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;AND2&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;NAND2&quot;</span><span class="p">):</span>
+                    <span class="n">and2_nand2_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;AND3&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;NAND3&quot;</span><span class="p">):</span>
+                    <span class="n">and3_nand3_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OR2&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;NOR2&quot;</span><span class="p">):</span>
+                    <span class="n">or2_nor2_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OR3&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;NOR3&quot;</span><span class="p">):</span>
+                    <span class="n">or3_nor3_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;XOR2&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;XNOR2&quot;</span><span class="p">):</span>
+                    <span class="n">xor_xnor_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;DFFSR&quot;</span><span class="p">):</span>
+                    <span class="n">dffrs_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;DFF&quot;</span><span class="p">):</span>
+                    <span class="n">dff_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;NOT&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INVX&quot;</span><span class="p">):</span>
+                    <span class="n">not_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;AOI21&quot;</span><span class="p">):</span>
+                    <span class="n">aoi21_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;AOI22&quot;</span><span class="p">):</span>
+                    <span class="n">aoi22_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OAI21&quot;</span><span class="p">):</span>
+                    <span class="n">oai21_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OAI22&quot;</span><span class="p">):</span>
+                    <span class="n">oai22_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;MUX2X1&quot;</span><span class="p">):</span>
+                    <span class="n">mux2x1_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span>
+                        <span class="s2">&quot;In calculation_observability.py unrecognised gate with NAME: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">gate</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+        <span class="n">tacks</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">man</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="dffrs_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.dffrs_function.html#re_verilog2features.scoap.calculation_observability.dffrs_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dffrs_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="c1"># active-high asynchronous reset pin r and s</span>
+    <span class="c1"># print(output_pin_list)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="c1"># print(output_pin)</span>
+        <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+            <span class="n">tmp_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+            <span class="n">tmp_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">tmp_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                    <span class="n">tmp_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">tmp_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                    <span class="n">tmp_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">tmp_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                    <span class="n">tmp_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="n">tmp_s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INPUT_CONSTANT_1&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">tmp_r</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INPUT_CONSTANT_1&quot;</span><span class="p">):</span>
+        <span class="n">dff_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">tmp_s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INPUT_CONSTANT_1&quot;</span><span class="p">):</span>
+        <span class="n">s_r_status</span> <span class="o">=</span> <span class="s2">&quot;s_deactivated&quot;</span>
+        <span class="p">(</span>
+            <span class="n">cc0_clk</span><span class="p">,</span>
+            <span class="n">cc0_d</span><span class="p">,</span>
+            <span class="n">cc0_r</span><span class="p">,</span>
+            <span class="n">cc1_clk</span><span class="p">,</span>
+            <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="n">cc1_r</span><span class="p">,</span>
+            <span class="n">edge_clk</span><span class="p">,</span>
+            <span class="n">edge_d</span><span class="p">,</span>
+            <span class="n">edge_r</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">current_dffrs</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">s_r_status</span><span class="p">)</span>
+        <span class="c1"># cc1_r deactivated: !R, !1=0</span>
+
+        <span class="n">co_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc0_clk</span> <span class="o">+</span> <span class="n">cc1_r</span>  <span class="c1"># (!R) reset deactivated</span>
+        <span class="n">co_r</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_r</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc0_clk</span>
+        <span class="p">)</span>  <span class="c1"># (!R) reset activated</span>
+        <span class="n">co_clk</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">cc1_clk</span>
+            <span class="o">+</span> <span class="n">cc0_clk</span>
+            <span class="o">+</span> <span class="nb">min</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_d</span><span class="p">,</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_r</span><span class="p">,</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_r</span> <span class="o">+</span> <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_clk</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_d</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_r</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">tmp_r</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INPUT_CONSTANT_1&quot;</span><span class="p">):</span>
+        <span class="n">s_r_status</span> <span class="o">=</span> <span class="s2">&quot;r_deactivated&quot;</span>
+        <span class="p">(</span>
+            <span class="n">cc0_clk</span><span class="p">,</span>
+            <span class="n">cc0_d</span><span class="p">,</span>
+            <span class="n">cc0_s</span><span class="p">,</span>
+            <span class="n">cc1_clk</span><span class="p">,</span>
+            <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="n">cc1_s</span><span class="p">,</span>
+            <span class="n">edge_clk</span><span class="p">,</span>
+            <span class="n">edge_d</span><span class="p">,</span>
+            <span class="n">edge_s</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">current_dffrs</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">s_r_status</span><span class="p">)</span>
+        <span class="c1"># cc1_s deactivated: !S, !1=0</span>
+
+        <span class="c1"># synchron calculation:</span>
+        <span class="n">co_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_clk</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc1_s</span>  <span class="c1"># (!S) deactivated</span>
+        <span class="n">co_s</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_s</span> <span class="o">+</span> <span class="n">cc0_clk</span> <span class="o">+</span> <span class="n">cc1_clk</span>
+        <span class="p">)</span>  <span class="c1"># (!S) activated</span>
+        <span class="n">co_clk</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">cc0_clk</span>
+            <span class="o">+</span> <span class="n">cc1_clk</span>
+            <span class="o">+</span> <span class="nb">min</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_d</span> <span class="o">+</span> <span class="n">cc1_s</span><span class="p">,</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_s</span><span class="p">,</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_clk</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_d</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_s</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">s_r_status</span> <span class="o">=</span> <span class="s2">&quot;s_r_not_deactivated&quot;</span>
+        <span class="p">(</span>
+            <span class="n">cc0_clk</span><span class="p">,</span>
+            <span class="n">cc0_d</span><span class="p">,</span>
+            <span class="n">cc0_r</span><span class="p">,</span>
+            <span class="n">cc0_s</span><span class="p">,</span>
+            <span class="n">cc1_clk</span><span class="p">,</span>
+            <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="n">cc1_r</span><span class="p">,</span>
+            <span class="n">cc1_s</span><span class="p">,</span>
+            <span class="n">edge_clk</span><span class="p">,</span>
+            <span class="n">edge_d</span><span class="p">,</span>
+            <span class="n">edge_r</span><span class="p">,</span>
+            <span class="n">edge_s</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">current_dffrs</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">s_r_status</span><span class="p">)</span>
+        <span class="c1"># cc1_r deactivated: !R, !1=0</span>
+        <span class="c1"># cc1_s deactivated: !S, !1=0</span>
+
+        <span class="c1"># calculation synchron:</span>
+        <span class="n">co_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_clk</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc1_s</span> <span class="o">+</span> <span class="n">cc1_r</span>
+        <span class="n">co_r</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_r</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc0_clk</span> <span class="o">+</span> <span class="n">cc1_s</span>
+        <span class="p">)</span>  <span class="c1"># set deactivated</span>
+        <span class="n">co_s</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_s</span> <span class="o">+</span> <span class="n">cc0_clk</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc1_r</span>
+        <span class="p">)</span>  <span class="c1"># reset deactivated</span>
+        <span class="n">co_clk</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">cc0_clk</span>
+            <span class="o">+</span> <span class="n">cc1_clk</span>
+            <span class="o">+</span> <span class="nb">min</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_d</span> <span class="o">+</span> <span class="n">cc1_s</span><span class="p">,</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_s</span> <span class="o">+</span> <span class="n">cc1_r</span><span class="p">,</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_r</span> <span class="o">+</span> <span class="n">cc1_s</span><span class="p">,</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_r</span> <span class="o">+</span> <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_clk</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_d</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_s</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_r</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="aoi21_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.aoi21_function.html#re_verilog2features.scoap.calculation_observability.aoi21_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">aoi21_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;and-or-inverter 3 inputs A, B, C and 1 output Y,</span>
+<span class="sd">    node_function: [(&#39;Y&#39;, &#39;(!((A&amp;B)+C))&#39;)]&quot;&quot;&quot;</span>
+    <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc0_c</span><span class="p">,</span> <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">cc1_c</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_c</span> <span class="o">=</span> <span class="n">current_oai_aoi</span><span class="p">(</span>
+        <span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span>
+    <span class="p">)</span>
+
+    <span class="c1"># controllability from and-gate</span>
+    <span class="n">cc0_and</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">)</span>
+
+    <span class="c1"># observability from nor-gate</span>
+    <span class="n">co_a_nor</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_c</span>
+    <span class="n">co_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_and</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="c1"># observability from and-gate</span>
+    <span class="n">co_a</span> <span class="o">=</span> <span class="n">co_a_nor</span> <span class="o">+</span> <span class="n">cc1_b</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b</span> <span class="o">=</span> <span class="n">co_a_nor</span> <span class="o">+</span> <span class="n">cc1_a</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_c</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="aoi22_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.aoi22_function.html#re_verilog2features.scoap.calculation_observability.aoi22_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">aoi22_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;and-or-inverter 4 inputs A, B, C, D and one output Y,</span>
+<span class="sd">    node_function: [(&#39;Y&#39;, &#39;(!((A&amp;B)+(C&amp;D)))&#39;)]&quot;&quot;&quot;</span>
+    <span class="p">(</span>
+        <span class="n">cc1_a</span><span class="p">,</span>
+        <span class="n">cc1_b</span><span class="p">,</span>
+        <span class="n">cc1_c</span><span class="p">,</span>
+        <span class="n">cc1_d</span><span class="p">,</span>
+        <span class="n">cc0_a</span><span class="p">,</span>
+        <span class="n">cc0_b</span><span class="p">,</span>
+        <span class="n">cc0_c</span><span class="p">,</span>
+        <span class="n">cc0_d</span><span class="p">,</span>
+        <span class="n">edge_a</span><span class="p">,</span>
+        <span class="n">edge_b</span><span class="p">,</span>
+        <span class="n">edge_c</span><span class="p">,</span>
+        <span class="n">edge_d</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">current_oai_aoi</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="c1"># controllability from and-gate</span>
+    <span class="n">cc0_and_1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">)</span>
+    <span class="n">cc0_and_2</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc0_c</span><span class="p">,</span> <span class="n">cc0_d</span><span class="p">)</span>
+
+    <span class="c1"># observability from nor-gate</span>
+    <span class="n">co_a_nor</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_and_2</span>
+    <span class="n">co_b_nor</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_and_1</span>
+
+    <span class="c1"># observability from and-gate</span>
+    <span class="n">co_a</span> <span class="o">=</span> <span class="n">co_a_nor</span> <span class="o">+</span> <span class="n">cc1_b</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b</span> <span class="o">=</span> <span class="n">co_a_nor</span> <span class="o">+</span> <span class="n">cc1_a</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">co_c</span> <span class="o">=</span> <span class="n">co_b_nor</span> <span class="o">+</span> <span class="n">cc1_d</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_d</span> <span class="o">=</span> <span class="n">co_b_nor</span> <span class="o">+</span> <span class="n">cc1_c</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_c</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_d</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="oai21_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.oai21_function.html#re_verilog2features.scoap.calculation_observability.oai21_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">oai21_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;or-and-inverter 3 inputs A, B, C and 1 output Y,</span>
+<span class="sd">    node_function: [(&#39;Y&#39;, &#39;(!((A+B)&amp;C))&#39;)]&quot;&quot;&quot;</span>
+
+    <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc0_c</span><span class="p">,</span> <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">cc1_c</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_c</span> <span class="o">=</span> <span class="n">current_oai_aoi</span><span class="p">(</span>
+        <span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span>
+    <span class="p">)</span>
+
+    <span class="c1"># controllability cc1 from or-gate</span>
+    <span class="n">cc1_or</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">)</span>
+
+    <span class="c1"># nand-gate</span>
+    <span class="n">co_a_nand</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_c</span>
+
+    <span class="n">co_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_or</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="c1"># or-gate</span>
+    <span class="n">co_a</span> <span class="o">=</span> <span class="n">co_a_nand</span> <span class="o">+</span> <span class="n">cc0_b</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b</span> <span class="o">=</span> <span class="n">co_a_nand</span> <span class="o">+</span> <span class="n">cc0_a</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_c</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="oai22_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.oai22_function.html#re_verilog2features.scoap.calculation_observability.oai22_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">oai22_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;or-and-inverter 4 inputs A, B, C, D and one output Y,</span>
+<span class="sd">    node_function: [(&#39;Y&#39;, &#39;(!((A+B)&amp;(C+D)))&#39;)]&quot;&quot;&quot;</span>
+    <span class="p">(</span>
+        <span class="n">cc1_a</span><span class="p">,</span>
+        <span class="n">cc1_b</span><span class="p">,</span>
+        <span class="n">cc1_c</span><span class="p">,</span>
+        <span class="n">cc1_d</span><span class="p">,</span>
+        <span class="n">cc0_a</span><span class="p">,</span>
+        <span class="n">cc0_b</span><span class="p">,</span>
+        <span class="n">cc0_c</span><span class="p">,</span>
+        <span class="n">cc0_d</span><span class="p">,</span>
+        <span class="n">edge_a</span><span class="p">,</span>
+        <span class="n">edge_b</span><span class="p">,</span>
+        <span class="n">edge_c</span><span class="p">,</span>
+        <span class="n">edge_d</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">current_oai_aoi</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="c1"># cc1 from or-gates</span>
+    <span class="n">cc1_or_1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">)</span>
+    <span class="n">cc1_or_2</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc1_c</span><span class="p">,</span> <span class="n">cc1_d</span><span class="p">)</span>
+
+    <span class="n">co_or_ab</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_or_2</span>
+    <span class="n">co_or_cd</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_or_1</span>
+
+    <span class="n">co_a_or</span> <span class="o">=</span> <span class="n">co_or_ab</span> <span class="o">+</span> <span class="n">cc0_b</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b_or</span> <span class="o">=</span> <span class="n">co_or_ab</span> <span class="o">+</span> <span class="n">cc0_a</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">co_c_or</span> <span class="o">=</span> <span class="n">co_or_cd</span> <span class="o">+</span> <span class="n">cc0_d</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_d_or</span> <span class="o">=</span> <span class="n">co_or_cd</span> <span class="o">+</span> <span class="n">cc0_c</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a_or</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b_or</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_c_or</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_d_or</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="mux2x1_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.mux2x1_function.html#re_verilog2features.scoap.calculation_observability.mux2x1_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mux2x1_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;multiplexer 3 inputs A, B, S and 1 output Y,</span>
+<span class="sd">    node-function: [(&#39;Y&#39;, &#39;(!((S&amp;A) + (!S&amp;B)))&#39;)]&quot;&quot;&quot;</span>
+    <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc0_s</span><span class="p">,</span> <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">cc1_s</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_s</span> <span class="o">=</span> <span class="n">current_mux</span><span class="p">(</span>
+        <span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span>
+    <span class="p">)</span>
+
+    <span class="c1"># controllability cc1 from nand-gate</span>
+    <span class="n">cc0_and_1</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc0_s</span><span class="p">,</span> <span class="n">cc0_a</span><span class="p">)</span>
+    <span class="n">cc0_and_2</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc0_s</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">)</span>
+
+    <span class="c1"># observability from nor-gate</span>
+    <span class="n">co_a_nor</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_and_2</span>
+    <span class="n">co_b_nor</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_and_1</span>
+
+    <span class="c1"># observability from and-gate</span>
+    <span class="n">co_a</span> <span class="o">=</span> <span class="n">co_a_nor</span> <span class="o">+</span> <span class="n">cc1_s</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_s</span> <span class="o">=</span> <span class="n">co_a_nor</span> <span class="o">+</span> <span class="n">cc1_a</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">co_b</span> <span class="o">=</span> <span class="n">co_b_nor</span> <span class="o">+</span> <span class="n">cc1_s</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_ns</span> <span class="o">=</span> <span class="n">co_b_nor</span> <span class="o">+</span> <span class="n">cc1_b</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="c1"># updating new values in data</span>
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_s</span><span class="p">,</span> <span class="n">co_ns</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="and2_nand2_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.and2_nand2_function.html#re_verilog2features.scoap.calculation_observability.and2_nand2_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">and2_nand2_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;function for calculating the observability of a &#39;and&#39; or &#39;nand&#39; gate</span>
+<span class="sd">    inputs:</span>
+<span class="sd">    gate: specific nand gate with number</span>
+<span class="sd">    graph: gate-netlist of the graph</span>
+<span class="sd">    data: current CC0, CC1 und CO values of the gates &quot;&quot;&quot;</span>
+    <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span> <span class="o">=</span> <span class="n">current_cc1</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="n">co_a_and</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_b</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b_and</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_a</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a_and</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b_and</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="and3_nand3_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.and3_nand3_function.html#re_verilog2features.scoap.calculation_observability.and3_nand3_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">and3_nand3_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">cc1_c</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_c</span> <span class="o">=</span> <span class="n">current_cc1_3_input</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="n">co_a_and</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_b</span> <span class="o">+</span> <span class="n">cc1_c</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b_and</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_a</span> <span class="o">+</span> <span class="n">cc1_c</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_c_and</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_a</span> <span class="o">+</span> <span class="n">cc1_b</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a_and</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b_and</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_c_and</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="or2_nor2_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.or2_nor2_function.html#re_verilog2features.scoap.calculation_observability.or2_nor2_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">or2_nor2_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;function for calculating the observability of a &#39;or&#39; or &#39;nor&#39; gate</span>
+<span class="sd">    inputs:</span>
+<span class="sd">    gate: specific nand gate with number</span>
+<span class="sd">    graph: gate-netlist of the graph</span>
+<span class="sd">    data: current CC0, CC1 und CO values of the gates &quot;&quot;&quot;</span>
+    <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span> <span class="o">=</span> <span class="n">current_cc0</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="n">co_a_or</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_b</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b_or</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_a</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a_or</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b_or</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="or3_nor3_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.or3_nor3_function.html#re_verilog2features.scoap.calculation_observability.or3_nor3_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">or3_nor3_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc0_c</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_c</span> <span class="o">=</span> <span class="n">current_cc0_3_input</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="n">co_a_or</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_b</span> <span class="o">+</span> <span class="n">cc0_c</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b_or</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_a</span> <span class="o">+</span> <span class="n">cc0_c</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_c_or</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc0_a</span> <span class="o">+</span> <span class="n">cc0_b</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a_or</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b_or</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_c_or</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="xor_xnor_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.xor_xnor_function.html#re_verilog2features.scoap.calculation_observability.xor_xnor_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">xor_xnor_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;function for calculating the observability of a &#39;xor&#39; or &#39;xnor&#39; gate</span>
+<span class="sd">    inputs:</span>
+<span class="sd">    gate: specific nand gate with number</span>
+<span class="sd">    graph: gate-netlist of the graph</span>
+<span class="sd">    data: current CC0, CC1 und CO values of the gates &quot;&quot;&quot;</span>
+    <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span> <span class="o">=</span> <span class="n">current_cc0</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">current_cc1</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="n">co_a_xor</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">co_b_xor</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc1_a</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a_xor</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_b_xor</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="not_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.not_function.html#re_verilog2features.scoap.calculation_observability.not_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">not_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;not_function&quot;&quot;&quot;</span>
+    <span class="n">co_a_not</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_a_not</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="dff_function">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.dff_function.html#re_verilog2features.scoap.calculation_observability.dff_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dff_function</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;dff &quot;&quot;&quot;</span>
+    <span class="n">cc0_clk</span><span class="p">,</span> <span class="n">cc0_d</span><span class="p">,</span> <span class="n">cc1_clk</span><span class="p">,</span> <span class="n">cc1_d</span><span class="p">,</span> <span class="n">edge_clk</span><span class="p">,</span> <span class="n">edge_d</span> <span class="o">=</span> <span class="n">current_dff</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="n">cc0_q</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+    <span class="n">cc1_q</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+    <span class="c1"># minimum self decision for clk cause cc0_q+cc1_d also a case in my opinion</span>
+    <span class="n">co_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc0_clk</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="n">cc1_q</span> <span class="o">+</span> <span class="n">cc0_d</span><span class="p">,</span> <span class="n">cc0_q</span> <span class="o">+</span> <span class="n">cc1_d</span><span class="p">)</span>
+    <span class="n">co_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">gate</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">cc1_clk</span> <span class="o">+</span> <span class="n">cc0_clk</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_clk</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CO&quot;</span><span class="p">],</span> <span class="n">co_d</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="current_cc0">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_cc0.html#re_verilog2features.scoap.calculation_observability.current_cc0">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_cc0</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;function for reading the controllability cc0 values from the storage &#39;data&#39;</span>
+<span class="sd">    inputs:</span>
+<span class="sd">    gate: name of the current viewed gate</span>
+<span class="sd">    graph: gate-netlist of the graph in readable python format</span>
+<span class="sd">    data: current CC0, CC1 und CO values of the gates</span>
+<span class="sd">    outputs:</span>
+<span class="sd">    cc0_a: CC0 value of the input_a from the gate</span>
+<span class="sd">    cc0_b: CC0 value of the input_b from the gate</span>
+<span class="sd">    edge_a: name of the input_a from the gate</span>
+<span class="sd">    edge_b: name of the input_b from the gate&quot;&quot;&quot;</span>
+    <span class="c1"># print(graph.in_edges(gate))</span>
+    <span class="c1"># print(graph.out_edges(gate))</span>
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span></div>
+
+
+
+<div class="viewcode-block" id="current_cc0_3_input">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_cc0_3_input.html#re_verilog2features.scoap.calculation_observability.current_cc0_3_input">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_cc0_3_input</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;calculation for cc0 for 3 inputs in a gate&quot;&quot;&quot;</span>
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                <span class="n">cc0_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                    <span class="n">cc0_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc0_c</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_c</span></div>
+
+
+
+<div class="viewcode-block" id="current_cc1">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_cc1.html#re_verilog2features.scoap.calculation_observability.current_cc1">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_cc1</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;function for reading the controllability cc1 values from the storage &#39;data&#39;</span>
+<span class="sd">    inputs:</span>
+<span class="sd">    gate: name of the current viewed gate</span>
+<span class="sd">    graph: gate-netlist of the graph in readable python format</span>
+<span class="sd">    data: current CC0, CC1 und CO values of the gates</span>
+<span class="sd">    outputs:</span>
+<span class="sd">    cc0_a: CC0 value of the input_a from the gate</span>
+<span class="sd">    cc0_b: CC0 value of the input_b from the gate</span>
+<span class="sd">    edge_a: name of the input_a from the gate</span>
+<span class="sd">    edge_b: name of the input_b from the gate&quot;&quot;&quot;</span>
+    <span class="c1"># print(graph.in_edges(gate))</span>
+    <span class="c1"># print(graph.out_edges(gate))</span>
+
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span></div>
+
+
+
+<div class="viewcode-block" id="current_cc1_3_input">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_cc1_3_input.html#re_verilog2features.scoap.calculation_observability.current_cc1_3_input">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_cc1_3_input</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;calculation for cc1 for 3 inputs in a gate&quot;&quot;&quot;</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">counter</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+            <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">counter</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+            <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+            <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                    <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">cc1_c</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_c</span></div>
+
+
+
+<div class="viewcode-block" id="current_dff">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_dff.html#re_verilog2features.scoap.calculation_observability.current_dff">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_dff</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;difference between d and clk line for right parsing&quot;&quot;&quot;</span>
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="c1"># print(output_pin_list)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="c1"># print(output_pin)</span>
+        <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;CLK&quot;</span><span class="p">:</span>
+            <span class="n">edge_clk</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+            <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;CLK&quot;</span><span class="p">:</span>
+                    <span class="n">edge_clk</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">cc0_clk</span><span class="p">,</span> <span class="n">cc0_d</span><span class="p">,</span> <span class="n">cc1_clk</span><span class="p">,</span> <span class="n">cc1_d</span><span class="p">,</span> <span class="n">edge_clk</span><span class="p">,</span> <span class="n">edge_d</span></div>
+
+
+
+<div class="viewcode-block" id="current_dffrs">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_dffrs.html#re_verilog2features.scoap.calculation_observability.current_dffrs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_dffrs</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">s_r_status</span><span class="p">):</span>
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="c1"># print(output_pin_list)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="c1"># print(output_pin)</span>
+        <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;CLK&quot;</span><span class="p">:</span>
+            <span class="n">edge_clk</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+            <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+            <span class="n">edge_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+            <span class="n">edge_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;CLK&quot;</span><span class="p">:</span>
+                    <span class="n">edge_clk</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                    <span class="n">edge_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">edge_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;CLK&quot;</span><span class="p">:</span>
+                    <span class="n">edge_clk</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                    <span class="n">edge_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">edge_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;CLK&quot;</span><span class="p">:</span>
+                    <span class="n">edge_clk</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_clk</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_clk</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span>
+                    <span class="n">edge_r</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_r</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_r</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">edge_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">s_r_status</span> <span class="o">==</span> <span class="s2">&quot;s_deactivated&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cc0_clk</span><span class="p">,</span> <span class="n">cc0_d</span><span class="p">,</span> <span class="n">cc0_r</span><span class="p">,</span> <span class="n">cc1_clk</span><span class="p">,</span> <span class="n">cc1_d</span><span class="p">,</span> <span class="n">cc1_r</span><span class="p">,</span> <span class="n">edge_clk</span><span class="p">,</span> <span class="n">edge_d</span><span class="p">,</span> <span class="n">edge_r</span>
+    <span class="k">elif</span> <span class="n">s_r_status</span> <span class="o">==</span> <span class="s2">&quot;r_deactivated&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cc0_clk</span><span class="p">,</span> <span class="n">cc0_d</span><span class="p">,</span> <span class="n">cc0_s</span><span class="p">,</span> <span class="n">cc1_clk</span><span class="p">,</span> <span class="n">cc1_d</span><span class="p">,</span> <span class="n">cc1_s</span><span class="p">,</span> <span class="n">edge_clk</span><span class="p">,</span> <span class="n">edge_d</span><span class="p">,</span> <span class="n">edge_s</span>
+    <span class="k">elif</span> <span class="n">s_r_status</span> <span class="o">==</span> <span class="s2">&quot;s_r_not_deactivated&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">cc0_clk</span><span class="p">,</span>
+            <span class="n">cc0_d</span><span class="p">,</span>
+            <span class="n">cc0_r</span><span class="p">,</span>
+            <span class="n">cc0_s</span><span class="p">,</span>
+            <span class="n">cc1_clk</span><span class="p">,</span>
+            <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="n">cc1_r</span><span class="p">,</span>
+            <span class="n">cc1_s</span><span class="p">,</span>
+            <span class="n">edge_clk</span><span class="p">,</span>
+            <span class="n">edge_d</span><span class="p">,</span>
+            <span class="n">edge_r</span><span class="p">,</span>
+            <span class="n">edge_s</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span>
+            <span class="s2">&quot;in input_nodes_values_dffrs() s_r_status unknown: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s_r_status</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="current_oai_aoi">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_oai_aoi.html#re_verilog2features.scoap.calculation_observability.current_oai_aoi">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_oai_aoi</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="c1"># print(output_pin_list)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="c1"># print(output_pin)</span>
+        <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+            <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+            <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+            <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+            <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+            <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+            <span class="n">cc0_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+            <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+            <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                    <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                    <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span>
+                    <span class="n">edge_c</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_c</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_c</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;D&quot;</span><span class="p">:</span>
+                    <span class="n">edge_d</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc1_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                    <span class="n">cc0_d</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_d</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+
+    <span class="n">name_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;nodeType&quot;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name_list</span><span class="p">[</span><span class="n">gate</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;AOI21&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OAI21&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc0_c</span><span class="p">,</span> <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">cc1_c</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_c</span>
+    <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;AOI22&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OAI22&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">cc1_a</span><span class="p">,</span>
+            <span class="n">cc1_b</span><span class="p">,</span>
+            <span class="n">cc1_c</span><span class="p">,</span>
+            <span class="n">cc1_d</span><span class="p">,</span>
+            <span class="n">cc0_a</span><span class="p">,</span>
+            <span class="n">cc0_b</span><span class="p">,</span>
+            <span class="n">cc0_c</span><span class="p">,</span>
+            <span class="n">cc0_d</span><span class="p">,</span>
+            <span class="n">edge_a</span><span class="p">,</span>
+            <span class="n">edge_b</span><span class="p">,</span>
+            <span class="n">edge_c</span><span class="p">,</span>
+            <span class="n">edge_d</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;No AOI21, AOI22, OAI21, OAI22, NAME_iSSUE: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gate</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="current_mux">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.scoap.calculation_observability.current_mux.html#re_verilog2features.scoap.calculation_observability.current_mux">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_mux</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;input values for mux with A, B, S&quot;&quot;&quot;</span>
+    <span class="n">output_pin_list</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="s2">&quot;inpin&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">gate</span><span class="p">):</span>
+        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">output_pin_list</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span>
+        <span class="c1"># print(output_pin)</span>
+        <span class="k">if</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+            <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+            <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">output_pin</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+            <span class="n">edge_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+            <span class="n">cc0_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+            <span class="n">cc1_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">edge_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_pin</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">output_pin</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+                    <span class="n">edge_a</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_a</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_a</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span>
+                    <span class="n">edge_b</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_b</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_b</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+                    <span class="n">edge_s</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[(</span><span class="mi">0</span><span class="p">)]</span>
+                    <span class="n">cc0_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC0&quot;</span><span class="p">]</span>
+                    <span class="n">cc1_s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">edge_s</span><span class="p">][</span><span class="s2">&quot;CC1&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span>
+                <span class="s2">&quot;In aoi21_function new input, no A, B, S, output_pin NAME: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">output_pin</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">cc0_a</span><span class="p">,</span> <span class="n">cc0_b</span><span class="p">,</span> <span class="n">cc0_s</span><span class="p">,</span> <span class="n">cc1_a</span><span class="p">,</span> <span class="n">cc1_b</span><span class="p">,</span> <span class="n">cc1_s</span><span class="p">,</span> <span class="n">edge_a</span><span class="p">,</span> <span class="n">edge_b</span><span class="p">,</span> <span class="n">edge_s</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

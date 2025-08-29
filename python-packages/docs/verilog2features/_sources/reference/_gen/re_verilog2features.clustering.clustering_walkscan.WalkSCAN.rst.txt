@@ -1,0 +1,29 @@
+re\_verilog2features.clustering.clustering\_walkscan.WalkSCAN
+=============================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_walkscan
+
+.. autoclass:: WalkSCAN
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~WalkSCAN.__init__
+      ~WalkSCAN.aggregate_outliers
+      ~WalkSCAN.compute_core_average_value
+      ~WalkSCAN.detect_communities
+      ~WalkSCAN.embed_nodes
+      ~WalkSCAN.find_cores
+      ~WalkSCAN.load
+      ~WalkSCAN.sort_cores
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+re\_verilog2features.cli.partition2gephi.read\_original\_graph
+==============================================================
+
+.. currentmodule:: re_verilog2features.cli.partition2gephi
+
+.. autofunction:: re_verilog2features.cli.partition2gephi.read_original_graph

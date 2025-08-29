@@ -1,0 +1,57 @@
+.. module:: re_verilog2features
+
+re_verilog2features
+===================
+
+
+.. autosummary::
+    :toctree: _gen/
+
+    re_verilog2features.cli.make_features
+    re_verilog2features.cli.make_scoap
+    re_verilog2features.cli.run_clustering
+    re_verilog2features.cli.make_hasegawa_df
+    re_verilog2features.cli.make_scoap
+    re_verilog2features.cli.partition2gephi
+    re_verilog2features.graph_algo_func
+    re_verilog2features.read_graph_and_make_scoap
+    re_verilog2features.scoap.run_and_parse_tmax
+
+deprecated modules
+------------------
+
+.. autosummary::
+    :toctree: _gen/
+
+    re_verilog2features.cli.run_make_csv
+    re_verilog2features.cli.run_csv_to_hdf5
+
+undocumented modules
+--------------------
+
+These modules are currently basically undocumented.
+
+.. autosummary::
+    :toctree: _gen/
+
+    re_verilog2features.cluster_csv_file
+    re_verilog2features.create_data
+    re_verilog2features.globalArgParse
+    re_verilog2features.read_adjlist_and_make_csv
+    re_verilog2features.read_graph_and_make_features
+    re_verilog2features.read_graph_and_make_scoap
+    re_verilog2features.hasegawa_et_al
+    re_verilog2features.clustering.clustering_algorithms
+    re_verilog2features.clustering.clustering_cmty
+    re_verilog2features.clustering.clustering_params_default
+    re_verilog2features.clustering.clustering_walkscan
+    re_verilog2features.clustering.clustering_workflow
+    re_verilog2features.scoap.calculation_controllability
+    re_verilog2features.scoap.calculation_observability
+    re_verilog2features.scoap.graph_list
+    re_verilog2features.scoap.levelization_observability
+    re_verilog2features.scoap.levelization
+
+.. testsetup::
+
+    from re_verilog2features import *

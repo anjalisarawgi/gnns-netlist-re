@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.prepare\_generic\_cells.get\_var\_from\_tcsh
+===================================================================
+
+.. currentmodule:: tueisec_myparsing.cli.prepare_generic_cells
+
+.. autofunction:: tueisec_myparsing.cli.prepare_generic_cells.get_var_from_tcsh

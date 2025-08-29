@@ -1,0 +1,6 @@
+tueisec\_myparsing.netreplace.replace\_nets
+===========================================
+
+.. currentmodule:: tueisec_myparsing.netreplace
+
+.. autofunction:: tueisec_myparsing.netreplace.replace_nets

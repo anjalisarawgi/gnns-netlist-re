@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_lexer.VerilogLexer.t\_IFDEF\_DIRECTIVE
+===========================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_lexer
+
+.. autoattribute:: tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.t_IFDEF_DIRECTIVE

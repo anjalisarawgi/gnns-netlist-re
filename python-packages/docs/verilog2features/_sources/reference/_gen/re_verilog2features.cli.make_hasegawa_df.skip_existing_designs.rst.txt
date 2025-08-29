@@ -1,0 +1,6 @@
+re\_verilog2features.cli.make\_hasegawa\_df.skip\_existing\_designs
+===================================================================
+
+.. currentmodule:: re_verilog2features.cli.make_hasegawa_df
+
+.. autofunction:: re_verilog2features.cli.make_hasegawa_df.skip_existing_designs

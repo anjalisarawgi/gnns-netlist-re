@@ -1,0 +1,24 @@
+﻿tueisec\_myparsing.verilog\_parsing\_errors
+===========================================
+
+.. automodule:: tueisec_myparsing.verilog_parsing_errors
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+    :toctree: .
+   
+      ASTParsingError
+      VerilogParsingError
+   
+   

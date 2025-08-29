@@ -1,0 +1,6 @@
+re\_verilog2features.cluster\_csv\_file.CSVFile.read\_csvs\_to\_list
+====================================================================
+
+.. currentmodule:: re_verilog2features.cluster_csv_file
+
+.. automethod:: re_verilog2features.cluster_csv_file.CSVFile.read_csvs_to_list

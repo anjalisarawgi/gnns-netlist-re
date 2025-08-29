@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_algorithms.write\_cluster\_boundaries
+=================================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_algorithms
+
+.. autofunction:: re_verilog2features.clustering.clustering_algorithms.write_cluster_boundaries

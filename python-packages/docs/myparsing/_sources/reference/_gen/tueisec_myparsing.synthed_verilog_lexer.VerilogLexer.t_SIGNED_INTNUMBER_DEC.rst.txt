@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_lexer.VerilogLexer.t\_SIGNED\_INTNUMBER\_DEC
+=================================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_lexer
+
+.. autoattribute:: tueisec_myparsing.synthed_verilog_lexer.VerilogLexer.t_SIGNED_INTNUMBER_DEC

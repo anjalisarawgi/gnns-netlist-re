@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.calculation\_controllability.aoi22\_function
+=======================================================================
+
+.. currentmodule:: re_verilog2features.scoap.calculation_controllability
+
+.. autofunction:: re_verilog2features.scoap.calculation_controllability.aoi22_function

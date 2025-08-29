@@ -1,0 +1,6 @@
+tueisec\_myparsing.stateful\_verilog\_parsing\_helpers.VerilogCommentRemover.line\_has\_inline\_comment\_re
+===========================================================================================================
+
+.. currentmodule:: tueisec_myparsing.stateful_verilog_parsing_helpers
+
+.. autoattribute:: tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.line_has_inline_comment_re

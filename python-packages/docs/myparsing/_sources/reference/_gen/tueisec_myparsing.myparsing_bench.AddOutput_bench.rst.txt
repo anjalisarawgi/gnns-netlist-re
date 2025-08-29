@@ -1,0 +1,6 @@
+tueisec\_myparsing.myparsing\_bench.AddOutput\_bench
+====================================================
+
+.. currentmodule:: tueisec_myparsing.myparsing_bench
+
+.. autofunction:: tueisec_myparsing.myparsing_bench.AddOutput_bench

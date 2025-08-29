@@ -1,0 +1,6 @@
+re\_verilog2features.cli.make\_hasegawa\_df.load\_cells
+=======================================================
+
+.. currentmodule:: re_verilog2features.cli.make_hasegawa_df
+
+.. autofunction:: re_verilog2features.cli.make_hasegawa_df.load_cells

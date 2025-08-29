@@ -1,0 +1,41 @@
+============
+Installation
+============
+
+Preliminary
+-----------
+
+As python can not resolve the ``tueisec_myparsing`` package by itself, please go to https://git-int.aisec.fraunhofer.de/hws/tools/chip_reverse_engineering/tum_re_parsing and install this package, too.
+
+As wheel installation **cannot** execute any post install scripts, we cannot check if all requirements are installed. Especially ` ``mcl`` <https://micans.org/mcl/>` needs to be installed. 
+.. ~ * Easiest way: Use a chair computer, it's preinstalled.
+* Easy way: Use your package manager, it is available in ubuntu, debian, arch under its name. 
+* Hard way: Download and compile from `the project website <https://micans.org/mcl/src>`.
+
+Download
+--------
+
+The primary way of installation is by downloading the release wheel. Go to the |release-page|_ and download the latest ``re_verilog2features.whl``. 
+
+Install
+-------
+
+You can then install using
+
+.. code-block:: bash
+
+    pip install re_verilog2features-<version>-py2.py3-none-any.whl
+
+.. warning::
+    This package might require ``graph-tool`` which is not installable via pip and therefore not installed when installing this package. Please make sure that ``graph-tool`` is installed on your computer / in your virtualenv, if you intend to use it (See :doc:`the reference </reference/index>`).
+
+    Typically, you can force-install ``graph-tool`` in virtualenv by 
+
+    ::
+
+        ln -s /usr/lib/python3/dist-packages/graph_tool /path/to/your/venv/lib/python<whateveryouhave>/site-packages/graph_tool
+
+    when it is installed in your ubuntu already. This is not recognized by pip, unfortunately...
+
+.. warning::
+    This package allows arbitrary code execution via ``run_make_csv``'s ``-f`` flag. Think twice before you install it anywhere.

@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.create_data &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.create_data</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Feature extraction functions, to be used with read_adjlist_and_make_csv.py</span>
+
+<span class="sd">CAREFUL: If you do not want OPENBLAS / ARPACK to use all cores of the host system, use</span>
+<span class="sd">this line BEFORE importing this or any of nx, np, scipy, pandas etc.! ::</span>
+
+<span class="sd">    os.environ[&quot;OPENBLAS_NUM_THREADS&quot;] = str(&lt;number_of_cores&gt;)</span>
+
+<span class="sd">Also be careful because this parameter is threads per python process, so if you</span>
+<span class="sd">use multiprocessing, consider that #total_treads = #multiprocessing_pools *</span>
+<span class="sd">OPENBLAS_NUM_THREADS</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># imports</span>
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">statistics</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatisticsError</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">igraph</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ig</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyintergraph</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.globalArgParse</span><span class="w"> </span><span class="kn">import</span> <span class="n">GLOBAL_PARSER</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">re_verilog2features.graph_algo_func</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">betweenness_centrality_pivot</span><span class="p">,</span>
+    <span class="n">nx2gt</span><span class="p">,</span>
+    <span class="n">nx2igraph</span><span class="p">,</span>
+    <span class="n">sparse_katz_centrality_numpy</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">setrecursionlimit</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="node_type_ratios">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.node_type_ratios.html#re_verilog2features.create_data.node_type_ratios">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">node_type_ratios</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">node_types</span><span class="p">,</span> <span class="n">design_file</span><span class="p">):</span>
+
+    <span class="c1"># initialise</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Doing node type rations for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+
+    <span class="c1"># count all cells into AND OR ETC first</span>
+
+    <span class="n">cell_types</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;AND&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;OR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;NOR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;NAND&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;XOR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;XNOR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;MUX&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;INV&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;DFF&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AOI&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;OAI&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;BUF&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="p">:</span>
+
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;Nr of &quot;</span> <span class="o">+</span> <span class="n">cell</span> <span class="o">+</span> <span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;Node Type Ratio for &quot;</span> <span class="o">+</span> <span class="n">cell</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">node_type_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">node_list</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">node_types</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;INPUT&quot;</span><span class="p">,</span> <span class="s2">&quot;OUTPUT&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">node_list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cell_types</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">cell</span><span class="p">):</span>
+                <span class="n">node_type_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+
+    <span class="n">total_nodes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_type_list</span><span class="p">)</span>
+    <span class="n">node_type_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">node_type_list</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">number</span> <span class="ow">in</span> <span class="n">node_type_counter</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;Nr of &quot;</span> <span class="o">+</span> <span class="n">node_type</span> <span class="o">+</span> <span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">number</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;Node Type Ratio for &quot;</span> <span class="o">+</span> <span class="n">node_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">number</span> <span class="o">/</span> <span class="n">total_nodes</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="statistics_of_series">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.statistics_of_series.html#re_verilog2features.create_data.statistics_of_series">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">statistics_of_series</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">node_list</span><span class="p">,</span> <span class="n">list_len</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">):</span>
+
+    <span class="n">bins</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;betweenness_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)],</span>
+        <span class="s2">&quot;degree&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">330</span><span class="p">)],</span>
+        <span class="s2">&quot;closeness_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)],</span>
+        <span class="s2">&quot;degree_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)],</span>
+        <span class="s2">&quot;degree_in_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)],</span>
+        <span class="s2">&quot;degree_out_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)],</span>
+        <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.04</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">)],</span>
+        <span class="s2">&quot;in_degree&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">)],</span>
+        <span class="s2">&quot;in_edge_katz_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)],</span>
+        <span class="s2">&quot;load_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span>
+        <span class="s2">&quot;out_edge_katz_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)],</span>
+        <span class="s2">&quot;pagerank&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)],</span>
+    <span class="p">}</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;getting statistics (df) for &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot; for design &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;average_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;min_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;max_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;mode_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;median_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;entropy_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_bin&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1"># average</span>
+    <span class="n">name1</span> <span class="o">=</span> <span class="s2">&quot;average_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name1</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_list</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+    <span class="c1"># max</span>
+    <span class="n">name2</span> <span class="o">=</span> <span class="s2">&quot;max_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name2</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_list</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+    <span class="c1"># min</span>
+    <span class="n">name3</span> <span class="o">=</span> <span class="s2">&quot;min_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name3</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_list</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+
+    <span class="c1"># mode</span>
+    <span class="n">name4</span> <span class="o">=</span> <span class="s2">&quot;mode_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name4</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">node_list</span><span class="o">.</span><span class="n">mode</span><span class="p">())</span>
+
+    <span class="c1"># median</span>
+    <span class="n">name5</span> <span class="o">=</span> <span class="s2">&quot;median_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name5</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_list</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+    <span class="c1"># entropy</span>
+    <span class="n">name6</span> <span class="o">=</span> <span class="s2">&quot;entropy_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name6</span><span class="p">]</span> <span class="o">=</span> <span class="n">entropy</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span>
+
+    <span class="c1"># histogram of lists:</span>
+    <span class="c1"># figure out good bins based on data up to now for each statistic</span>
+    <span class="c1"># todo: good histogram bins.</span>
+
+    <span class="n">freq</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">node_list</span><span class="p">,</span> <span class="n">bins</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">bins</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">freq</span><span class="p">)):</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_bin&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">freq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">list_len</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="statistics_of_list">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.statistics_of_list.html#re_verilog2features.create_data.statistics_of_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">statistics_of_list</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">node_list</span><span class="p">,</span> <span class="n">list_len</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">):</span>
+
+    <span class="n">bins</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;betweenness_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)],</span>
+        <span class="s2">&quot;degree&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">330</span><span class="p">)],</span>
+        <span class="s2">&quot;closeness_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)],</span>
+        <span class="s2">&quot;degree_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)],</span>
+        <span class="s2">&quot;degree_in_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)],</span>
+        <span class="s2">&quot;degree_out_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)],</span>
+        <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.04</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">)],</span>
+        <span class="s2">&quot;in_degree&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">)],</span>
+        <span class="s2">&quot;in_edge_katz_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)],</span>
+        <span class="s2">&quot;load_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span>
+        <span class="s2">&quot;out_edge_katz_centrality&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)],</span>
+        <span class="s2">&quot;pagerank&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)],</span>
+    <span class="p">}</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;getting statistics for &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot; for design &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;average_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;min_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;max_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;mode_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;median_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;entropy_&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_bin&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1"># average</span>
+    <span class="n">name1</span> <span class="o">=</span> <span class="s2">&quot;average_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span> <span class="o">/</span> <span class="n">list_len</span>
+
+    <span class="c1"># max</span>
+    <span class="n">name2</span> <span class="o">=</span> <span class="s2">&quot;max_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span>
+
+    <span class="c1"># min</span>
+    <span class="n">name3</span> <span class="o">=</span> <span class="s2">&quot;min_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name3</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span>
+
+    <span class="c1"># mode</span>
+    <span class="n">name4</span> <span class="o">=</span> <span class="s2">&quot;mode_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">name4</span><span class="p">]</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">StatisticsError</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">name4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># median</span>
+    <span class="n">name5</span> <span class="o">=</span> <span class="s2">&quot;median_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name5</span><span class="p">]</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span>
+    <span class="c1"># entropy</span>
+    <span class="n">name6</span> <span class="o">=</span> <span class="s2">&quot;entropy_&quot;</span> <span class="o">+</span> <span class="n">name</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">name6</span><span class="p">]</span> <span class="o">=</span> <span class="n">entropy</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span>
+
+    <span class="c1"># histogram of lists:</span>
+    <span class="c1"># figure out good bins based on data up to now for each statistic</span>
+    <span class="c1"># todo: good histogram bins.</span>
+
+    <span class="n">freq</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">node_list</span><span class="p">,</span> <span class="n">bins</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">bins</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">freq</span><span class="p">)):</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_bin&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">freq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">list_len</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="entropy">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.entropy.html#re_verilog2features.create_data.entropy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">entropy</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">p_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># calculates the probabilities</span>
+    <span class="n">entropy</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">p_data</span><span class="p">)</span>  <span class="c1"># input probabilities to get the entropy</span>
+    <span class="k">return</span> <span class="n">entropy</span></div>
+
+
+
+<div class="viewcode-block" id="graph_tests_nx">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.graph_tests_nx.html#re_verilog2features.create_data.graph_tests_nx">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">graph_tests_nx</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;run the graph_tests algorithms solely with networkx</span>
+
+<span class="sd">    :param graph: graph to analyze</span>
+<span class="sd">    :type graph: networkx.Graph</span>
+<span class="sd">    :param result: result dictionary where the calculation results should be added</span>
+<span class="sd">    :type result: dict</span>
+<span class="sd">    :param design_file: name of the design file for debuggin purposes</span>
+<span class="sd">    :type design_file: str</span>
+<span class="sd">    :return: returns the result dict again</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;running graph tests with nx&quot;</span><span class="p">)</span>
+
+    <span class="c1"># number of nodes for further calculations</span>
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()</span>
+    <span class="n">nedges</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_edges</span><span class="p">()</span>
+    <span class="n">undirected</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">()</span>
+
+    <span class="c1"># Functions of graph</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;graph function tests for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;number_of_nodes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nnodes</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;number_of_edges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nedges</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">graph</span><span class="p">))</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;in_degree&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">in_degree</span><span class="p">())</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+            <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span>
+            <span class="nb">list</span><span class="p">(</span>
+                <span class="nb">dict</span><span class="p">(</span>
+                    <span class="n">nx</span><span class="o">.</span><span class="n">eigenvector_centrality_numpy</span><span class="p">(</span>
+                        <span class="n">undirected</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">eigs_tolerance</span>
+                    <span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="p">),</span>
+            <span class="n">nnodes</span><span class="p">,</span>
+            <span class="n">result</span><span class="p">,</span>
+            <span class="n">design_file</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate eigenvector centrality in &quot;</span>
+            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> with </span><span class="si">%s</span><span class="s2"> nodes and </span><span class="si">%s</span><span class="s2"> edges due to: &quot;</span><span class="p">,</span>
+            <span class="n">design_file</span><span class="p">,</span>
+            <span class="n">nnodes</span><span class="p">,</span>
+            <span class="n">nedges</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+            <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span> <span class="p">[],</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+        <span class="p">)</span>
+
+    <span class="c1"># pivots generation. THIS HEAVILY BIASES THE betweenness CALUCALTION!</span>
+
+    <span class="c1"># We calculate the pivots as all graph inputs, where graph is the DIRECTED</span>
+    <span class="c1"># version of the netlist. The betweenness calculation then only considers</span>
+    <span class="c1"># shortest paths starting at the input nodes of the graph, to every node in</span>
+    <span class="c1"># the graph. This causes a significant speedup, but heavily biases the</span>
+    <span class="c1"># calculation as not nearly all shortest paths are considered. In the realm</span>
+    <span class="c1"># of netlists, actually this should not be problematic, as data can not flow</span>
+    <span class="c1"># between arbitrary nodes, but rather only from inputs to the nodes.</span>
+    <span class="n">pivots</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_degree</span><span class="p">()</span> <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;betweenness_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">betweenness_centrality_pivot</span><span class="p">(</span><span class="n">undirected</span><span class="p">,</span> <span class="n">pivots</span><span class="p">))</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;############graph algorithm tests for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span>
+            <span class="s2">&quot;degree_assortativity_coefficient&quot;</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">degree_assortativity_coefficient</span><span class="p">(</span>
+            <span class="n">graph</span>
+        <span class="p">)</span>  <span class="c1"># Assortativity measures the similarity of connections in the graph with</span>
+        <span class="c1"># respect to the node degree.</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate degree_assortativity_coefficient in </span><span class="si">%s</span><span class="s2"> due to: &quot;</span><span class="p">,</span>
+            <span class="n">design_file</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;degree_assortativity_coefficient&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">degree_centrality</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_in_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">in_degree_centrality</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_out_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">out_degree_centrality</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_series</span><span class="p">(</span>
+        <span class="s2">&quot;closeness_centrality&quot;</span><span class="p">,</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">closeness_centrality</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;pagerank&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">pagerank</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;in_edge_katz_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">katz_centrality_numpy</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">reverse</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">reverse</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;out_edge_katz_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">katz_centrality_numpy</span><span class="p">(</span><span class="n">reverse</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;condenstation-factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">condensation</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span> <span class="o">/</span> <span class="n">nnodes</span>
+    <span class="p">)</span>  <span class="c1"># condensation removes all strongly connected components, replacing them with a single node</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;len_dominating_set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span>
+        <span class="n">nx</span><span class="o">.</span><span class="n">dominating_set</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1"># fixme: different values sometimes?</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flow_hierarchy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">flow_hierarchy</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate flow_hierarchy in </span><span class="si">%s</span><span class="s2"> due to: &quot;</span><span class="p">,</span> <span class="n">design_file</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flow_hierarchy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="graph_tests">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.graph_tests.html#re_verilog2features.create_data.graph_tests">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">graph_tests</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;run the graph_tests algorithms partially using igraph, graph_tool and networkx</span>
+
+<span class="sd">    This is a hand-tested function using the fastest implementation</span>
+<span class="sd">    of graph algorithms from the three libraries. Use this by default.</span>
+
+<span class="sd">    .. note::</span>
+
+<span class="sd">        This imports graph_tool, which is not in the requirements of the</span>
+<span class="sd">        re_verilog2features package and must be installed manually.</span>
+
+<span class="sd">        If you can not install it, use the slower :py:func:`graph_tests_nx`, for</span>
+<span class="sd">        example with `--use_nx`</span>
+
+<span class="sd">    :param graph: graph to analyze</span>
+<span class="sd">    :type graph: networkx.Graph</span>
+<span class="sd">    :param result: result dictionary where the calculation results should be added</span>
+<span class="sd">    :type result: dict</span>
+<span class="sd">    :param design_file: name of the design file for debuggin purposes</span>
+<span class="sd">    :type design_file: str</span>
+<span class="sd">    :return: returns the result dict again</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Import graph tool just here, only if the user actually wants the</span>
+    <span class="c1"># graph_tool based flow</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">graph_tool.centrality</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">graph_tool.topology</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">graph_tool.util</span>
+
+        <span class="n">graph_tool</span><span class="o">.</span><span class="n">openmp_set_num_threads</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">gt_cores</span><span class="p">)</span>
+        <span class="n">graph_tool</span><span class="o">.</span><span class="n">openmp_set_schedule</span><span class="p">(</span><span class="s2">&quot;guided&quot;</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+            <span class="s2">&quot;Late import of graph-tool failed. You probably do not have it &quot;</span>
+            <span class="s2">&quot;installed. Please use the networkx-only calculation &quot;</span>
+            <span class="s2">&quot;`graph_tests_nx`, eg. with `--use_nx`.&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;running graph tests (fastest)&quot;</span><span class="p">)</span>
+
+    <span class="c1"># number of nodes for further calculations</span>
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()</span>
+    <span class="n">nedges</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_edges</span><span class="p">()</span>
+    <span class="n">undirected</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">()</span>
+
+    <span class="n">ig_graph</span> <span class="o">=</span> <span class="n">nx2igraph</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="c1"># ig_graph_u = pyintergraph.nx2igraph(undirected)</span>
+
+    <span class="c1"># Functions of graph</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;graph function tests for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;number_of_nodes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nnodes</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;number_of_edges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nedges</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">loops</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">degree</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vs</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">degree</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="n">in_degree</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;in_degree&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">in_degree</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">eig_centr</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">nx</span><span class="o">.</span><span class="n">eigenvector_centrality_numpy</span><span class="p">(</span>
+                <span class="n">undirected</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">eigs_tolerance</span>
+            <span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate eigenvector centrality in </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%d</span><span class="s2"> &quot;</span>
+            <span class="s2">&quot;nodes and </span><span class="si">%d</span><span class="s2"> edges due to: &quot;</span><span class="p">,</span>
+            <span class="n">design_file</span><span class="p">,</span>
+            <span class="n">nnodes</span><span class="p">,</span>
+            <span class="n">nedges</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+            <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span> <span class="p">[],</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+                <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">eig_centr</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                <span class="s2">&quot;Could not calculate eigenvector centrality statistics &quot;</span>
+                <span class="s2">&quot;in </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%d</span><span class="s2"> nodes and </span><span class="si">%d</span><span class="s2"> edges due to: &quot;</span><span class="p">,</span>
+                <span class="n">design_file</span><span class="p">,</span>
+                <span class="n">nnodes</span><span class="p">,</span>
+                <span class="n">nedges</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+                <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span> <span class="p">[],</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+            <span class="p">)</span>
+
+    <span class="c1"># pivots generation. THIS HEAVILY BIASES THE betweenness CALUCALTION!</span>
+
+    <span class="c1"># We calculate the pivots as all graph inputs, where graph is the DIRECTED</span>
+    <span class="c1"># version of the netlist. The betweenness calculation then only considers</span>
+    <span class="c1"># shortest paths starting at the input nodes of the graph, to every node in</span>
+    <span class="c1"># the graph. This causes a significant speedup, but heavily biases the</span>
+    <span class="c1"># calculation as not nearly all shortest paths are considered. In the realm</span>
+    <span class="c1"># of netlists, actually this should not be problematic, as data can not flow</span>
+    <span class="c1"># between arbitrary nodes, but rather only from inputs to the nodes.</span>
+    <span class="n">gt_graph_d</span> <span class="o">=</span> <span class="n">nx2gt</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">labelname</span><span class="o">=</span><span class="s2">&quot;node_name&quot;</span><span class="p">)</span>
+    <span class="n">gt_graph</span> <span class="o">=</span> <span class="n">nx2gt</span><span class="p">(</span><span class="n">undirected</span><span class="p">,</span> <span class="n">labelname</span><span class="o">=</span><span class="s2">&quot;node_name&quot;</span><span class="p">)</span>
+    <span class="n">pivots_number</span> <span class="o">=</span> <span class="n">graph_tool</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_vertex</span><span class="p">(</span><span class="n">gt_graph_d</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">pivots_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">gt_graph_d</span><span class="o">.</span><span class="n">vp</span><span class="o">.</span><span class="n">node_name</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">pivots_number</span><span class="p">]</span>
+    <span class="n">pivots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">graph_tool</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_vertex</span><span class="p">(</span><span class="n">gt_graph</span><span class="p">,</span> <span class="n">gt_graph</span><span class="o">.</span><span class="n">vp</span><span class="o">.</span><span class="n">node_name</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">pivots_names</span>
+        <span class="p">]</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+    <span class="n">vp</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">graph_tool</span><span class="o">.</span><span class="n">centrality</span><span class="o">.</span><span class="n">betweenness</span><span class="p">(</span><span class="n">gt_graph</span><span class="p">,</span> <span class="n">pivots</span><span class="o">=</span><span class="n">pivots</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;betweenness_centrality&quot;</span><span class="p">,</span> <span class="n">vp</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="k">del</span> <span class="n">gt_graph</span>
+    <span class="k">del</span> <span class="n">gt_graph_d</span>
+
+    <span class="c1"># THIS WOULD USE nx and is a bit slower. commented out.</span>
+    <span class="c1"># # pivots generation. THIS HEAVILY BIASES THE betweenness CALUCALTION!</span>
+
+    <span class="c1"># # We calculate the pivots as all graph inputs, where graph is the DIRECTED</span>
+    <span class="c1"># # version of the netlist. The betweenness calculation then only considers</span>
+    <span class="c1"># # shortest paths starting at the input nodes of the graph, to every node in</span>
+    <span class="c1"># # the graph. This causes a significant speedup, but heavily biases the</span>
+    <span class="c1"># # calculation as not nearly all shortest paths are considered. In the realm</span>
+    <span class="c1"># # of netlists, actually this should not be problematic, as data can not flow</span>
+    <span class="c1"># # between arbitrary nodes, but rather only from inputs to the nodes.</span>
+    <span class="c1"># pivots = [x for x, y in graph.in_degree() if y == 0]</span>
+
+    <span class="c1"># result = statistics_of_list(</span>
+    <span class="c1">#     &quot;betweenness_centrality&quot;,</span>
+    <span class="c1">#     list(dict(betweenness_centrality_pivot(undirected, pivots)).values()),</span>
+    <span class="c1">#     nnodes,</span>
+    <span class="c1">#     result,</span>
+    <span class="c1">#     design_file,</span>
+    <span class="c1"># )</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;############graph algorithm tests for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;degree_assortativity_coefficient&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">assortativity_degree</span><span class="p">()</span>
+        <span class="c1"># Assortativity measures the similarity of connections in the graph with</span>
+        <span class="c1"># respect to the node degree.</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate degree_assortativity_coefficient in </span><span class="si">{}</span><span class="s2"> due to: &quot;</span><span class="p">,</span>
+            <span class="n">design_file</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;degree_assortativity_coefficient&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="o">*</span> <span class="n">s</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">()]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_centrality&quot;</span><span class="p">,</span> <span class="n">deg_centr</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">in_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">in_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="o">*</span> <span class="n">s</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_in_centrality&quot;</span><span class="p">,</span> <span class="n">in_deg_centr</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">out_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">out_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="o">*</span> <span class="n">s</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_out_centrality&quot;</span><span class="p">,</span> <span class="n">out_deg_centr</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="n">closeness</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">closeness</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)</span>
+
+    <span class="c1"># to comply with networkx closeness, fill NaN with 0</span>
+    <span class="c1"># NaN happens if a node has no incoming paths</span>
+    <span class="c1"># (eg. INPUTs)</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">closeness</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_series</span><span class="p">(</span>
+        <span class="s2">&quot;closeness_centrality&quot;</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="n">pagerank</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">personalized_pagerank</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span><span class="s2">&quot;pagerank&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">pagerank</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">)</span>
+
+    <span class="c1"># TODO: katz in igraph</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;in_edge_katz_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">sparse_katz_centrality_numpy</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">reverse</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">reverse</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;out_edge_katz_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">sparse_katz_centrality_numpy</span><span class="p">(</span><span class="n">reverse</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;condenstation-factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">components</span><span class="p">(</span><span class="n">ig</span><span class="o">.</span><span class="n">STRONG</span><span class="p">))</span> <span class="o">/</span> <span class="n">nnodes</span>
+    <span class="p">)</span>  <span class="c1"># condensation removes all strongly connected components, replacing them with a single node</span>
+
+    <span class="c1"># TODO igraph</span>
+
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;len_dominating_set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span>
+        <span class="n">nx</span><span class="o">.</span><span class="n">dominating_set</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1"># fixme: different values sometimes?</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flow_hierarchy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">ecount</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">components</span><span class="p">(</span><span class="n">ig</span><span class="o">.</span><span class="n">STRONG</span><span class="p">)</span><span class="o">.</span><span class="n">subgraphs</span><span class="p">()</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">ecount</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate flow_hierarchy in </span><span class="si">{}</span><span class="s2"> due to: &quot;</span><span class="p">,</span> <span class="n">design_file</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flow_hierarchy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="graph_tests_ig">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.graph_tests_ig.html#re_verilog2features.create_data.graph_tests_ig">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">graph_tests_ig</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;run the graph_tests algorithms partially using igraph, graph_tool and networkx</span>
+
+<span class="sd">    This is a hand-tested function using the fastest implementation</span>
+<span class="sd">    of graph algorithms from the three libraries. Use this by default.</span>
+
+<span class="sd">    .. note::</span>
+
+<span class="sd">        This imports graph_tool, which is not in the requirements of the</span>
+<span class="sd">        re_verilog2features package and must be installed manually.</span>
+
+<span class="sd">        If you can not install it, use the slower :py:func:`graph_tests_nx`, for</span>
+<span class="sd">        example with `--use_nx`</span>
+
+<span class="sd">    :param graph: graph to analyze</span>
+<span class="sd">    :type graph: networkx.Graph</span>
+<span class="sd">    :param result: result dictionary where the calculation results should be added</span>
+<span class="sd">    :type result: dict</span>
+<span class="sd">    :param design_file: name of the design file for debuggin purposes</span>
+<span class="sd">    :type design_file: str</span>
+<span class="sd">    :return: returns the result dict again</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;running graph tests (fastest-igraph)&quot;</span><span class="p">)</span>
+
+    <span class="c1"># number of nodes for further calculations</span>
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()</span>
+    <span class="n">nedges</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_edges</span><span class="p">()</span>
+    <span class="n">undirected</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">()</span>
+
+    <span class="n">ig_graph</span> <span class="o">=</span> <span class="n">nx2igraph</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="c1"># ig_graph_u = pyintergraph.nx2igraph(undirected)</span>
+
+    <span class="c1"># Functions of graph</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;graph function tests for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;number_of_nodes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nnodes</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;number_of_edges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nedges</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">loops</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">degree</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vs</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">degree</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="n">in_degree</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vs</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;in_degree&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">in_degree</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">eig_centr</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">nx</span><span class="o">.</span><span class="n">eigenvector_centrality_numpy</span><span class="p">(</span>
+                <span class="n">undirected</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">eigs_tolerance</span>
+            <span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate eigenvector centrality in </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%d</span><span class="s2"> &quot;</span>
+            <span class="s2">&quot;nodes and </span><span class="si">%d</span><span class="s2"> edges due to: &quot;</span><span class="p">,</span>
+            <span class="n">design_file</span><span class="p">,</span>
+            <span class="n">nnodes</span><span class="p">,</span>
+            <span class="n">nedges</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+            <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span> <span class="p">[],</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+                <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">eig_centr</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                <span class="s2">&quot;Could not calculate eigenvector centrality statistics &quot;</span>
+                <span class="s2">&quot;in </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%d</span><span class="s2"> nodes and </span><span class="si">%d</span><span class="s2"> edges due to: &quot;</span><span class="p">,</span>
+                <span class="n">design_file</span><span class="p">,</span>
+                <span class="n">nnodes</span><span class="p">,</span>
+                <span class="n">nedges</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+                <span class="s2">&quot;eigenvector_centrality&quot;</span><span class="p">,</span> <span class="p">[],</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+            <span class="p">)</span>
+
+    <span class="c1"># pivots generation. THIS HEAVILY BIASES THE betweenness CALUCALTION!</span>
+
+    <span class="c1"># We calculate the pivots as all graph inputs, where graph is the DIRECTED</span>
+    <span class="c1"># version of the netlist. The betweenness calculation then only considers</span>
+    <span class="c1"># shortest paths starting at the input nodes of the graph, to every node in</span>
+    <span class="c1"># the graph. This causes a significant speedup, but heavily biases the</span>
+    <span class="c1"># calculation as not nearly all shortest paths are considered. In the realm</span>
+    <span class="c1"># of netlists, actually this should not be problematic, as data can not flow</span>
+    <span class="c1"># between arbitrary nodes, but rather only from inputs to the nodes.</span>
+    <span class="n">pivots</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_degree</span><span class="p">()</span> <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;betweenness_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">betweenness_centrality_pivot</span><span class="p">(</span><span class="n">undirected</span><span class="p">,</span> <span class="n">pivots</span><span class="p">))</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;############graph algorithm tests for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;degree_assortativity_coefficient&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">assortativity_degree</span><span class="p">()</span>
+        <span class="c1"># Assortativity measures the similarity of connections in the graph with</span>
+        <span class="c1"># respect to the node degree.</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate degree_assortativity_coefficient in </span><span class="si">{}</span><span class="s2"> due to: &quot;</span><span class="p">,</span>
+            <span class="n">design_file</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;degree_assortativity_coefficient&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="o">*</span> <span class="n">s</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">()]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_centrality&quot;</span><span class="p">,</span> <span class="n">deg_centr</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">in_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">in_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="o">*</span> <span class="n">s</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_in_centrality&quot;</span><span class="p">,</span> <span class="n">in_deg_centr</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">out_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">out_deg_centr</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="o">*</span> <span class="n">s</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">degree</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;degree_out_centrality&quot;</span><span class="p">,</span> <span class="n">out_deg_centr</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="n">closeness</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">closeness</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">ig</span><span class="o">.</span><span class="n">IN</span><span class="p">)</span>
+
+    <span class="c1"># to comply with networkx closeness, fill NaN with 0</span>
+    <span class="c1"># NaN happens if a node has no incoming paths</span>
+    <span class="c1"># (eg. INPUTs)</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">closeness</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_series</span><span class="p">(</span>
+        <span class="s2">&quot;closeness_centrality&quot;</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span>
+    <span class="p">)</span>
+
+    <span class="n">pagerank</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">personalized_pagerank</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span><span class="s2">&quot;pagerank&quot;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">pagerank</span><span class="p">),</span> <span class="n">nnodes</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">)</span>
+
+    <span class="c1"># TODO: katz in igraph</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;in_edge_katz_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">sparse_katz_centrality_numpy</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">reverse</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">reverse</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">statistics_of_list</span><span class="p">(</span>
+        <span class="s2">&quot;out_edge_katz_centrality&quot;</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">sparse_katz_centrality_numpy</span><span class="p">(</span><span class="n">reverse</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="n">nnodes</span><span class="p">,</span>
+        <span class="n">result</span><span class="p">,</span>
+        <span class="n">design_file</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;condenstation-factor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">components</span><span class="p">(</span><span class="n">ig</span><span class="o">.</span><span class="n">STRONG</span><span class="p">))</span> <span class="o">/</span> <span class="n">nnodes</span>
+    <span class="p">)</span>  <span class="c1"># condensation removes all strongly connected components, replacing them with a single node</span>
+
+    <span class="c1"># TODO igraph</span>
+
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;len_dominating_set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span>
+        <span class="n">nx</span><span class="o">.</span><span class="n">dominating_set</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1"># fixme: different values sometimes?</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flow_hierarchy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">ecount</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">components</span><span class="p">(</span><span class="n">ig</span><span class="o">.</span><span class="n">STRONG</span><span class="p">)</span><span class="o">.</span><span class="n">subgraphs</span><span class="p">()</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">ecount</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Could not calculate flow_hierarchy in </span><span class="si">{}</span><span class="s2"> due to: &quot;</span><span class="p">,</span> <span class="n">design_file</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">e</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flow_hierarchy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<span class="n">IS_SPLIT_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^.+\[\d+\]$&quot;</span><span class="p">)</span>
+<span class="n">NORMAL_PORT_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">&quot;(:?INPUT|OUTPUT)_(?P&lt;portname&gt;(:?(:?[a-zA-Z_])(:?[a-zA-Z_0-9$])*))\[(?P&lt;portindex&gt;\d+)\]$&quot;</span>
+<span class="p">)</span>
+<span class="n">SPLIT_PORT_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">&quot;(:?INPUT|OUTPUT)_(?P&lt;portname&gt;(:?(:?</span><span class="se">\\</span><span class="s2">\S)(:?\S)*))\[(?P&lt;portindex&gt;\d+)\]$&quot;</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="input_output_analysis">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.create_data.input_output_analysis.html#re_verilog2features.create_data.input_output_analysis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">input_output_analysis</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">design_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;get number and type of inputs and outputs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;testing input and output number and type for &quot;</span> <span class="o">+</span> <span class="n">design_file</span><span class="p">)</span>
+    <span class="c1"># find inputs and outputs to graph</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">out_degree</span><span class="p">())</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">in_degree</span><span class="p">())</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="mi">0</span><span class="p">}</span>
+
+    <span class="c1"># find inputs and outputs which were not split</span>
+    <span class="n">grouped_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inputs</span> <span class="k">if</span> <span class="n">IS_SPLIT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">x</span><span class="p">)}</span>
+    <span class="n">grouped_outputs</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">outputs</span> <span class="k">if</span> <span class="n">IS_SPLIT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">x</span><span class="p">)}</span>
+
+    <span class="n">single_inputs</span> <span class="o">=</span> <span class="n">inputs</span> <span class="o">-</span> <span class="n">grouped_inputs</span>
+    <span class="n">single_outputs</span> <span class="o">=</span> <span class="n">outputs</span> <span class="o">-</span> <span class="n">grouped_outputs</span>
+
+    <span class="n">input_groups</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">output_groups</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="n">grouped_inputs</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">NORMAL_PORT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">SPLIT_PORT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                    <span class="s2">&quot;Input analysis not performable. There is a split port I can not identify: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">inp</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">result</span>
+        <span class="n">input_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s1">&#39;portname&#39;</span><span class="p">)</span>
+        <span class="n">input_index</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s1">&#39;portindex&#39;</span><span class="p">)</span>
+
+        <span class="c1"># ~ highest_index = 0</span>
+        <span class="k">if</span> <span class="n">input_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">input_groups</span><span class="p">:</span>
+            <span class="n">input_groups</span><span class="p">[</span><span class="n">input_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_index</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">input_groups</span><span class="p">[</span><span class="n">input_name</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">input_index</span><span class="p">:</span>
+                <span class="n">input_groups</span><span class="p">[</span><span class="n">input_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_index</span>
+
+    <span class="k">for</span> <span class="n">outp</span> <span class="ow">in</span> <span class="n">grouped_outputs</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">NORMAL_PORT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">outp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">SPLIT_PORT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">outp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                    <span class="s2">&quot;Output analysis not performable. There is a split port I can not identify: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">outp</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">result</span>
+        <span class="n">output_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s1">&#39;portname&#39;</span><span class="p">)</span>
+        <span class="n">output_index</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s1">&#39;portindex&#39;</span><span class="p">)</span>
+
+        <span class="c1"># ~ highest_index = 0</span>
+        <span class="k">if</span> <span class="n">output_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">output_groups</span><span class="p">:</span>
+            <span class="n">output_groups</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_index</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">output_groups</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">output_index</span><span class="p">:</span>
+                <span class="n">output_groups</span><span class="p">[</span><span class="n">output_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_index</span>
+
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;nr_inputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;nr_single_inputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">single_inputs</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;nr_outputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;nr_single_outputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">single_outputs</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;nr_input_groups&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_groups</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;nr_output_groups&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">output_groups</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+﻿tueisec\_myparsing.cli.verilog2graph
+====================================
+
+.. automodule:: tueisec_myparsing.cli.verilog2graph
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+      output_graph
+      write_graph
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+    :toctree: .
+   
+      OutputInformation
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_parser.VerilogParser.p\_sigtype\_inout
+===========================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. automethod:: tueisec_myparsing.synthed_verilog_parser.VerilogParser.p_sigtype_inout

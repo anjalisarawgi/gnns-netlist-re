@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.MultilineFormatter.start\_section
+=====================================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. automethod:: re_verilog2features.globalArgParse.MultilineFormatter.start_section

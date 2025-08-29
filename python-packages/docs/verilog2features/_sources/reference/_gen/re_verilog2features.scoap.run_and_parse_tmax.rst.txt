@@ -1,0 +1,24 @@
+﻿re\_verilog2features.scoap.run\_and\_parse\_tmax
+================================================
+
+.. automodule:: re_verilog2features.scoap.run_and_parse_tmax
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      analyse_report
+      call_tmax
+   
+   
+
+   
+   
+   
+
+   
+   
+   

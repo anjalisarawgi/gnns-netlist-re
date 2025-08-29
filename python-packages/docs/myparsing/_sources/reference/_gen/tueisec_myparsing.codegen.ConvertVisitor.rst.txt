@@ -1,0 +1,24 @@
+tueisec\_myparsing.codegen.ConvertVisitor
+=========================================
+
+.. currentmodule:: tueisec_myparsing.codegen
+
+.. autoclass:: ConvertVisitor
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~ConvertVisitor.__init__
+      ~ConvertVisitor.generic_visit
+      ~ConvertVisitor.visit
+   
+   
+
+   
+   
+   

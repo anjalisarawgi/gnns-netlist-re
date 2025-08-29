@@ -1,0 +1,92 @@
+tueisec\_myparsing.synthed\_verilog\_lexer.VerilogLexer
+=======================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_lexer
+
+.. autoclass:: VerilogLexer
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~VerilogLexer.__init__
+      ~VerilogLexer.build
+      ~VerilogLexer.get_default_nettype
+      ~VerilogLexer.get_directives
+      ~VerilogLexer.input
+      ~VerilogLexer.reset_lineno
+      ~VerilogLexer.t_BIT_NUMBER
+      ~VerilogLexer.t_COMMENTOUT
+      ~VerilogLexer.t_DIRECTIVE
+      ~VerilogLexer.t_FLOATNUMBER
+      ~VerilogLexer.t_ID
+      ~VerilogLexer.t_IFDEF_DIRECTIVE
+      ~VerilogLexer.t_INTNUMBER_BIN
+      ~VerilogLexer.t_INTNUMBER_DEC
+      ~VerilogLexer.t_INTNUMBER_HEX
+      ~VerilogLexer.t_INTNUMBER_OCT
+      ~VerilogLexer.t_LINECOMMENT
+      ~VerilogLexer.t_NEWLINE
+      ~VerilogLexer.t_SIGNED_INTNUMBER_BIN
+      ~VerilogLexer.t_SIGNED_INTNUMBER_DEC
+      ~VerilogLexer.t_SIGNED_INTNUMBER_HEX
+      ~VerilogLexer.t_SIGNED_INTNUMBER_OCT
+      ~VerilogLexer.t_STRING_LITERAL
+      ~VerilogLexer.t_error
+      ~VerilogLexer.token
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~VerilogLexer.bin_number
+      ~VerilogLexer.bit_number
+      ~VerilogLexer.commentout
+      ~VerilogLexer.decimal_number
+      ~VerilogLexer.directive
+      ~VerilogLexer.escape_sequence
+      ~VerilogLexer.exponent_part
+      ~VerilogLexer.float_number
+      ~VerilogLexer.fractional_constant
+      ~VerilogLexer.hex_escape
+      ~VerilogLexer.hex_number
+      ~VerilogLexer.identifier
+      ~VerilogLexer.ifdef_directive
+      ~VerilogLexer.keyword
+      ~VerilogLexer.keywords
+      ~VerilogLexer.linecomment
+      ~VerilogLexer.octal_escape
+      ~VerilogLexer.octal_number
+      ~VerilogLexer.operators
+      ~VerilogLexer.reserved
+      ~VerilogLexer.signed_bin_number
+      ~VerilogLexer.signed_decimal_number
+      ~VerilogLexer.signed_hex_number
+      ~VerilogLexer.signed_octal_number
+      ~VerilogLexer.simple_escape
+      ~VerilogLexer.skipped
+      ~VerilogLexer.string_char
+      ~VerilogLexer.string_literal
+      ~VerilogLexer.t_COLON
+      ~VerilogLexer.t_COMMA
+      ~VerilogLexer.t_DOT
+      ~VerilogLexer.t_EQUALS
+      ~VerilogLexer.t_LBRACKET
+      ~VerilogLexer.t_LPAREN
+      ~VerilogLexer.t_RBRACKET
+      ~VerilogLexer.t_RPAREN
+      ~VerilogLexer.t_SEMICOLON
+      ~VerilogLexer.t_TIMES
+      ~VerilogLexer.t_ignore
+      ~VerilogLexer.tokens
+   
+   

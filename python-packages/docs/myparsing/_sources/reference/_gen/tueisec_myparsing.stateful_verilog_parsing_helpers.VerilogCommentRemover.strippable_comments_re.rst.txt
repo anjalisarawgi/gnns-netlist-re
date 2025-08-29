@@ -1,0 +1,6 @@
+tueisec\_myparsing.stateful\_verilog\_parsing\_helpers.VerilogCommentRemover.strippable\_comments\_re
+=====================================================================================================
+
+.. currentmodule:: tueisec_myparsing.stateful_verilog_parsing_helpers
+
+.. autoattribute:: tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.strippable_comments_re

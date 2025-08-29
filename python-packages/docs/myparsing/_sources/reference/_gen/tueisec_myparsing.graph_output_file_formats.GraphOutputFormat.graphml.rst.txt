@@ -1,0 +1,6 @@
+tueisec\_myparsing.graph\_output\_file\_formats.GraphOutputFormat.graphml
+=========================================================================
+
+.. currentmodule:: tueisec_myparsing.graph_output_file_formats
+
+.. autoattribute:: tueisec_myparsing.graph_output_file_formats.GraphOutputFormat.graphml

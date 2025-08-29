@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.calculation\_observability.xor\_xnor\_function
+=========================================================================
+
+.. currentmodule:: re_verilog2features.scoap.calculation_observability
+
+.. autofunction:: re_verilog2features.scoap.calculation_observability.xor_xnor_function

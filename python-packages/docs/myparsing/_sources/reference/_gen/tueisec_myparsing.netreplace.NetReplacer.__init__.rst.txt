@@ -1,0 +1,6 @@
+tueisec\_myparsing.netreplace.NetReplacer.\_\_init\_\_
+======================================================
+
+.. currentmodule:: tueisec_myparsing.netreplace
+
+.. automethod:: tueisec_myparsing.netreplace.NetReplacer.__init__

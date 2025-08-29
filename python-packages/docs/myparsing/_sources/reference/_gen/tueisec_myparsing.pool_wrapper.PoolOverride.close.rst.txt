@@ -1,0 +1,6 @@
+tueisec\_myparsing.pool\_wrapper.PoolOverride.close
+===================================================
+
+.. currentmodule:: tueisec_myparsing.pool_wrapper
+
+.. automethod:: tueisec_myparsing.pool_wrapper.PoolOverride.close

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.eda_helper_functions &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.eda_helper_functions</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!usr/bin/ipython3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyeda.inter</span><span class="w"> </span><span class="kn">import</span> <span class="n">exprvar</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyeda.boolalg.expr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyeda.parsing.boolexpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoolExprLexer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyeda.parsing.boolexpr</span>
+
+<span class="n">LEVEL_REPL_DICT</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;VSS&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Gnd&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gnd&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Vcc&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;1&#39;b1&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;1&#39;b0&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="LibertyBoolExprLexer">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.LibertyBoolExprLexer.html#tueisec_myparsing.eda_helper_functions.LibertyBoolExprLexer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LibertyBoolExprLexer</span><span class="p">(</span><span class="n">BoolExprLexer</span><span class="p">):</span>
+    <span class="n">RULES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;root&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">ignore</span><span class="p">),</span>
+
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bOr\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bAnd\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bXor\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bXnor\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bEqual\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bUnequal\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bNor\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bNand\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bOneHot0\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bOneHot\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bMajority\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bAchillesHeel\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bITE\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bImplies\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bNot\b&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">keyword</span><span class="p">),</span>
+
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[a-zA-Z_][a-zA-Z0-9_]*&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\d+&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">integer</span><span class="p">),</span>
+
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;=&gt;&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;&lt;=&gt;&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\?&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\~&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;!&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\|&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\+&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\^&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\&amp;&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\*&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">operator</span><span class="p">),</span>
+
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\(&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">punct</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\)&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">punct</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\[&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">punct</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\]&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">punct</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">punct</span><span class="p">),</span>
+            <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\.&quot;</span><span class="p">,</span> <span class="n">BoolExprLexer</span><span class="o">.</span><span class="n">punct</span><span class="p">),</span>
+        <span class="p">],</span>
+    <span class="p">}</span>
+    <span class="n">OPERATORS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;=&gt;&#39;</span>  <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_rarrow</span><span class="p">,</span>
+        <span class="s1">&#39;&lt;=&gt;&#39;</span> <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_lrarrow</span><span class="p">,</span>
+        <span class="s1">&#39;?&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_question</span><span class="p">,</span>
+        <span class="s1">&#39;:&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_colon</span><span class="p">,</span>
+        <span class="s1">&#39;~&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_not</span><span class="p">,</span>
+        <span class="s1">&#39;!&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_not</span><span class="p">,</span>
+        <span class="s1">&#39;|&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_or</span><span class="p">,</span>
+        <span class="s1">&#39;+&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_or</span><span class="p">,</span>
+        <span class="s1">&#39;&amp;&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_and</span><span class="p">,</span>
+        <span class="s1">&#39;*&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_and</span><span class="p">,</span>
+        <span class="s1">&#39;^&#39;</span>   <span class="p">:</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_xor</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_prodterm_prime</span><span class="p">(</span><span class="n">lexer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a product term&#39; expression, eliminates left recursion.&quot;&quot;&quot;</span>
+    <span class="n">tok</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">lexer</span><span class="p">)</span>
+    <span class="c1"># &#39;&amp;&#39; FACTOR PRODTERM&#39;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tok</span><span class="p">,</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">OP_and</span><span class="p">):</span>
+        <span class="n">factor</span> <span class="o">=</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">_factor</span><span class="p">(</span><span class="n">lexer</span><span class="p">)</span>
+        <span class="n">prodterm_prime</span> <span class="o">=</span> <span class="n">_prodterm_prime</span><span class="p">(</span><span class="n">lexer</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prodterm_prime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">factor</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;and&#39;</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">prodterm_prime</span><span class="p">)</span>
+    <span class="c1"># FACTOR PRODTERM&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lexer</span><span class="o">.</span><span class="n">unpop_token</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">_factor</span><span class="p">(</span><span class="n">lexer</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+            <span class="n">lexer</span><span class="o">.</span><span class="n">unpop_token</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prodterm_prime</span> <span class="o">=</span> <span class="n">_prodterm_prime</span><span class="p">(</span><span class="n">lexer</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">prodterm_prime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">factor</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;and&#39;</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">prodterm_prime</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="stringToPyeda">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.stringToPyeda.html#tueisec_myparsing.eda_helper_functions.stringToPyeda">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stringToPyeda</span><span class="p">(</span><span class="n">function_s</span><span class="p">):</span>
+
+
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;VSS&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Gnd&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;gnd&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Vcc&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;INPUT_1&#39;b1&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;INPUT_1&#39;b0&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># monkey-patch the prodterm function and the lexer</span>
+    <span class="n">oldprodterm</span> <span class="o">=</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">_prodterm_prime</span>
+    <span class="n">oldlexer</span> <span class="o">=</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">BoolExprLexer</span>
+    <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">BoolExprLexer</span> <span class="o">=</span> <span class="n">LibertyBoolExprLexer</span>
+    <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">_prodterm_prime</span> <span class="o">=</span> <span class="n">_prodterm_prime</span>
+
+    <span class="n">function_p</span> <span class="o">=</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">function_s</span><span class="p">)</span>
+    <span class="c1"># restore</span>
+    <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">_prodterm_prime</span> <span class="o">=</span> <span class="n">oldprodterm</span>
+    <span class="n">pyeda</span><span class="o">.</span><span class="n">parsing</span><span class="o">.</span><span class="n">boolexpr</span><span class="o">.</span><span class="n">BoolExprLexer</span> <span class="o">=</span> <span class="n">oldlexer</span>
+    
+    <span class="n">function_a</span> <span class="o">=</span> <span class="n">pyeda</span><span class="o">.</span><span class="n">boolalg</span><span class="o">.</span><span class="n">expr</span><span class="o">.</span><span class="n">ast2expr</span><span class="p">(</span><span class="n">function_p</span><span class="p">)</span>
+    <span class="n">function_e</span> <span class="o">=</span> <span class="n">function_a</span><span class="o">.</span><span class="n">simplify</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">function_e</span></div>
+
+
+
+<div class="viewcode-block" id="pyedaToSymbol">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.pyedaToSymbol.html#tueisec_myparsing.eda_helper_functions.pyedaToSymbol">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pyedaToSymbol</span><span class="p">(</span><span class="n">function_b</span><span class="p">):</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_b</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+    <span class="c1"># FIXME</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;And&quot;</span><span class="p">,</span> <span class="s2">&quot;and_s&quot;</span><span class="p">)</span>
+    <span class="n">function_s</span> <span class="o">=</span> <span class="n">function_s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Xor&quot;</span><span class="p">,</span> <span class="s2">&quot;xor_s&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">function_s</span></div>
+
+
+
+<div class="viewcode-block" id="vectorToList">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.vectorToList.html#tueisec_myparsing.eda_helper_functions.vectorToList">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">vectorToList</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">signal</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">):</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">offset</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">signal</span></div>
+
+
+
+<div class="viewcode-block" id="get_boolean_function_exprvar">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.get_boolean_function_exprvar.html#tueisec_myparsing.eda_helper_functions.get_boolean_function_exprvar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_boolean_function_exprvar</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">node_info</span><span class="p">,</span> <span class="n">lib</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;DFF&quot;</span><span class="p">):</span>
+
+        <span class="n">element</span> <span class="o">=</span> <span class="n">node_info</span>
+        <span class="n">cell_type</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_type&quot;</span><span class="p">)</span>
+        <span class="n">dest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dest&quot;</span><span class="p">)</span>
+
+        <span class="n">b_function</span> <span class="o">=</span> <span class="n">lib</span><span class="p">[</span><span class="n">cell_type</span><span class="p">][</span><span class="n">dest</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]][</span><span class="s2">&quot;function&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">b_function</span> <span class="o">=</span> <span class="n">exprvar</span><span class="p">(</span><span class="s2">&quot;D&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">b_function</span></div>
+
+
+
+<div class="viewcode-block" id="get_pin_destination_exprvar">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.get_pin_destination_exprvar.html#tueisec_myparsing.eda_helper_functions.get_pin_destination_exprvar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_pin_destination_exprvar</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">node_info</span><span class="p">):</span>
+    <span class="n">element</span> <span class="o">=</span> <span class="n">node_info</span>
+    <span class="c1"># cell_type = element.get(&quot;cell_type&quot;)</span>
+    <span class="n">dest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dest&quot;</span><span class="p">)</span>
+    <span class="n">src</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;src&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">src</span><span class="p">,</span> <span class="n">dest</span></div>
+
+
+
+<div class="viewcode-block" id="get_function_exprvar">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.get_function_exprvar.html#tueisec_myparsing.eda_helper_functions.get_function_exprvar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_function_exprvar</span><span class="p">(</span><span class="n">start_node</span><span class="p">,</span> <span class="n">node_info</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">nets_to_nodes</span><span class="p">,</span> <span class="n">POs</span><span class="p">):</span>
+
+    <span class="n">cell_func</span> <span class="o">=</span> <span class="n">get_boolean_function_exprvar</span><span class="p">(</span><span class="n">start_node</span><span class="p">,</span> <span class="n">node_info</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+    <span class="n">src_pin_to_net</span><span class="p">,</span> <span class="n">dest_pin_to_net</span> <span class="o">=</span> <span class="n">get_pin_destination_exprvar</span><span class="p">(</span><span class="n">start_node</span><span class="p">,</span> <span class="n">node_info</span><span class="p">)</span>
+
+    <span class="c1"># ### create template and substitution dictionary</span>
+    <span class="n">subsDict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">pin</span><span class="p">,</span> <span class="n">net</span> <span class="ow">in</span> <span class="n">src_pin_to_net</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">net</span> <span class="ow">in</span> <span class="n">LEVEL_REPL_DICT</span><span class="p">:</span>
+            <span class="n">subsDict</span><span class="p">[</span><span class="n">exprvar</span><span class="p">(</span><span class="n">pin</span><span class="p">)]</span> <span class="o">=</span> <span class="n">LEVEL_REPL_DICT</span><span class="p">[</span><span class="n">net</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net</span><span class="p">)</span> <span class="ow">in</span> <span class="n">POs</span><span class="p">:</span>  <span class="c1"># net is a PO</span>
+                <span class="n">full_net</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">))</span>
+                <span class="n">subsDict</span><span class="p">[</span><span class="n">exprvar</span><span class="p">(</span><span class="n">pin</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pyeda_escape</span><span class="p">(</span><span class="n">full_net</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">net</span> <span class="ow">in</span> <span class="n">nets_to_nodes</span><span class="p">:</span>  <span class="c1"># net corresponds to a driving node</span>
+                <span class="n">full_node</span> <span class="o">=</span> <span class="n">nets_to_nodes</span><span class="p">[</span><span class="n">net</span><span class="p">]</span>
+                <span class="n">subsDict</span><span class="p">[</span><span class="n">exprvar</span><span class="p">(</span><span class="n">pin</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pyeda_escape</span><span class="p">(</span><span class="n">full_node</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># net is neither node nor PO, it must be PI.</span>
+                <span class="n">full_net</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">))</span>
+                <span class="n">subsDict</span><span class="p">[</span><span class="n">exprvar</span><span class="p">(</span><span class="n">pin</span><span class="p">)]</span> <span class="o">=</span> <span class="n">pyeda_escape</span><span class="p">(</span><span class="n">full_net</span><span class="p">)</span>
+
+                <span class="c1">## substitute template with substitution dict</span>
+    <span class="k">return</span> <span class="n">cell_func</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">subsDict</span><span class="p">)</span></div>
+
+
+
+<span class="n">PYEDA_UNALLOWED_CHARS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">:</span> <span class="s2">&quot;_BackslasH_&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.&quot;</span><span class="p">:</span> <span class="s2">&quot;_DoT_&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;[&quot;</span><span class="p">:</span> <span class="s2">&quot;_LbrackeT_&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;]&quot;</span><span class="p">:</span> <span class="s2">&quot;_RbrackeT_&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">PYEDA_UNALLOWED_CHARS_REV</span> <span class="o">=</span> <span class="p">{</span><span class="n">value</span><span class="p">:</span> <span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">PYEDA_UNALLOWED_CHARS</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+
+<div class="viewcode-block" id="pyeda_escape">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.pyeda_escape.html#tueisec_myparsing.eda_helper_functions.pyeda_escape">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pyeda_escape</span><span class="p">(</span><span class="n">full_node</span><span class="p">):</span>
+
+    <span class="c1"># use ugly escape sequences</span>
+    <span class="k">for</span> <span class="n">find</span><span class="p">,</span> <span class="n">replace</span> <span class="ow">in</span> <span class="n">PYEDA_UNALLOWED_CHARS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">full_node</span> <span class="o">=</span> <span class="n">full_node</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">find</span><span class="p">,</span> <span class="n">replace</span><span class="p">)</span>
+    <span class="n">full_node</span> <span class="o">=</span> <span class="n">full_node</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span>
+        <span class="s2">&quot;_&quot;</span>
+    <span class="p">)</span>  <span class="c1"># should there be a dot or backslash in the beginning, dont put a _ in the beginning</span>
+    <span class="k">return</span> <span class="n">exprvar</span><span class="p">(</span><span class="n">full_node</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="rev_pyeda_escape">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.eda_helper_functions.rev_pyeda_escape.html#tueisec_myparsing.eda_helper_functions.rev_pyeda_escape">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rev_pyeda_escape</span><span class="p">(</span><span class="n">function_input</span><span class="p">):</span>
+    <span class="n">node_name</span> <span class="o">=</span> <span class="n">function_input</span>
+    <span class="k">for</span> <span class="n">find</span><span class="p">,</span> <span class="n">replace</span> <span class="ow">in</span> <span class="n">PYEDA_UNALLOWED_CHARS_REV</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">node_name</span> <span class="o">=</span> <span class="n">node_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">find</span><span class="p">,</span> <span class="n">replace</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">node_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">find</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">node_name</span> <span class="o">=</span> <span class="n">node_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">find</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">replace</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">node_name</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

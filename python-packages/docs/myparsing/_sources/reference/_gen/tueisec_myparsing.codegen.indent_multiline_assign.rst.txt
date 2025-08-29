@@ -1,0 +1,6 @@
+tueisec\_myparsing.codegen.indent\_multiline\_assign
+====================================================
+
+.. currentmodule:: tueisec_myparsing.codegen
+
+.. autofunction:: tueisec_myparsing.codegen.indent_multiline_assign

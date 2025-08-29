@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Partselect.\_\_init\_\_
+================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. automethod:: tueisec_myparsing.synthed_verilog_ast.Partselect.__init__

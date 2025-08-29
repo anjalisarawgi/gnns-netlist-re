@@ -1,0 +1,91 @@
+==========================
+Netlist Clustering Example
+==========================
+
+Example of how to use one or multiple clustering algorithms for adding hierarchical information to a synthesized netlist by grouping it into subgraphs.
+
+Preparation Steps
+-----------------
+
+.. ~ Connect to one of the student lab computers via ssh:
+
+.. ~ .. code-block:: bash
+    
+.. ~     ssh ab12cde@TUEISEC-Stu[02-16].sec.ei.tum.de
+
+.. ~ Start a tmux session:
+
+.. ~ .. code-block:: bash
+    
+.. ~     tmux
+
+Start a virtual environment:
+
+.. code-block:: bash
+    
+    source path/to/venv/name_of_venv/bin/activate 
+
+Follow the steps described in Installation.
+
+Synthesize the verilog file(s) first if no synthesized netlist is given.
+
+Use the following two parsing steps (for further details see the parsing documentation):
+
+a) Convert the design into a graph:
+
+    .. code-block:: bash
+        
+        verilog2graph qflow/postprocessed/name_of_synthesized_file.v -o graph/
+
+b) Generate hierarchical data:
+
+    .. code-block:: bash
+        
+        run_hierarchy qflow/postprocessed/name_of_synthesized_file.v -D qflow -L qflow/log/synth_name_of_synthesized_file.log -u osu035 -o qflow/hierarchy
+
+Clustering Process
+------------------ 
+
+The goal is to cluster the design into subgraphs using the previously obtained results.
+There are multiple clustering tasks that can be performed. One or multiple of these tasks can be selected: all, cluster, partition, mcl, louvain, louvain_dend, leiden-mod, leiden-cpm, walkscan, walkscan-py, io-bwn, io-bwn-rusto or nsbm.
+
+Remarks:
+
+* `all` means all clustering options; `cluster` means all clustering options except of `partition`.
+* `partition` means "golden" hierarchy, i.e., copy cells from hierarchy and re-generate the respective graph. Here the results of the `run_hierarchy` command can be used to partition the synthesized verilog file into subgraphs representing its original modules.
+* Of the remaining clustering algorithms, only `mcl`, `louvain`, `leiden-mod`, `leiden-cpm` are well tested; `io-bwn` is home-grown and not finished yet. Instead of using the `run_hierarchy` result the result from the respective clustering algorithm is used for clustering the design into subgraphs.
+* For some of the clustering options you need additional software or python packages. You will get complaints when executing it.
+* Most algorithms have a default set of parameters that are tried. You can override the default set with ``--config clustering_params.toml``. 
+  The structure of ``clustering_params.toml`` is currently undocumented. However, you will get the default params in a file when executing 
+  ``run_clustering`` in a folder where no ``clustering_params.toml`` exists yet.
+
+
+This example uses the mcl clustering (with multiple parameter settings):
+
+.. code-block:: bash
+    
+    run_clustering -u osu035 graph/top.txt --cores 8 --gt_cores 8 --task mcl -T 0.0 -i qflow/hierarchy
+
+Remark: The `run_clustering` function only accepts a text file as input graph structure at the moment. This might be changed in the future, which would also allow the user to input graphs in gml format.
+
+The output is a special format called parquet. This format was chosen because the data stored in a parquet file are especially compact, e.g., compared to the text or gml format.
+
+There is the graph created by the clustering. This output graph can be analysed in python by reading the adj.pq (the graph/adjacence list) using:
+
+.. code-block:: python
+    
+    nx.from_pandas_edgelist(pd.read_parquet("path/to/adj.pq", engine="fastparquet"), create_using=nx.DiGraph())
+
+Additionally, there is the Jaccard-index match data for this graph. Using python, the all_matched.pq can be imported like this:
+
+.. code-block:: python
+    
+    pd.read_parquet("path/to/all_matched.pq", engine="fastparquet")
+
+Each row tells you, to which module in the golden hierarchy the cluster matched, and to which percentage. The Jaccard-index can be calculated by dividing the number of elements in the combined area by the number of elements that are part of one or of both areas. Mostly only the original module that overlaps with the cluster by the highest percentage is relevant. This can be extracted from the `all_matched.pq` file by taking only the module with the highest percentage for each row. However, it is possible that other modules the cluster overlaps with should be analysed as well. Here the `all_matched.pq` could be used as well.
+
+.. note::
+    There is an ongoing effort to replace the terms cluster and clustering with partition and partitioning in our research. The terms cluster and clustering might lead to confusion with unsupervised learning methods for multidimensional data, and decomposing graphs into subgraphs is more commonly referred to as partitioning. Unfortunately, in this guide you will still find a legacy use of these terms: 
+    
+    * Partition(ing) refers to the decomposition into original modules,
+    * Cluster(ing) refers to the decomposition by a subgraph detection algorithm.

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.myparsing_bench &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.myparsing_bench</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!usr/bin/python3</span>
+
+<span class="c1">########################################################################</span>
+<span class="c1"># derived from JB, partly changed by MB, refactored by AD</span>
+<span class="c1">########################################################################</span>
+
+<span class="c1"># stdlib imports</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">plylibparser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.liberty_parsing</span><span class="w"> </span><span class="kn">import</span> <span class="n">own_parseLibertyToDataStruct</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parsed_verilog</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParsedVerilog</span>
+
+<span class="n">cell_lib</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">node_lookup</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">nets_to_nodes</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="create_nets_expl_bench">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_bench.create_nets_expl_bench.html#tueisec_myparsing.myparsing_bench.create_nets_expl_bench">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_nets_expl_bench</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;parses all nodes for explicitly declared wires/nets.</span>
+<span class="sd">    That are &quot;wire&quot;, &quot;inputs&quot; and &quot;outputs&quot;. &quot;inouts&quot; are not supported&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">prefix</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;inout&quot;</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;Inouts are not supported&quot;</span><span class="p">)</span>
+    <span class="n">nets</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">c_line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="p">:]</span>
+    <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">c_line</span> <span class="o">=</span> <span class="n">c_line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">c_line</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">):</span>
+            <span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+            <span class="n">lh</span> <span class="o">=</span> <span class="n">lh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">rh</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">rh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="n">lh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lh</span><span class="p">)</span>
+            <span class="n">rh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rh</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">lh</span> <span class="o">&lt;</span> <span class="n">rh</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                    <span class="k">if</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;OUTPUT(&quot;</span><span class="p">:</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PO&quot;</span>
+                        <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                        <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                        <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;INPUT(&quot;</span><span class="p">:</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PI&quot;</span>
+                        <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                        <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                        <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="n">node_name</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">node_type</span><span class="p">,</span>
+                                <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span>
+                                <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">,</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rh</span><span class="p">,</span> <span class="n">lh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                    <span class="k">if</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;OUTPUT(&quot;</span><span class="p">:</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PO&quot;</span>
+                        <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                        <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                        <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;INPUT(&quot;</span><span class="p">:</span>
+                        <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                        <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PI&quot;</span>
+                        <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                        <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                        <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="n">node_name</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">node_type</span><span class="p">,</span>
+                                <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span>
+                                <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">,</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                    <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">net_name</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>  <span class="c1"># JB</span>
+            <span class="k">if</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;OUTPUT(&quot;</span><span class="p">:</span>
+                <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PO&quot;</span>
+                <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">prefix</span> <span class="o">==</span> <span class="s2">&quot;INPUT(&quot;</span><span class="p">:</span>
+                <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                <span class="n">node_type</span> <span class="o">=</span> <span class="s2">&quot;PI&quot;</span>
+                <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">)]</span>
+                <span class="n">node_src</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+                <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">node_name</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">node_type</span><span class="p">,</span>
+                        <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span>
+                        <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span></div>
+
+
+<div class="viewcode-block" id="create_nets_impl_bench">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_bench.create_nets_impl_bench.html#tueisec_myparsing.myparsing_bench.create_nets_impl_bench">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_nets_impl_bench</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;parses all nodes for implicitly declared wires/nets&quot;&quot;&quot;</span>
+    <span class="n">nets</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="n">s_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">cell_type</span> <span class="o">=</span> <span class="n">s_line</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">dest</span> <span class="o">=</span> <span class="n">s_line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">node_src</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">cell_type</span> <span class="o">!=</span> <span class="s2">&quot;NOT&quot;</span><span class="p">:</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">s_line</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">s_line</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">cell_type</span> <span class="o">=</span> <span class="s2">&quot;INV&quot;</span>
+
+    <span class="k">if</span> <span class="n">cell_type</span> <span class="o">!=</span> <span class="s2">&quot;DFF&quot;</span><span class="p">:</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">cell_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">while</span> <span class="n">counter</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="c1"># for osu</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">:</span>
+                <span class="n">cell_name</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="k">break</span>
+            <span class="c1"># for nangate</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;_X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;_X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">:</span>
+                <span class="n">cell_name</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="k">break</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">inst_name</span> <span class="o">=</span> <span class="n">cell_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">dest</span>
+
+        <span class="n">input_pins</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">k</span><span class="p">])</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;direction&quot;</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">k</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;input&quot;</span><span class="p">:</span>
+                        <span class="n">input_pins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">output_pin</span> <span class="o">=</span> <span class="n">k</span>
+
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)):</span>
+            <span class="n">net_name</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="n">pin_name</span> <span class="o">=</span> <span class="n">input_pins</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_name</span><span class="p">)</span>
+            <span class="n">node_src</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pin_name</span><span class="p">,</span> <span class="n">net_name</span><span class="p">))</span>
+
+        <span class="n">node_dest</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">output_pin</span><span class="p">,</span> <span class="n">dest</span><span class="p">))</span>
+
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">inst_name</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">cell_name</span><span class="p">,</span> <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">}</span>
+        <span class="p">}</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># fixme...</span>
+        <span class="n">cell_name</span> <span class="o">=</span> <span class="s2">&quot;DFF&quot;</span>
+        <span class="n">inst_name</span> <span class="o">=</span> <span class="n">cell_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">dest</span>
+        <span class="n">net_name</span> <span class="o">=</span> <span class="n">s_line</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">nets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">net_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_name</span><span class="p">)</span>
+        <span class="n">node_src</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="n">net_name</span><span class="p">))</span>
+        <span class="n">node_dest</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="p">))</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">inst_name</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">cell_name</span><span class="p">,</span> <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">}</span>
+        <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span></div>
+
+
+<div class="viewcode-block" id="AddNode_bench">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_bench.AddNode_bench.html#tueisec_myparsing.myparsing_bench.AddNode_bench">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">AddNode_bench</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">net_dict</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function to add a node to the graph&quot;&quot;&quot;</span>
+
+    <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="n">s_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="n">cell_type</span> <span class="o">=</span> <span class="n">s_line</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">dest</span> <span class="o">=</span> <span class="n">s_line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">node_src</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">node_dest</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">cell_type</span> <span class="o">!=</span> <span class="s2">&quot;NOT&quot;</span><span class="p">:</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">s_line</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">s_line</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">cell_type</span> <span class="o">=</span> <span class="s2">&quot;INV&quot;</span>
+
+    <span class="k">if</span> <span class="n">cell_type</span> <span class="o">!=</span> <span class="s2">&quot;DFF&quot;</span><span class="p">:</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">cell_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">while</span> <span class="n">counter</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="c1"># for osu</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">:</span>
+                <span class="n">cell_name</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="k">break</span>
+            <span class="c1"># for nangate</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;_X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cell_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;_X&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">:</span>
+                <span class="n">cell_name</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="k">break</span>
+            <span class="n">counter</span> <span class="o">=</span> <span class="n">counter</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">inst_name</span> <span class="o">=</span> <span class="n">cell_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">dest</span>
+
+        <span class="n">input_pins</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">k</span><span class="p">])</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;direction&quot;</span> <span class="ow">in</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">k</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">cell_lib</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">dest</span><span class="p">]:</span>
+
+                            <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">inst_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">inst_name</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cell_type&quot;</span><span class="p">:</span> <span class="n">cell_name</span><span class="p">,</span> <span class="s2">&quot;dest&quot;</span><span class="p">:</span> <span class="n">node_dest</span><span class="p">,</span> <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">node_src</span><span class="p">}</span>
+        <span class="p">}</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># fixme...</span>
+        <span class="n">cell_name</span> <span class="o">=</span> <span class="s2">&quot;DFF&quot;</span>
+        <span class="n">inst_name</span> <span class="o">=</span> <span class="n">cell_name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">dest</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">dest</span><span class="p">]:</span>
+            <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">inst_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">graph</span><span class="p">,</span> <span class="p">{</span><span class="n">inst_name</span><span class="p">:</span> <span class="n">cell_name</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="AddInput_bench">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_bench.AddInput_bench.html#tueisec_myparsing.myparsing_bench.AddInput_bench">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">AddInput_bench</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">net_dict</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function to add primary inputs to the graph&quot;&quot;&quot;</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;INPUT(&quot;</span>
+    <span class="n">c_line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="p">:]</span>
+    <span class="c1"># ~ c_line = c_line.rstrip(&quot;;\n&quot;)</span>
+    <span class="c1"># ~ c_line = c_line.split(&#39;,&#39;)</span>
+    <span class="n">c_line</span> <span class="o">=</span> <span class="p">[</span><span class="n">c_line</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">c_line</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">):</span>
+            <span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+            <span class="n">lh</span> <span class="o">=</span> <span class="n">lh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">rh</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">rh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="n">lh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lh</span><span class="p">)</span>
+            <span class="n">rh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rh</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lh</span> <span class="o">&lt;</span> <span class="n">rh</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                    <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                    <span class="k">for</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]:</span>
+                        <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rh</span><span class="p">,</span> <span class="n">lh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                    <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                    <span class="k">for</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]:</span>
+                        <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">net_name</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;INPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+
+            <span class="k">for</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">net_dict</span><span class="p">[</span><span class="n">net_name</span><span class="p">]:</span>
+                <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">graph</span></div>
+
+
+<div class="viewcode-block" id="AddOutput_bench">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_bench.AddOutput_bench.html#tueisec_myparsing.myparsing_bench.AddOutput_bench">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">AddOutput_bench</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">net_dict</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Helper function to add extra nodes for the primary outputs&quot;&quot;&quot;</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT(&quot;</span>
+    <span class="n">c_line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="p">:]</span>
+    <span class="c1"># ~ c_line = c_line.rstrip(&quot;;\n&quot;)</span>
+    <span class="c1"># ~ c_line = c_line.split(&#39;,&#39;)</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="n">c_line</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">):</span>
+            <span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span>
+            <span class="n">lh</span> <span class="o">=</span> <span class="n">lh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">rh</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">rh</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="n">lh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">lh</span><span class="p">)</span>
+            <span class="n">rh</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rh</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">lh</span> <span class="o">&lt;</span> <span class="n">rh</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lh</span><span class="p">,</span> <span class="n">rh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                    <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                    <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rh</span><span class="p">,</span> <span class="n">lh</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">net_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+                    <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+                    <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">net_name</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">node_name</span> <span class="o">=</span> <span class="s2">&quot;OUTPUT_&quot;</span> <span class="o">+</span> <span class="n">net_name</span>
+            <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="k">return</span> <span class="n">graph</span></div>
+
+
+
+<div class="viewcode-block" id="parseBenchToData">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_bench.parseBenchToData.html#tueisec_myparsing.myparsing_bench.parseBenchToData">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parseBenchToData</span><span class="p">(</span><span class="n">bench_file</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">):</span>
+
+    <span class="n">in_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">out_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">node_types</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">nets</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">bench_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+
+    <span class="c1"># first build nets</span>
+
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">file</span><span class="p">:</span>
+
+        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;/*&quot;</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;FIXME: Comments are not supportet&quot;</span><span class="p">)</span>
+
+        <span class="c1"># ~ elif line.startswith(&quot;module&quot;) or line.startswith(&quot;endmodule&quot;):</span>
+        <span class="c1"># ~ continue</span>
+        <span class="k">elif</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INPUT&quot;</span><span class="p">):</span>
+
+            <span class="n">net</span><span class="p">,</span> <span class="n">node</span> <span class="o">=</span> <span class="n">create_nets_expl_bench</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="s2">&quot;INPUT(&quot;</span><span class="p">)</span>
+            <span class="n">nets</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+            <span class="n">in_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OUTPUT&quot;</span><span class="p">):</span>
+            <span class="n">net</span><span class="p">,</span> <span class="n">node</span> <span class="o">=</span> <span class="n">create_nets_expl_bench</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="s2">&quot;OUTPUT(&quot;</span><span class="p">)</span>
+            <span class="n">nets</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+            <span class="n">out_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;wire &quot;</span><span class="p">):</span>
+            <span class="c1"># net, node = create_nets_expl(line, &quot;wire &quot;)</span>
+            <span class="c1"># nets.update(net)</span>
+            <span class="c1"># nodes.update(node)</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INOUT&quot;</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;inouts are not supported&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">net</span><span class="p">,</span> <span class="n">node</span> <span class="o">=</span> <span class="n">create_nets_impl_bench</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">nets</span><span class="p">:</span>
+                    <span class="n">nets</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">nets</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+            <span class="n">nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="c1"># print(&quot;DEBUG:&quot;,line, nets)</span>
+            <span class="c1"># print(&quot;DEBUG:&quot;,line, nets)</span>
+            <span class="c1"># print (&quot;ToDo&quot;, line)</span>
+    <span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c1"># second    build nodes</span>
+
+    <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">bench_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">file</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;/*&quot;</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;FIXME: Comments are not supportet&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">line</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="c1"># ~ elif line.startswith(&quot;module&quot;) or line.startswith(&quot;endmodule&quot;):</span>
+        <span class="c1"># ~ continue</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;INPUT(&quot;</span><span class="p">):</span>
+            <span class="n">graph</span> <span class="o">=</span> <span class="n">AddInput_bench</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;OUTPUT(&quot;</span><span class="p">):</span>
+            <span class="n">graph</span> <span class="o">=</span> <span class="n">AddOutput_bench</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;wire &quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">graph</span><span class="p">,</span> <span class="n">node_type</span> <span class="o">=</span> <span class="n">AddNode_bench</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">)</span>
+            <span class="n">node_types</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">node_type</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">graph</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="p">(</span><span class="n">in_nodes</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">out_nodes</span><span class="p">),</span> <span class="n">node_types</span></div>
+
+
+<div class="viewcode-block" id="parse_it_bench">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.myparsing_bench.parse_it_bench.html#tueisec_myparsing.myparsing_bench.parse_it_bench">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_it_bench</span><span class="p">(</span><span class="n">netlist_file</span><span class="p">,</span> <span class="n">liberty_file</span><span class="p">):</span>
+    <span class="c1"># parsing</span>
+    <span class="c1"># ~ lib=dotlib.PLYPair()</span>
+    <span class="c1"># ~ lib.set_lexer(dotlib.create_lexer())</span>
+    <span class="c1"># ~ lib.set_parser(dotlib.create_parser())</span>
+    <span class="c1"># ~ lib.parse_file(liberty_file)</span>
+
+    <span class="n">lib_file_name</span> <span class="o">=</span> <span class="n">liberty_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.lib&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;_lib.txt&quot;</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">lib_file_name</span><span class="p">)</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">lib_file_name</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">lib</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">handle</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># own parsing</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">liberty_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">lib_raw</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">own_lexer</span> <span class="o">=</span> <span class="n">plylibparser</span><span class="o">.</span><span class="n">create_lexer</span><span class="p">()</span>
+        <span class="n">own_parser</span> <span class="o">=</span> <span class="n">plylibparser</span><span class="o">.</span><span class="n">create_parser</span><span class="p">()</span>
+        <span class="n">lib</span> <span class="o">=</span> <span class="n">own_parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span>
+            <span class="n">lib_raw</span><span class="p">,</span> <span class="n">lexer</span><span class="o">=</span><span class="n">own_lexer</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>  <span class="c1"># debug kann auch entfert werden</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">lib_file_name</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
+
+    <span class="k">global</span> <span class="n">cell_lib</span>
+    <span class="k">global</span> <span class="n">node_lookup</span>
+    <span class="k">global</span> <span class="n">nets_to_nodes</span>
+
+    <span class="c1"># my parsing</span>
+    <span class="c1"># ~ cell_lib = parseLibertyToDataStruct(lib)</span>
+    <span class="n">cell_lib</span> <span class="o">=</span> <span class="n">own_parseLibertyToDataStruct</span><span class="p">(</span><span class="n">lib</span><span class="p">)</span>
+    <span class="n">graph</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">node_types</span> <span class="o">=</span> <span class="n">parseBenchToData</span><span class="p">(</span>
+        <span class="n">netlist_file</span><span class="p">,</span> <span class="n">cell_lib</span>
+    <span class="p">)</span>  <span class="c1"># FIXME: Better return names for global lookup</span>
+    <span class="c1"># FIXME: nodetuple....</span>
+    <span class="c1"># global lookup</span>
+
+    <span class="n">nets_to_nodes</span> <span class="o">=</span> <span class="n">ParsedVerilog</span><span class="o">.</span><span class="n">rev_lookup</span><span class="p">(</span><span class="n">nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">node_lookup</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">graph</span><span class="p">,</span> <span class="n">nets</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">node_types</span><span class="p">,</span> <span class="n">cell_lib</span><span class="p">,</span> <span class="n">nets_to_nodes</span></div>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_walkscan.WalkSCAN.aggregate\_outliers
+=================================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_walkscan
+
+.. automethod:: re_verilog2features.clustering.clustering_walkscan.WalkSCAN.aggregate_outliers

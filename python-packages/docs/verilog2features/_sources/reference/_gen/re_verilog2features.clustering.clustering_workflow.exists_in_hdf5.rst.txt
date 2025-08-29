@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_workflow.exists\_in\_hdf5
+=====================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_workflow
+
+.. autofunction:: re_verilog2features.clustering.clustering_workflow.exists_in_hdf5

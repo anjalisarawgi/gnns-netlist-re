@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.verilog2graph.OutputInformation.plain
+============================================================
+
+.. currentmodule:: tueisec_myparsing.cli.verilog2graph
+
+.. autoattribute:: tueisec_myparsing.cli.verilog2graph.OutputInformation.plain

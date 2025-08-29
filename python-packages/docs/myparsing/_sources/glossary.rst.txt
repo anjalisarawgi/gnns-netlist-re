@@ -1,0 +1,14 @@
+Glossary
+========
+
+.. glossary::
+
+    INPUT_CONSTANT_0
+    INPUT_CONSTANT_1
+        phantom inputs that allow to trace constant-``1'b1`` or constant-``1'b0`` inputs 
+        to ports or assignments after parsing. Especially useful in the output of
+        :py:meth:`ParsedVerilog.get_networkx_graph() <tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_networkx_graph>`,
+        as constants will be lost otherwise. These phantom inputs are only created if 
+        you create the 
+        :py:meth:`ParsedVerilog <tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.__init__>`
+        object with :samp:`add_const_as_input == True`.

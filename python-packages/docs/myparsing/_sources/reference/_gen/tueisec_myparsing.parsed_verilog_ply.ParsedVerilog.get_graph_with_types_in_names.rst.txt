@@ -1,0 +1,6 @@
+tueisec\_myparsing.parsed\_verilog\_ply.ParsedVerilog.get\_graph\_with\_types\_in\_names
+========================================================================================
+
+.. currentmodule:: tueisec_myparsing.parsed_verilog_ply
+
+.. automethod:: tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.get_graph_with_types_in_names

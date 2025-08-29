@@ -1,0 +1,29 @@
+re\_verilog2features.globalArgParse.MultilineFormatter
+======================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. autoclass:: MultilineFormatter
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~MultilineFormatter.__init__
+      ~MultilineFormatter.add_argument
+      ~MultilineFormatter.add_arguments
+      ~MultilineFormatter.add_text
+      ~MultilineFormatter.add_usage
+      ~MultilineFormatter.end_section
+      ~MultilineFormatter.format_help
+      ~MultilineFormatter.start_section
+   
+   
+
+   
+   
+   

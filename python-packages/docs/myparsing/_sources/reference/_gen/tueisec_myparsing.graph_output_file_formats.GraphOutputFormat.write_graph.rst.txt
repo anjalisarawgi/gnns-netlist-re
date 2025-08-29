@@ -1,0 +1,6 @@
+tueisec\_myparsing.graph\_output\_file\_formats.GraphOutputFormat.write\_graph
+==============================================================================
+
+.. currentmodule:: tueisec_myparsing.graph_output_file_formats
+
+.. automethod:: tueisec_myparsing.graph_output_file_formats.GraphOutputFormat.write_graph

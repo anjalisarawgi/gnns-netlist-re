@@ -1,0 +1,48 @@
+re\_verilog2features.globalArgParse.CustomParser
+================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. autoclass:: CustomParser
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~CustomParser.__init__
+      ~CustomParser.add_argument
+      ~CustomParser.add_argument_group
+      ~CustomParser.add_mutually_exclusive_group
+      ~CustomParser.add_subparsers
+      ~CustomParser.convert_arg_line_to_args
+      ~CustomParser.error
+      ~CustomParser.exit
+      ~CustomParser.format_help
+      ~CustomParser.format_usage
+      ~CustomParser.get_default
+      ~CustomParser.parse_args
+      ~CustomParser.parse_args_main
+      ~CustomParser.parse_intermixed_args
+      ~CustomParser.parse_known_args
+      ~CustomParser.parse_known_intermixed_args
+      ~CustomParser.print_help
+      ~CustomParser.print_usage
+      ~CustomParser.register
+      ~CustomParser.set_defaults
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~CustomParser.parsed_args
+   
+   

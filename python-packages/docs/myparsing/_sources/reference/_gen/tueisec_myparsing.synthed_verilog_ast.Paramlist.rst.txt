@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Paramlist
+==================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Paramlist
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Paramlist.__init__
+      ~Paramlist.children
+      ~Paramlist.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Paramlist.attr_names
+   
+   

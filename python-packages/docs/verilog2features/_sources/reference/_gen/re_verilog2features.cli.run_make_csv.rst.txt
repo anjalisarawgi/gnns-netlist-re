@@ -1,0 +1,23 @@
+﻿re\_verilog2features.cli.run\_make\_csv
+=======================================
+
+.. automodule:: re_verilog2features.cli.run_make_csv
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+   
+   
+
+   
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+tueisec\_myparsing.liberty\_parsing.own\_parseLibertyToDataStruct
+=================================================================
+
+.. currentmodule:: tueisec_myparsing.liberty_parsing
+
+.. autofunction:: tueisec_myparsing.liberty_parsing.own_parseLibertyToDataStruct

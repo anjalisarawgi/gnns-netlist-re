@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.stateful_verilog_parsing_helpers &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.stateful_verilog_parsing_helpers</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="VerilogCommentRemover">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.html#tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VerilogCommentRemover</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove verilog comments while parsing line-by-line.</span>
+
+<span class="sd">    After initialization, supply each line of a verilog file to `handle_comments(...)` before parsing it. You can reuse this class for multiple files, just reset before the next file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VerilogCommentRemover.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.__init__.html#tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Verilog Comment Remover.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_in_comment</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strippable_comments_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;[/][*][^*]*[*]+(?:[^*/][^*]*[*]+)*[/]&quot;</span>
+        <span class="p">)</span>  <span class="c1">#: Regex to find multiline comments in a single line</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">line_ends_with_comment_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;[/][*][^*]*(?:[*](?:[^/]|$)[^*]*)*\n$&quot;</span>
+        <span class="p">)</span>  <span class="c1">#: Regex to find a comment section in a line that ends with a comment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">line_starts_with_comment_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;^[^*]*(?:[*](?:[^/])[^*]*)*[*][/]&quot;</span>
+        <span class="p">)</span>  <span class="c1">#: Regex to find a comment section in a line that starts with a comment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">line_has_inline_comment_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;[/][/].*\n$&quot;</span>
+        <span class="p">)</span>  <span class="c1">#: Regex to find inline comments in a line</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="VerilogCommentRemover.handle_comments">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.handle_comments.html#tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.handle_comments">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_comments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle a line of verilog source code.</span>
+
+<span class="sd">        This function removes all comments from a verilog source code line. It tracks begin and end of multiline comments and returns `&quot;&quot;` until the end of these.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            line (:obj:`str`): The line to remove comments from</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A line of verilog source code without inline and multiline comments. If the current line does not contain enything else but comments, returns `&quot;&quot;`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_in_comment</span><span class="p">:</span>
+            <span class="n">line_starts_with_comment_comment</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">line_starts_with_comment_re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">rest</span><span class="p">,</span> <span class="n">line_starts_with_comment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">line_starts_with_comment_re</span><span class="o">.</span><span class="n">subn</span><span class="p">(</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">line</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">line_starts_with_comment</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_in_comment</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span> <span class="o">+=</span> <span class="n">line_starts_with_comment_comment</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_comments</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span> <span class="o">+=</span> <span class="n">rest</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">inline_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">line_has_inline_comment_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">strippable_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strippable_comments_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">endswith_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">line_ends_with_comment_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+                <span class="n">todo</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">line_has_inline_comment_re</span><span class="p">:</span> <span class="n">inline_loc</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">strippable_comments_re</span><span class="p">:</span> <span class="n">strippable_loc</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">line_ends_with_comment_re</span><span class="p">:</span> <span class="n">endswith_loc</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">firstmatch</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                    <span class="n">todo</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">start</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">4</span>
+                <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">firstmatch</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span> <span class="o">+=</span> <span class="n">firstmatch</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span>
+                        <span class="s2">&quot; &quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">line</span><span class="p">,</span> <span class="n">line_ends_with_comment</span> <span class="o">=</span> <span class="n">firstmatch</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">subn</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">firstmatch</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">line_ends_with_comment_re</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">line_ends_with_comment</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_in_comment</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">firstmatch</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">line_has_inline_comment_re</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">line_ends_with_comment</span><span class="p">:</span>
+                            <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">accumulated_comments</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">return</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="VerilogCommentRemover.reset">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.reset.html#tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogCommentRemover.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the remover to handle a new file.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_in_comment</span> <span class="o">=</span> <span class="kc">False</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VerilogMultilineJoiner">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogMultilineJoiner.html#tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogMultilineJoiner">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VerilogMultilineJoiner</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse multiline verilog statements into one line.</span>
+
+<span class="sd">    After initialization, supply verilog sourcecode lines to `handle_line()`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VerilogMultilineJoiner.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogMultilineJoiner.__init__.html#tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogMultilineJoiner.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Verilog Multiline Joiner.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="VerilogMultilineJoiner.handle_line">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogMultilineJoiner.handle_line.html#tueisec_myparsing.stateful_verilog_parsing_helpers.VerilogMultilineJoiner.handle_line">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle a multiline statement while parsing line-by-line.</span>
+
+<span class="sd">        As soon as the line is complete, the line will be returned, else None is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            line (:obj:`str`): A line of verilog code containing part of a instantiation statement.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The line if the line is complete, else None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># there could be coming empty lines due to comments, do not accumulate spaces due to this.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">line</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span> <span class="o">=</span> <span class="n">line</span>
+        <span class="n">semipos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">semipos</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span><span class="p">[:</span> <span class="n">semipos</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aquired_line</span><span class="p">[</span><span class="n">semipos</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+            <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

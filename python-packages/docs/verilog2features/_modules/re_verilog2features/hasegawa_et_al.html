@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.hasegawa_et_al &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.hasegawa_et_al</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="calc_in_flipflop_4">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.hasegawa_et_al.calc_in_flipflop_4.html#re_verilog2features.hasegawa_et_al.calc_in_flipflop_4">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_in_flipflop_4</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="calculate_hasegawa_features">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.hasegawa_et_al.calculate_hasegawa_features.html#re_verilog2features.hasegawa_et_al.calculate_hasegawa_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_hasegawa_features</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">design_file</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate HT features as given by Hasegawa et al</span>
+
+<span class="sd">    That is:</span>
+<span class="sd">    - fan_in_4</span>
+<span class="sd">    - fan_in_5</span>
+<span class="sd">    - in_flipflop_4</span>
+<span class="sd">    - out_flipflop_3</span>
+<span class="sd">    - out_flipflop_4</span>
+<span class="sd">    - in_loop_4</span>
+<span class="sd">    - out_loop_5</span>
+<span class="sd">    - in_nearest_pin</span>
+<span class="sd">    - out_nearest_pout</span>
+<span class="sd">    - out_nearest_flipflop</span>
+<span class="sd">    - out_nearest_multiplexer</span>
+
+<span class="sd">    :param graph: graph to analyze</span>
+<span class="sd">    :type graph: networkx.Graph</span>
+<span class="sd">    :param design_file: name of the design file for debuggin purposes</span>
+<span class="sd">    :type design_file: str</span>
+<span class="sd">    :return: returns a result df with index node and columns features</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;running hasegawa feature creation&quot;</span><span class="p">)</span>
+
+    <span class="c1"># graph = graph.copy()</span>
+    <span class="c1"># clk_and_rst = [</span>
+    <span class="c1">#     node</span>
+    <span class="c1">#     for node in graph</span>
+    <span class="c1">#     if node.lower().find(&quot;clk&quot;) &gt;= 0</span>
+    <span class="c1">#     or node.lower().find(&quot;rst&quot;) &gt;= 0</span>
+    <span class="c1"># ]</span>
+    <span class="c1"># graph.remove_nodes_from(clk_and_rst)</span>
+
+    <span class="n">nodes_index</span> <span class="o">=</span> <span class="n">df</span>
+    <span class="n">node_types_dict</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_node_attributes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span><span class="s1">&#39;nodeType&#39;</span><span class="p">)</span>
+    <span class="c1"># pd.DataFrame(index=graph.nodes())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_node_type</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">node_types_dict</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="nb">type</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;config does not contain cell list for </span><span class="si">{</span><span class="nb">type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">node_types_dict</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">node_types_dict</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+
+    <span class="c1"># fan_in_4: number of inputs after stepping 4 away from net</span>
+    <span class="c1"># careful, this method does not work, if the graph has self-loops</span>
+    <span class="c1"># generate graph with selfloops at PIs</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+    <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">deg</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">in_degree</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">deg</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+    <span class="n">adjm_r</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">to_scipy_sparse_array</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">reverse</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+    
+    <span class="n">indegs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromiter</span><span class="p">((</span><span class="n">deg</span> <span class="k">for</span> <span class="n">node</span><span class="p">,</span><span class="n">deg</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_degree</span><span class="p">()),</span> <span class="nb">int</span><span class="p">,</span> <span class="n">count</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">fourth_pow</span> <span class="o">=</span> <span class="p">(</span><span class="n">adjm_r</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;fan_in_4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="n">fourth_pow</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">@</span> <span class="n">indegs</span><span class="p">)</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated fan_in_4&quot;</span><span class="p">)</span>
+
+    <span class="c1"># fan_in_5: trivial</span>
+    <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;fan_in_5&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(((</span><span class="n">fourth_pow</span> <span class="o">@</span> <span class="n">adjm_r</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">@</span> <span class="n">indegs</span><span class="p">)</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated fan_in_5&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">adjm_r</span><span class="p">,</span> <span class="n">indegs</span><span class="p">,</span> <span class="n">fourth_pow</span>
+
+    
+
+    <span class="c1"># in_flipflop_4: perform bfs and count DFFs</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">():</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">bfs_tree</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">depth_limit</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span>
+        <span class="n">ffs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">is_node_type</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;DFF&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">nodes_index</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;in_flipflop_4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ffs</span>
+    <span class="k">del</span> <span class="n">cells</span><span class="p">,</span> <span class="n">ffs</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated in_flipflop_4&quot;</span><span class="p">)</span>
+    <span class="c1"># out_flipflop_3: perform bfs and count DFFs</span>
+    <span class="c1"># attention: skip first node in tree!!!</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">():</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">bfs_tree</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">depth_limit</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span>
+        <span class="n">ffs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">is_node_type</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;DFF&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">nodes_index</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;out_flipflop_3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ffs</span>
+        <span class="n">nextffs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">is_node_type</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s2">&quot;DFF&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cells</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">successors</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">)</span>
+        <span class="n">nodes_index</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;out_flipflop_4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ffs</span> <span class="o">+</span> <span class="n">nextffs</span>
+    <span class="k">del</span> <span class="n">cells</span><span class="p">,</span> <span class="n">ffs</span><span class="p">,</span> <span class="n">nextffs</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated out_flipflop_3, out_flipflop_4&quot;</span><span class="p">)</span>
+    <span class="c1"># in_loop_4: power matrix step by step and count diagonal 1s</span>
+    <span class="c1"># careful, this method does not work, if the graph has self-loops</span>
+    <span class="n">adjm</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">to_scipy_sparse_array</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">reverse</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+    <span class="n">cur</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">adjm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">num_loops</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">):</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span> <span class="o">@</span> <span class="n">adjm</span>
+        <span class="n">diagonal</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span>
+
+        <span class="n">num_loops</span> <span class="o">+=</span> <span class="n">diagonal</span>
+        <span class="n">zero_diagonal</span><span class="p">(</span><span class="n">cur</span><span class="p">,</span> <span class="n">diagonal</span><span class="p">)</span>
+    <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;in_loop_4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_loops</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated in_loop_4&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">adjm</span><span class="p">,</span> <span class="n">cur</span><span class="p">,</span> <span class="n">diagonal</span>
+
+    <span class="c1"># out_loop_5: power matrix step by step and count diagonal 1s</span>
+    <span class="c1"># careful, this method does not work, if the graph has self-loops</span>
+    <span class="n">adjm</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">to_scipy_sparse_array</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="n">cur</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">adjm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">num_loops</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">6</span><span class="p">):</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span> <span class="o">@</span> <span class="n">adjm</span>
+        <span class="n">diagonal</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span>
+
+        <span class="n">num_loops</span> <span class="o">+=</span> <span class="n">diagonal</span>
+        <span class="n">zero_diagonal</span><span class="p">(</span><span class="n">cur</span><span class="p">,</span> <span class="n">diagonal</span><span class="p">)</span>
+    <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;out_loop_5&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_loops</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated out_loop_5&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">adjm</span><span class="p">,</span> <span class="n">cur</span><span class="p">,</span> <span class="n">diagonal</span>
+
+    <span class="c1"># in_nearest_pin: find shortest path </span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">node</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span>
+        <span class="k">if</span> <span class="n">graph</span><span class="o">.</span><span class="n">in_degree</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">]</span>
+    <span class="n">nearest</span> <span class="o">=</span> <span class="n">shortest_path_from_source_list_to_all_nodes</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">inputs</span><span class="p">)</span>
+    <span class="n">in_nearest_pin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">nearest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()])</span>
+    <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;in_nearest_pin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">in_nearest_pin</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated in_nearest_pin&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">in_nearest_pin</span><span class="p">,</span> <span class="n">nearest</span>
+
+    <span class="c1"># out_nearest_pout: find shortest path </span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">node</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span>
+        <span class="k">if</span> <span class="n">graph</span><span class="o">.</span><span class="n">out_degree</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">]</span>
+    <span class="n">nearest</span> <span class="o">=</span> <span class="n">shortest_path_from_source_list_to_all_nodes</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">reverse</span><span class="p">(),</span> <span class="n">outputs</span><span class="p">)</span>
+    <span class="n">out_nearest_pout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">nearest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()])</span>
+    <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;out_nearest_pout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_nearest_pout</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated out_nearest_pout&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">nearest</span><span class="p">,</span> <span class="n">out_nearest_pout</span>
+
+    <span class="c1"># out_nearest_flipflop: find shortest path </span>
+    <span class="n">ffs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">node</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span>
+        <span class="k">if</span> <span class="n">is_node_type</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;DFF&quot;</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">nearest</span> <span class="o">=</span> <span class="n">shortest_path_from_source_list_to_all_nodes</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">reverse</span><span class="p">(),</span> <span class="n">ffs</span><span class="p">)</span>
+    <span class="n">out_nearest_flipflop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">nearest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()])</span>
+    <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;out_nearest_flipflop&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_nearest_flipflop</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated out_nearest_flipflop&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">nearest</span><span class="p">,</span> <span class="n">out_nearest_flipflop</span>
+
+    <span class="c1"># out_nearest_multiplexer: find shortest path </span>
+    <span class="n">muxes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">node</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span>
+        <span class="k">if</span> <span class="n">is_node_type</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;MUX&quot;</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">nearest</span> <span class="o">=</span> <span class="n">shortest_path_from_source_list_to_all_nodes</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">reverse</span><span class="p">(),</span> <span class="n">muxes</span><span class="p">)</span>
+        <span class="n">out_nearest_multiplexer</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">nearest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">()])</span>
+        <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;out_nearest_multiplexer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_nearest_multiplexer</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="n">nodes_index</span><span class="p">[</span><span class="s2">&quot;out_nearest_multiplexer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;calculated out_nearest_multiplexer&quot;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">nearest</span><span class="p">,</span> <span class="n">out_nearest_multiplexer</span>
+
+    <span class="k">return</span> <span class="n">nodes_index</span></div>
+
+
+<div class="viewcode-block" id="check_node_type">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.hasegawa_et_al.check_node_type.html#re_verilog2features.hasegawa_et_al.check_node_type">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_node_type</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="n">node_types_dict</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">node_types_dict</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">node_types_dict</span><span class="p">[</span><span class="n">cell</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cell</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cell</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="zero_diagonal">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.hasegawa_et_al.zero_diagonal.html#re_verilog2features.hasegawa_et_al.zero_diagonal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zero_diagonal</span><span class="p">(</span><span class="n">csrmatrix</span><span class="p">,</span> <span class="n">diagonal</span><span class="p">):</span>
+    <span class="n">nonzero</span><span class="p">,</span> <span class="o">=</span> <span class="n">diagonal</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+    <span class="n">csrmatrix</span><span class="p">[</span><span class="n">nonzero</span><span class="p">,</span> <span class="n">nonzero</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="shortest_path_from_source_list_to_all_nodes">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.hasegawa_et_al.shortest_path_from_source_list_to_all_nodes.html#re_verilog2features.hasegawa_et_al.shortest_path_from_source_list_to_all_nodes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">shortest_path_from_source_list_to_all_nodes</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">source_set</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_set</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;At least one source needed&quot;</span><span class="p">)</span>
+    <span class="n">adj</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">adj</span>
+    <span class="n">seen</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="p">:</span> <span class="nb">set</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">source_set</span><span class="p">}</span>                  <span class="c1"># level (number of hops) when seen in BFS</span>
+    <span class="n">level</span> <span class="o">=</span> <span class="mi">0</span>                  <span class="c1"># the current level</span>
+    <span class="n">nextlevel</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="p">:</span> <span class="p">{</span><span class="n">s</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">source_set</span><span class="p">}</span>     <span class="c1"># dict of nodes to check at next level</span>
+    <span class="n">allseen</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">while</span> <span class="nb">any</span><span class="p">(</span><span class="n">path</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">nextlevel</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="n">thislevel</span> <span class="o">=</span> <span class="n">nextlevel</span>  <span class="c1"># advance to next level</span>
+        <span class="n">nextlevel</span> <span class="o">=</span> <span class="p">{}</span>         <span class="c1"># and start a new list (fringe)</span>
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">thislevel</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">nextlevel</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">[</span><span class="n">s</span><span class="p">]:</span>
+                    <span class="n">seen</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>  <span class="c1"># set the level of vertex v</span>
+                    <span class="n">nextlevel</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">adj</span><span class="p">[</span><span class="n">v</span><span class="p">])</span>  <span class="c1"># add neighbors of v</span>
+                    <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allseen</span><span class="p">:</span>
+                        <span class="n">allseen</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">level</span>
+        <span class="n">level</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">del</span> <span class="n">seen</span>
+    <span class="k">return</span> <span class="n">allseen</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

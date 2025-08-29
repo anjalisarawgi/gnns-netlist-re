@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Wire
+=============================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Wire
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Wire.__init__
+      ~Wire.children
+      ~Wire.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Wire.attr_names
+   
+   

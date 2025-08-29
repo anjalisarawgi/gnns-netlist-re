@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.calculation\_controllability.dff\_function
+=====================================================================
+
+.. currentmodule:: re_verilog2features.scoap.calculation_controllability
+
+.. autofunction:: re_verilog2features.scoap.calculation_controllability.dff_function

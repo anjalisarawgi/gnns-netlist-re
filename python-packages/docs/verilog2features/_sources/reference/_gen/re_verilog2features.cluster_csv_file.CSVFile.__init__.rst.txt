@@ -1,0 +1,6 @@
+re\_verilog2features.cluster\_csv\_file.CSVFile.\_\_init\_\_
+============================================================
+
+.. currentmodule:: re_verilog2features.cluster_csv_file
+
+.. automethod:: re_verilog2features.cluster_csv_file.CSVFile.__init__

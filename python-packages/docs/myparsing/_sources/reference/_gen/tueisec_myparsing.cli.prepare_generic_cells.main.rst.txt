@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.prepare\_generic\_cells.main
+===================================================
+
+.. currentmodule:: tueisec_myparsing.cli.prepare_generic_cells
+
+.. autofunction:: tueisec_myparsing.cli.prepare_generic_cells.main

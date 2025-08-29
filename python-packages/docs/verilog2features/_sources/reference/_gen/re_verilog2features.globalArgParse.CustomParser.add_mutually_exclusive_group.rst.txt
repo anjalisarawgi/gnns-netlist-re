@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.CustomParser.add\_mutually\_exclusive\_group
+================================================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. automethod:: re_verilog2features.globalArgParse.CustomParser.add_mutually_exclusive_group

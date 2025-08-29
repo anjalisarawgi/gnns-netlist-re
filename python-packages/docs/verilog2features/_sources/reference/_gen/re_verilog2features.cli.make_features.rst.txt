@@ -1,0 +1,23 @@
+﻿re\_verilog2features.cli.make\_features
+=======================================
+
+.. automodule:: re_verilog2features.cli.make_features
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+   
+   
+
+   
+   
+   
+
+   
+   
+   

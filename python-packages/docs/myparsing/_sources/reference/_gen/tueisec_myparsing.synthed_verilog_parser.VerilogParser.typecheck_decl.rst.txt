@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_parser.VerilogParser.typecheck\_decl
+=========================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. automethod:: tueisec_myparsing.synthed_verilog_parser.VerilogParser.typecheck_decl

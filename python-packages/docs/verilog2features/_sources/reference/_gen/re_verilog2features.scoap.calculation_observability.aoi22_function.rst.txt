@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.calculation\_observability.aoi22\_function
+=====================================================================
+
+.. currentmodule:: re_verilog2features.scoap.calculation_observability
+
+.. autofunction:: re_verilog2features.scoap.calculation_observability.aoi22_function

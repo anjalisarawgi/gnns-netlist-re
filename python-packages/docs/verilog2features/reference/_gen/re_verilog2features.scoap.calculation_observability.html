@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>re_verilog2features.scoap.calculation_observability &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="re_verilog2features.scoap.calculation_observability.and2_nand2_function" href="re_verilog2features.scoap.calculation_observability.and2_nand2_function.html" />
+    <link rel="prev" title="re_verilog2features.scoap.calculation_controllability.xor_function" href="re_verilog2features.scoap.calculation_controllability.xor_function.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../re_verilog2features.html" accesskey="U">re_verilog2features</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-re_verilog2features.scoap.calculation_observability">
+<span id="re-verilog2features-scoap-calculation-observability"></span><h1>re_verilog2features.scoap.calculation_observability<a class="headerlink" href="#module-re_verilog2features.scoap.calculation_observability" title="Link to this heading">¶</a></h1>
+<p>Function for calculating CO for every gate</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.and2_nand2_function.html#re_verilog2features.scoap.calculation_observability.and2_nand2_function" title="re_verilog2features.scoap.calculation_observability.and2_nand2_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">and2_nand2_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>function for calculating the observability of a 'and' or 'nand' gate inputs: gate: specific nand gate with number graph: gate-netlist of the graph data: current CC0, CC1 und CO values of the gates</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.and3_nand3_function.html#re_verilog2features.scoap.calculation_observability.and3_nand3_function" title="re_verilog2features.scoap.calculation_observability.and3_nand3_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">and3_nand3_function</span></code></a>(gate, graph, data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.aoi21_function.html#re_verilog2features.scoap.calculation_observability.aoi21_function" title="re_verilog2features.scoap.calculation_observability.aoi21_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aoi21_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>and-or-inverter 3 inputs A, B, C and 1 output Y, node_function: [('Y', '(!((A&amp;B)+C))')]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.aoi22_function.html#re_verilog2features.scoap.calculation_observability.aoi22_function" title="re_verilog2features.scoap.calculation_observability.aoi22_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aoi22_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>and-or-inverter 4 inputs A, B, C, D and one output Y, node_function: [('Y', '(!((A&amp;B)+(C&amp;D)))')]</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.calculation_observability.html#re_verilog2features.scoap.calculation_observability.calculation_observability" title="re_verilog2features.scoap.calculation_observability.calculation_observability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculation_observability</span></code></a>(levels_co, graph, ...)</p></td>
+<td><p>input: the levelized gates in a list, position of gate in list stands for level output: CC0 for gate output: CC0 for gate</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_cc0.html#re_verilog2features.scoap.calculation_observability.current_cc0" title="re_verilog2features.scoap.calculation_observability.current_cc0"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_cc0</span></code></a>(gate, graph, data)</p></td>
+<td><p>function for reading the controllability cc0 values from the storage 'data' inputs: gate: name of the current viewed gate graph: gate-netlist of the graph in readable python format data: current CC0, CC1 und CO values of the gates outputs: cc0_a: CC0 value of the input_a from the gate cc0_b: CC0 value of the input_b from the gate edge_a: name of the input_a from the gate edge_b: name of the input_b from the gate</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_cc0_3_input.html#re_verilog2features.scoap.calculation_observability.current_cc0_3_input" title="re_verilog2features.scoap.calculation_observability.current_cc0_3_input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_cc0_3_input</span></code></a>(gate, graph, data)</p></td>
+<td><p>calculation for cc0 for 3 inputs in a gate</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_cc1.html#re_verilog2features.scoap.calculation_observability.current_cc1" title="re_verilog2features.scoap.calculation_observability.current_cc1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_cc1</span></code></a>(gate, graph, data)</p></td>
+<td><p>function for reading the controllability cc1 values from the storage 'data' inputs: gate: name of the current viewed gate graph: gate-netlist of the graph in readable python format data: current CC0, CC1 und CO values of the gates outputs: cc0_a: CC0 value of the input_a from the gate cc0_b: CC0 value of the input_b from the gate edge_a: name of the input_a from the gate edge_b: name of the input_b from the gate</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_cc1_3_input.html#re_verilog2features.scoap.calculation_observability.current_cc1_3_input" title="re_verilog2features.scoap.calculation_observability.current_cc1_3_input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_cc1_3_input</span></code></a>(gate, graph, data)</p></td>
+<td><p>calculation for cc1 for 3 inputs in a gate</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_dff.html#re_verilog2features.scoap.calculation_observability.current_dff" title="re_verilog2features.scoap.calculation_observability.current_dff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_dff</span></code></a>(gate, graph, data)</p></td>
+<td><p>difference between d and clk line for right parsing</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_dffrs.html#re_verilog2features.scoap.calculation_observability.current_dffrs" title="re_verilog2features.scoap.calculation_observability.current_dffrs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_dffrs</span></code></a>(gate, graph, data, s_r_status)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_mux.html#re_verilog2features.scoap.calculation_observability.current_mux" title="re_verilog2features.scoap.calculation_observability.current_mux"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_mux</span></code></a>(gate, graph, data)</p></td>
+<td><p>input values for mux with A, B, S</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.current_oai_aoi.html#re_verilog2features.scoap.calculation_observability.current_oai_aoi" title="re_verilog2features.scoap.calculation_observability.current_oai_aoi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_oai_aoi</span></code></a>(gate, graph, data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.dff_function.html#re_verilog2features.scoap.calculation_observability.dff_function" title="re_verilog2features.scoap.calculation_observability.dff_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dff_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>dff</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.dffrs_function.html#re_verilog2features.scoap.calculation_observability.dffrs_function" title="re_verilog2features.scoap.calculation_observability.dffrs_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dffrs_function</span></code></a>(gate, graph, data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.mux2x1_function.html#re_verilog2features.scoap.calculation_observability.mux2x1_function" title="re_verilog2features.scoap.calculation_observability.mux2x1_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mux2x1_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>multiplexer 3 inputs A, B, S and 1 output Y, node-function: [('Y', '(!((S&amp;A) + (!S&amp;B)))')]</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.not_function.html#re_verilog2features.scoap.calculation_observability.not_function" title="re_verilog2features.scoap.calculation_observability.not_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">not_function</span></code></a>(gate, graph, data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.oai21_function.html#re_verilog2features.scoap.calculation_observability.oai21_function" title="re_verilog2features.scoap.calculation_observability.oai21_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">oai21_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>or-and-inverter 3 inputs A, B, C and 1 output Y, node_function: [('Y', '(!((A+B)&amp;C))')]</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.oai22_function.html#re_verilog2features.scoap.calculation_observability.oai22_function" title="re_verilog2features.scoap.calculation_observability.oai22_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">oai22_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>or-and-inverter 4 inputs A, B, C, D and one output Y, node_function: [('Y', '(!((A+B)&amp;(C+D)))')]</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.or2_nor2_function.html#re_verilog2features.scoap.calculation_observability.or2_nor2_function" title="re_verilog2features.scoap.calculation_observability.or2_nor2_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">or2_nor2_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>function for calculating the observability of a 'or' or 'nor' gate inputs: gate: specific nand gate with number graph: gate-netlist of the graph data: current CC0, CC1 und CO values of the gates</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.or3_nor3_function.html#re_verilog2features.scoap.calculation_observability.or3_nor3_function" title="re_verilog2features.scoap.calculation_observability.or3_nor3_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">or3_nor3_function</span></code></a>(gate, graph, data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.scoap.calculation_observability.xor_xnor_function.html#re_verilog2features.scoap.calculation_observability.xor_xnor_function" title="re_verilog2features.scoap.calculation_observability.xor_xnor_function"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xor_xnor_function</span></code></a>(gate, graph, data)</p></td>
+<td><p>function for calculating the observability of a 'xor' or 'xnor' gate inputs: gate: specific nand gate with number graph: gate-netlist of the graph data: current CC0, CC1 und CO values of the gates</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../re_verilog2features.html">re_verilog2features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/re_verilog2features.scoap.calculation_observability.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.scoap.calculation_observability.and2_nand2_function.html" title="re_verilog2features.scoap.calculation_observability.and2_nand2_function"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.scoap.calculation_controllability.xor_function.html" title="re_verilog2features.scoap.calculation_controllability.xor_function"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

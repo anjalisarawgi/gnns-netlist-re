@@ -1,0 +1,6 @@
+tueisec\_myparsing.parsed\_verilog.ParsedVerilog.build\_nets
+============================================================
+
+.. currentmodule:: tueisec_myparsing.parsed_verilog
+
+.. automethod:: tueisec_myparsing.parsed_verilog.ParsedVerilog.build_nets

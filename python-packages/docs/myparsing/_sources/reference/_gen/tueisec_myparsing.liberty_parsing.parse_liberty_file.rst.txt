@@ -1,0 +1,6 @@
+tueisec\_myparsing.liberty\_parsing.parse\_liberty\_file
+========================================================
+
+.. currentmodule:: tueisec_myparsing.liberty_parsing
+
+.. autofunction:: tueisec_myparsing.liberty_parsing.parse_liberty_file

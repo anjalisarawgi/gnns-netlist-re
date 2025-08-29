@@ -1,0 +1,6 @@
+re\_verilog2features.cluster\_csv\_file.CSVType.partition\_graph
+================================================================
+
+.. currentmodule:: re_verilog2features.cluster_csv_file
+
+.. autoattribute:: re_verilog2features.cluster_csv_file.CSVType.partition_graph

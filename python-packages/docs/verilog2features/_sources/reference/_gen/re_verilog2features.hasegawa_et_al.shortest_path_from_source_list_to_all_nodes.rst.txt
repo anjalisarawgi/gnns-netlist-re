@@ -1,0 +1,6 @@
+re\_verilog2features.hasegawa\_et\_al.shortest\_path\_from\_source\_list\_to\_all\_nodes
+========================================================================================
+
+.. currentmodule:: re_verilog2features.hasegawa_et_al
+
+.. autofunction:: re_verilog2features.hasegawa_et_al.shortest_path_from_source_list_to_all_nodes

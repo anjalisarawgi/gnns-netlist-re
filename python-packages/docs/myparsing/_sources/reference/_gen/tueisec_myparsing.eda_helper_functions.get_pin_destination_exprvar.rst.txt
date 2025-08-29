@@ -1,0 +1,6 @@
+tueisec\_myparsing.eda\_helper\_functions.get\_pin\_destination\_exprvar
+========================================================================
+
+.. currentmodule:: tueisec_myparsing.eda_helper_functions
+
+.. autofunction:: tueisec_myparsing.eda_helper_functions.get_pin_destination_exprvar

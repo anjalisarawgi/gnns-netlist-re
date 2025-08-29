@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_ast.IntConst.base\_types
+=============================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoattribute:: tueisec_myparsing.synthed_verilog_ast.IntConst.base_types

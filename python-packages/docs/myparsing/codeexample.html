@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Parsing Example &#8212; TUEISEC_myparsing 0.0.1a25 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="_static/documentation_options.js?v=c61080f6"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Reference" href="reference/index.html" />
+    <link rel="prev" title="Usage" href="usage.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="index.html">TUEISEC_myparsing-0.0.1a25</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="parsing-example">
+<h1>Parsing Example<a class="headerlink" href="#parsing-example" title="Link to this heading">¶</a></h1>
+<p>Example of how to parse an already synthesized netlist.</p>
+<section id="preparation-steps">
+<h2>Preparation Steps<a class="headerlink" href="#preparation-steps" title="Link to this heading">¶</a></h2>
+<p>Start a virtual environment (you can use the same env for parsing, synthesis and verilog2features):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>path/to/venv/name_of_venv/bin/activate
+</pre></div>
+</div>
+<p>Follow the steps described in Installation.</p>
+<p>Synthesize the verilog file(s) first if no synthesized netlist is given.</p>
+</section>
+<section id="parsing-process">
+<h2>Parsing Process<a class="headerlink" href="#parsing-process" title="Link to this heading">¶</a></h2>
+<p>Parsing includes all tools that internally use <cite>tmp.parse_to_obj</cite> method and therefore still operate on the synthesized verilog code and not on graphs.</p>
+<section id="graph-creation">
+<h3>Graph Creation<a class="headerlink" href="#graph-creation" title="Link to this heading">¶</a></h3>
+<p>In a first step the parser takes the verilog code and generates an abstract syntax tree (ast). In a second step this ast is converted into a graph structure.</p>
+<p><strong>Alternative 1:</strong></p>
+<p>You can directly parse the netlist into a gml graph format (this command works if you are in the same folder as used for the synthesis):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>verilog2graph<span class="w"> </span>qflow/postprocessed/name_of_synthesized_file.v<span class="w"> </span>--output_format<span class="w"> </span>gml<span class="w"> </span>--output_info<span class="w"> </span>complete_data<span class="w"> </span>--do-not-zip<span class="w"> </span>-o<span class="w"> </span>graph
+</pre></div>
+</div>
+<p>If you inspect the generated file(s) in the directory graph, you will find a .gml file for each of your parsed netlist files.</p>
+<p>Remarks:</p>
+<ul class="simple">
+<li><p>The meta data and annotations can only be generated and saved in the gml structure. Additionally, the flag <cite>–output_info complete_data</cite> needs to be set there.</p></li>
+<li><p>After synthesizing multiple depending files the main verilog file, e.g. <cite>main_file.v</cite>, contains the whole synthesized design. You can use this verilog file to generate the graph of the whole design. If the synthesis outputs of the individual submodules should be converted into graph structures, replace the path to a single file by a path to the folder that contains all files in the command above.</p></li>
+<li><p>Parsing multiple synthesized verilog files that are independent of each other is possible by replacing the path to a single file by a path to the folder that contains all files.</p></li>
+</ul>
+<p>If only the nodes and the interconnections of the graph should be created and no annotations should be added, use this adaption:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>verilog2graph<span class="w"> </span>qflow/postprocessed/name_of_synthesized_file.v<span class="w"> </span>-o<span class="w"> </span>graph
+</pre></div>
+</div>
+<p>The output is a text file containing all the nodes and the interconnections of the graph.</p>
+<p>Remark: The text file could, e.g., be used for the clustering procedure.</p>
+<p><strong>Alternative 2:</strong></p>
+<p>If not only the resulting graph structure from Alternative 1 is desired you can also inspect the netlist with python at many abstraction levels.</p>
+<p>The following commands could be used for processing your netlist using a python environment.
+To execute them in the current bash session, first activate the interactive python shell.</p>
+<p>If you are working in a virtual environment use:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python
+</pre></div>
+</div>
+<p>else additionally specify that you would like to use python 3:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3
+</pre></div>
+</div>
+<p>To close the interactive python shell just use this command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>quit<span class="o">()</span>
+</pre></div>
+</div>
+<p>Below are examples of commands for the interactive python shell:</p>
+<p>The verilog file can be converted into a python object representing a graph structure:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">tueisec_myparsing.myparsing_ply</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tmp</span>
+<span class="n">O</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">parse_to_obj</span><span class="p">(</span><span class="s2">&quot;qflow/postprocessed/name_of_synthesized_file.v&quot;</span><span class="p">,</span> <span class="s2">&quot;/nas/ei/share/sec/tools/qflow/qflow-1.3-RE/share/qflow/tech/osu035/osu035_stdcells.lib&quot;</span><span class="p">,</span> <span class="n">add_const_as_input</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Remark: Internally first the verilog code is converted into an abstract syntax tree (ast). Based in the ast further information are generated.</p>
+<p>You could use some of the following commands to interact with the O object and extract further information:</p>
+<p>Get the abstract syntax tree (ast) of the verilog code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">ast</span>
+</pre></div>
+</div>
+<p>The verilog ast is a simple hierarchical representation of the file’s structure. It will e.g. have the module on one layer followed by a layer of all standard gates (OR, AND, …) it contains and a layer with all pins (inputs and outputs of the gates). The relation of elements in different layers is represented by cross-layer interconnections.</p>
+<p>Sometimes an adaption of the verilog file is wanted. It is then easier to modify the ast object than operating on the verilog file itself.</p>
+<p>Remark: The ast will additionally be used in an intermediate step when generating the O object. For further information on the ast see</p>
+<p>After changing the verilog ast it can be converted back into a verilog file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.codegen</span><span class="w"> </span><span class="kn">import</span> <span class="n">ASTCodeGenerator</span>
+<span class="n">generator</span> <span class="o">=</span> <span class="n">ASTCodeGenerator</span><span class="p">()</span>
+<span class="n">rslt</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">O</span><span class="o">.</span><span class="n">ast</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;modified_file.v&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+    <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">rslt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can look at the generated file when you are done working in the interactive shell. It contains a modified version of the verilog code from the original file.</p>
+<p>Access other easier data structures of the O object:</p>
+<p>Dictionary of input nodes of O:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">in_nodes</span>
+</pre></div>
+</div>
+<p>Dictionary of output nodes of O:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">out_nodes</span>
+</pre></div>
+</div>
+<p>Dictionary of other nodes of O with metadata:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">other_nodes</span>
+</pre></div>
+</div>
+<p>Dictionary of nets in design:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">nets</span>
+</pre></div>
+</div>
+<p>The nets are connected wires on the same voltage level. All input, output and other wires go into or out of a gate of the design. Therefore, these wires all drive one or multiple receivers, carrying information through the circuit. The output is a dictionary containing a list of driven nodes for each net. The output is, e.g., <cite>[“net_a”: [“AND2X1”, “DFFPOSX1” …], “net_b”: …]</cite>.</p>
+<p>Dictionary of drivers for nets:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">net_drivers</span>
+</pre></div>
+</div>
+<p>The dictionary of net drivers contains all nodes that drive the nets by supplying an output voltage. It does map the nets from above to the corresponding net drivers.</p>
+<p>Get the module name as a string:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">module_name</span>
+</pre></div>
+</div>
+<p>Dictionary of the standard cell type of each node:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">node_types</span>
+</pre></div>
+</div>
+<p>Simple dictionary explaining the edge relations between nodes, no fancy data there:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">graph</span>
+</pre></div>
+</div>
+<p>Inspect the cell library that was used in the synthesis step:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">cell_lib</span>
+</pre></div>
+</div>
+<p>In the parsing process the standard cell library will be automatically imported and provides a possibility to check for the functionality and content of single standard cells.
+A dictionary containing all the important info from /nas/ei/share/sec/tools/qflow/qflow-1.3-RE/share/qflow/tech/osu035/osu035_stdcells.lib is generated.</p>
+<p>Check whether the standard cell AND2X1 is a FlipFlop:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">cell_lib</span><span class="p">[</span><span class="s2">&quot;AND2X1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ff&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Returns None, i.e., standard cell AND2X1 is not a FlipFlop.</p>
+<p>Check whether the standard cell DFFSR is a FlipFlop:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">cell_lib</span><span class="p">[</span><span class="s2">&quot;DFFSR&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ff&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Returns <cite>{‘next_state’: ‘D’, ‘clocked_on’: ‘CLK’, ‘clear’: ‘(!R)’, ‘preset’: ‘(!S)’, ‘clear_preset_var1’: ‘L’}</cite>, i.e. standard cell DFFSR is a Flip-Flop.</p>
+<p>Get information on the pin Y of the standard cell AND2X1:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">O</span><span class="o">.</span><span class="n">cell_lib</span><span class="p">[</span><span class="s2">&quot;AND2X1&quot;</span><span class="p">][</span><span class="s2">&quot;Y&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Returns <cite>{‘direction’: ‘output’, ‘function’: ‘(A&amp;B)’}</cite>, i.e. pin Y is an output pin and has the function <cite>A and B</cite>. A, B are the inputs of this cell.</p>
+<p>The graph structure of O.graph is a very simple and primitive representation of the hierarchy of the verilog file. This representation could be extended with further annotations. Each wire could be annotated by adding the information to which ports it is connected to. To all gates the Boolean logic they represent could be added. This annotated graph is the networkx-graph.</p>
+<p>Directly generate the networkx-graph (same procedure as with the command line tool <cite>verilog2graph</cite> from alternative 1):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">G</span> <span class="o">=</span> <span class="n">O</span><span class="o">.</span><span class="n">get_networkx_graph</span><span class="p">(</span><span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can get the same graph by parsing the .gml file created before:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">read_gml</span><span class="p">(</span><span class="s2">&quot;graph/name_of_synthesized_file.gml&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Remark: Going from G to <cite>*.v</cite> again should be possible, but has not been implemented before. It would be OK if you stick to O.ast!</p>
+<p>Close the interactive python shell:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">quit</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>As previously mentioned, you can now look at the generated file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vim<span class="w"> </span>modified_file.v
+</pre></div>
+</div>
+<p>Close the file again:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>:q
+</pre></div>
+</div>
+</section>
+<section id="hierarchy-generation">
+<h3>Hierarchy Generation<a class="headerlink" href="#hierarchy-generation" title="Link to this heading">¶</a></h3>
+<p>The generation of the hierarchical structure belongs to the parsing process. The parsing of the verilog file is done internally.</p>
+<p>The main procedure to generate a hierarchy is the following. First the logging file that was generated during the synthesis process is used. Here the units of the main_file.v are determined by identifying the names of all submodules that were needed for synthesizing the main module. These names are the names that were used in the un-synthesized main_file.v. The synthesized design main_file.v still contains these submodule names as module prefixes. Therefore, the standard cells of the synthesized design, i.e., the nodes of the graph, can be assigned to the modules they belong to using these prefixes. The output is a list of nodes that are assigned to the different modules.</p>
+<p>To generate hierarchical data, you need some ingredients:</p>
+<ol class="loweralpha simple">
+<li><p>The logfile from yosys</p></li>
+<li><p>The top-level netlist (the whole design, not some sub-design)</p></li>
+<li><p>The <cite>run_hierarchy</cite> command</p></li>
+</ol>
+<p>Then it’s simple.</p>
+<p>Generate hierarchical data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>run_hierarchy<span class="w"> </span>qflow/postprocessed/name_of_synthesized_file.v<span class="w"> </span>-D<span class="w"> </span>qflow<span class="w"> </span>-L<span class="w"> </span>qflow/log/synth_name_of_synthesized_file.log<span class="w"> </span>-u<span class="w"> </span>osu035<span class="w"> </span>-o<span class="w"> </span>qflow/hierarchy
+</pre></div>
+</div>
+<p>Remark: The path after flag -L is the path to the log-file that was generated during the synthesis process.</p>
+<p>Look at the hierarchy at <cite>qflow/hierarchy</cite> :</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>qflow/hierarchy
+vim<span class="w"> </span>hierarchy_<span class="o">(</span>modules_<span class="o">)</span>name_of_synthesized_file.csv
+:q
+</pre></div>
+</div>
+</section>
+</section>
+<section id="further-procedure">
+<h2>Further procedure<a class="headerlink" href="#further-procedure" title="Link to this heading">¶</a></h2>
+<p>The generation of the graph as a text file from the graph generation section and the hierarchical data from the hierarchy generation section can, e.g, be used further for the clustering process.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Parsing Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preparation-steps">Preparation Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parsing-process">Parsing Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#further-procedure">Further procedure</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/codeexample.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="reference/index.html" title="Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

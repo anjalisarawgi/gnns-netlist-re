@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>re_verilog2features.create_data &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="re_verilog2features.create_data.entropy" href="re_verilog2features.create_data.entropy.html" />
+    <link rel="prev" title="re_verilog2features.cluster_csv_file.CSVType.small" href="re_verilog2features.cluster_csv_file.CSVType.small.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../re_verilog2features.html" accesskey="U">re_verilog2features</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-re_verilog2features.create_data">
+<span id="re-verilog2features-create-data"></span><h1>re_verilog2features.create_data<a class="headerlink" href="#module-re_verilog2features.create_data" title="Link to this heading">¶</a></h1>
+<p>Feature extraction functions, to be used with read_adjlist_and_make_csv.py</p>
+<p>CAREFUL: If you do not want OPENBLAS / ARPACK to use all cores of the host system, use
+this line BEFORE importing this or any of nx, np, scipy, pandas etc.!</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OPENBLAS_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="o">&lt;</span><span class="n">number_of_cores</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Also be careful because this parameter is threads per python process, so if you
+use multiprocessing, consider that #total_treads = #multiprocessing_pools *
+OPENBLAS_NUM_THREADS</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.create_data.entropy.html#re_verilog2features.create_data.entropy" title="re_verilog2features.create_data.entropy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">entropy</span></code></a>(data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.create_data.graph_tests.html#re_verilog2features.create_data.graph_tests" title="re_verilog2features.create_data.graph_tests"><code class="xref py py-obj docutils literal notranslate"><span class="pre">graph_tests</span></code></a>(graph, result, design_file)</p></td>
+<td><p>run the graph_tests algorithms partially using igraph, graph_tool and networkx</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.create_data.graph_tests_ig.html#re_verilog2features.create_data.graph_tests_ig" title="re_verilog2features.create_data.graph_tests_ig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">graph_tests_ig</span></code></a>(graph, result, design_file)</p></td>
+<td><p>run the graph_tests algorithms partially using igraph, graph_tool and networkx</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.create_data.graph_tests_nx.html#re_verilog2features.create_data.graph_tests_nx" title="re_verilog2features.create_data.graph_tests_nx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">graph_tests_nx</span></code></a>(graph, result, design_file)</p></td>
+<td><p>run the graph_tests algorithms solely with networkx</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.create_data.input_output_analysis.html#re_verilog2features.create_data.input_output_analysis" title="re_verilog2features.create_data.input_output_analysis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">input_output_analysis</span></code></a>(graph, result, design_file)</p></td>
+<td><p>get number and type of inputs and outputs</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.create_data.node_type_ratios.html#re_verilog2features.create_data.node_type_ratios" title="re_verilog2features.create_data.node_type_ratios"><code class="xref py py-obj docutils literal notranslate"><span class="pre">node_type_ratios</span></code></a>(graph, result, node_types, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.create_data.statistics_of_list.html#re_verilog2features.create_data.statistics_of_list" title="re_verilog2features.create_data.statistics_of_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">statistics_of_list</span></code></a>(name, node_list, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="re_verilog2features.create_data.statistics_of_series.html#re_verilog2features.create_data.statistics_of_series" title="re_verilog2features.create_data.statistics_of_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">statistics_of_series</span></code></a>(name, node_list, ...)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../re_verilog2features.html">re_verilog2features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/re_verilog2features.create_data.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.create_data.entropy.html" title="re_verilog2features.create_data.entropy"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.cluster_csv_file.CSVType.small.html" title="re_verilog2features.cluster_csv_file.CSVType.small"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

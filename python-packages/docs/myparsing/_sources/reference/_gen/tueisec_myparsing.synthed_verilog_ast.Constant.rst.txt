@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Constant
+=================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Constant
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Constant.__init__
+      ~Constant.children
+      ~Constant.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Constant.attr_names
+   
+   

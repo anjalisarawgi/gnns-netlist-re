@@ -1,0 +1,6 @@
+tueisec\_myparsing.pool\_wrapper.draw\_progress\_bar
+====================================================
+
+.. currentmodule:: tueisec_myparsing.pool_wrapper
+
+.. autofunction:: tueisec_myparsing.pool_wrapper.draw_progress_bar

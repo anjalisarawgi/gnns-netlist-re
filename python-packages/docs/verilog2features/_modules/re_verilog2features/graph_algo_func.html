@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.graph_algo_func &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.graph_algo_func</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Graph algorithm overrides</span>
+<span class="sd">=========================</span>
+
+<span class="sd">The functions in this file are graph algorithms and functions on graphs</span>
+<span class="sd">copied from the respective graph packages and adapted to special needs.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">networkx.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">py_random_state</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyintergraph</span>
+
+
+<div class="viewcode-block" id="sparse_katz_centrality_numpy">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.graph_algo_func.sparse_katz_centrality_numpy.html#re_verilog2features.graph_algo_func.sparse_katz_centrality_numpy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sparse_katz_centrality_numpy</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute the Katz centrality for the graph G *with sparse matrices*.</span>
+
+<span class="sd">    See networkx&#39;s documentation for</span>
+<span class="sd">    :py:func:`katz_centrality_numpy&lt;networkx:networkx.algorithms.centrality.katz_centrality_numpy&gt;`</span>
+<span class="sd">    for the params.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;Requires NumPy: http://scipy.org/&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">nx</span><span class="o">.</span><span class="n">NetworkXError</span><span class="p">(</span>
+                <span class="s2">&quot;beta dictionary &quot;</span> <span class="s2">&quot;must have a value for every node&quot;</span>
+            <span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">beta</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">nodelist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nodelist</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">nx</span><span class="o">.</span><span class="n">NetworkXError</span><span class="p">(</span><span class="s2">&quot;beta must be a number&quot;</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">adjacency_matrix</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">nodelist</span><span class="o">=</span><span class="n">nodelist</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">tosolve</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;csr&quot;</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">A</span><span class="p">)</span>
+    <span class="n">centrality</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">spsolve</span><span class="p">(</span><span class="n">tosolve</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">normalized</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">centrality</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>  <span class="c1"># result of spsolve is not sparse.</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">centrality</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">*=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">centrality</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">centrality</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">nodelist</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">centrality</span> <span class="o">/</span> <span class="n">norm</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">centrality</span></div>
+
+
+
+<span class="nd">@py_random_state</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">betweenness_centrality_pivot</span><span class="p">(</span>
+    <span class="n">G</span><span class="p">,</span> <span class="n">pivots</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">endpoints</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This is a copy of networkx&#39;s betweenness centrality where pivots can be </span>
+<span class="sd">    specified by name</span>
+
+<span class="sd">    See networkx&#39;s documentation for</span>
+<span class="sd">    :py:func:`betweenness_centrality&lt;networkx:networkx.algorithms.bipartite.centrality.betweenness_centrality&gt;`</span>
+<span class="sd">    for further details.</span>
+
+<span class="sd">    :param G: Graph to operate on</span>
+<span class="sd">    :type G: networkx.Graph</span>
+<span class="sd">    :param pivots: List of pivot nodes or int of nodes for randomly chosen pivots, defaults to None</span>
+<span class="sd">    :type pivots: list(str) or int, optional</span>
+<span class="sd">    :param normalized: Normalize the betweenness?, defaults to True</span>
+<span class="sd">    :type normalized: bool, optional</span>
+<span class="sd">    :param weight: If None, all edge weights are considered equal.</span>
+<span class="sd">      Otherwise holds the name of the edge attribute used as weight, defaults to None</span>
+<span class="sd">    :type weight: str, optional</span>
+<span class="sd">    :param endpoints: If True include the endpoints in the shortest path counts, defaults to False</span>
+<span class="sd">    :type endpoints: bool, optional</span>
+<span class="sd">    :param seed: Indicator of random number generation state.</span>
+<span class="sd">        See :ref:`Randomness&lt;networkx:randomness&gt;`.</span>
+<span class="sd">        Note that this is only used if k is not None and a int, defaults to None</span>
+<span class="sd">    :type seed: random_state, optional</span>
+<span class="sd">    :return: Dictionary of nodes with betweenness centrality as the value.</span>
+<span class="sd">    :rtype: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">networkx.algorithms.centrality.betweenness</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">_single_source_shortest_path_basic</span><span class="p">,</span>
+        <span class="n">_single_source_dijkstra_path_basic</span><span class="p">,</span>
+        <span class="n">_accumulate_endpoints</span><span class="p">,</span>
+        <span class="n">_accumulate_basic</span><span class="p">,</span>
+        <span class="n">_rescale</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">betweenness</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># b[v]=0 for v in G</span>
+    <span class="k">if</span> <span class="n">pivots</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">G</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pivots</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">seed</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">(),</span> <span class="n">pivots</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">pivots</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pivots</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pivots</span><span class="p">:</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">pivots</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pivots</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">G</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+        <span class="c1"># single source shortest paths</span>
+        <span class="k">if</span> <span class="n">weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># use BFS</span>
+            <span class="n">S</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_single_source_shortest_path_basic</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># use Dijkstra&#39;s algorithm</span>
+            <span class="n">S</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_single_source_dijkstra_path_basic</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
+        <span class="c1"># accumulation</span>
+        <span class="k">if</span> <span class="n">endpoints</span><span class="p">:</span>
+            <span class="n">betweenness</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_accumulate_endpoints</span><span class="p">(</span><span class="n">betweenness</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">betweenness</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_accumulate_basic</span><span class="p">(</span><span class="n">betweenness</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="c1"># rescaling</span>
+    <span class="n">betweenness</span> <span class="o">=</span> <span class="n">_rescale</span><span class="p">(</span>
+        <span class="n">betweenness</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="p">),</span>
+        <span class="n">normalized</span><span class="o">=</span><span class="n">normalized</span><span class="p">,</span>
+        <span class="n">directed</span><span class="o">=</span><span class="n">G</span><span class="o">.</span><span class="n">is_directed</span><span class="p">(),</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="n">endpoints</span><span class="o">=</span><span class="n">endpoints</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">betweenness</span>
+
+
+<div class="viewcode-block" id="nx2igraph">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.graph_algo_func.nx2igraph.html#re_verilog2features.graph_algo_func.nx2igraph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nx2igraph</span><span class="p">(</span><span class="n">nxG</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a networkx graph to a igraph graph</span>
+
+<span class="sd">    This function is a thin wrapper for igraphs functionality,</span>
+<span class="sd">    with lazy-import</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This method imports igraph</span>
+<span class="sd">    </span>
+<span class="sd">    :param nxG: networkx Graph to convert to a igraph graph</span>
+<span class="sd">    :type nxG: networkx.Graph</span>
+<span class="sd">    :return: ``nxG`` converted to a igraph graph</span>
+<span class="sd">    :rtype: igraph.Graph</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">igraph</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ig</span>
+
+    <span class="n">igG</span> <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">Graph</span><span class="o">.</span><span class="n">from_networkx</span><span class="p">(</span><span class="n">nxG</span><span class="p">)</span>
+    <span class="c1"># vertex names shall be kept.</span>
+    <span class="n">igG</span><span class="o">.</span><span class="n">vs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">igG</span><span class="o">.</span><span class="n">vs</span><span class="p">[</span><span class="s2">&quot;_nx_name&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">igG</span></div>
+
+
+<div class="viewcode-block" id="nx2gt">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.graph_algo_func.nx2gt.html#re_verilog2features.graph_algo_func.nx2gt">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nx2gt</span><span class="p">(</span>
+    <span class="n">nxG</span><span class="p">,</span>
+    <span class="n">labelname</span><span class="o">=</span><span class="s2">&quot;node_name&quot;</span><span class="p">,</span>
+    <span class="n">openmp_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">openmp_schedule</span><span class="o">=</span><span class="s2">&quot;guided&quot;</span><span class="p">,</span>
+    <span class="n">openmp_chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a networkx graph to a graph_tool graph</span>
+
+<span class="sd">    This method is pretty stupid and does not convert</span>
+<span class="sd">    anything else than graph structure and node names.</span>
+
+<span class="sd">    In particular, this does not convert node attributes, edge weights etc.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This method imports graph_tool.</span>
+<span class="sd">        For further documentation of the ``openmp_schedule`` and ``openmp_chunk``</span>
+<span class="sd">        parameters, please see http://jakascorner.com/blog/2016/06/omp-for-scheduling.html</span>
+<span class="sd">    </span>
+<span class="sd">    :param nxG: networkx Graph to convert to a graph_tool graph</span>
+<span class="sd">    :type nxG: networkx.Graph</span>
+<span class="sd">    :param labelname: graph_tool id&#39;s nodes with integers. The node name must therefore </span>
+<span class="sd">        be saved as a vertex property. Specify the vertex property name here and access</span>
+<span class="sd">        the name later by ``gtG.vp[&lt;labelname&gt;]``. defaults to &quot;node_name&quot;</span>
+<span class="sd">    :type labelname: str, optional</span>
+<span class="sd">    :param openmp_threads: This function imports graph_tool, maybe for the first time.</span>
+<span class="sd">        As a safeguard, we should set the openmp threads (*multiplies by any </span>
+<span class="sd">        multiprocessing!*) here. defaults to 1</span>
+<span class="sd">    :type openmp_threads: int, optional</span>
+<span class="sd">    :param openmp_schedule: This function imports graph_tool, maybe for the first time.</span>
+<span class="sd">        As a safeguard, we should set the openmp schedule here, defaults to &quot;guided&quot;</span>
+<span class="sd">    :type openmp_schedule: str, optional</span>
+<span class="sd">    :param openmp_chunks: This function imports graph_tool, maybe for the first time.</span>
+<span class="sd">        As a safeguard, we should set the openmp chunks here, defaults to 1</span>
+<span class="sd">    :type openmp_chunks: int, optional</span>
+<span class="sd">    :return: ``nxG`` converted to a graph_tool graph</span>
+<span class="sd">    :rtype: graph_tool.Graph</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">graph_tool</span>
+
+    <span class="n">graph_tool</span><span class="o">.</span><span class="n">openmp_set_num_threads</span><span class="p">(</span><span class="n">openmp_threads</span><span class="p">)</span>
+    <span class="n">graph_tool</span><span class="o">.</span><span class="n">openmp_set_schedule</span><span class="p">(</span><span class="n">openmp_schedule</span><span class="p">,</span> <span class="n">chunk</span><span class="o">=</span><span class="n">openmp_chunks</span><span class="p">)</span>
+
+    <span class="n">gtG</span> <span class="o">=</span> <span class="n">graph_tool</span><span class="o">.</span><span class="n">Graph</span><span class="p">(</span><span class="n">directed</span><span class="o">=</span><span class="n">nxG</span><span class="o">.</span><span class="n">is_directed</span><span class="p">())</span>
+
+    <span class="n">node_type</span> <span class="o">=</span> <span class="n">pyintergraph</span><span class="o">.</span><span class="n">infer</span><span class="o">.</span><span class="n">infer_type</span><span class="p">(</span><span class="n">nxG</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">labelname</span><span class="p">:</span>
+        <span class="n">name_property</span> <span class="o">=</span> <span class="n">gtG</span><span class="o">.</span><span class="n">new_vertex_property</span><span class="p">(</span><span class="n">node_type</span><span class="p">)</span>
+
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">empty_vertices</span> <span class="o">=</span> <span class="n">gtG</span><span class="o">.</span><span class="n">add_vertex</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nxG</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">nxG</span><span class="o">.</span><span class="n">nodes</span><span class="p">(),</span> <span class="n">empty_vertices</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">labelname</span><span class="p">:</span>
+            <span class="n">name_property</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="n">nodes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+    <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">nxG</span><span class="o">.</span><span class="n">edges</span><span class="p">():</span>
+        <span class="n">gtG</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">nodes</span><span class="p">[</span><span class="n">u</span><span class="p">],</span> <span class="n">nodes</span><span class="p">[</span><span class="n">v</span><span class="p">])</span>
+
+    <span class="n">gtG</span><span class="o">.</span><span class="n">vp</span><span class="p">[</span><span class="n">labelname</span><span class="p">]</span> <span class="o">=</span> <span class="n">name_property</span>
+
+    <span class="k">return</span> <span class="n">gtG</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

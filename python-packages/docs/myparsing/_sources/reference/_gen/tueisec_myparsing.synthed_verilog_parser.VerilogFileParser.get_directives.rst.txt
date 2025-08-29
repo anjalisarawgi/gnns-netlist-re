@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_parser.VerilogFileParser.get\_directives
+=============================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. automethod:: tueisec_myparsing.synthed_verilog_parser.VerilogFileParser.get_directives

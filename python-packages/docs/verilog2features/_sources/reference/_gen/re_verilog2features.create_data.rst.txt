@@ -1,0 +1,30 @@
+﻿re\_verilog2features.create\_data
+=================================
+
+.. automodule:: re_verilog2features.create_data
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      entropy
+      graph_tests
+      graph_tests_ig
+      graph_tests_nx
+      input_output_analysis
+      node_type_ratios
+      statistics_of_list
+      statistics_of_series
+   
+   
+
+   
+   
+   
+
+   
+   
+   

@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.liberty_parsing &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.liberty_parsing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pprint</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.eda_helper_functions</span><span class="w"> </span><span class="kn">import</span> <span class="n">stringToPyeda</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">plylibparser</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="parseLibertyToDataStruct">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.liberty_parsing.parseLibertyToDataStruct.html#tueisec_myparsing.liberty_parsing.parseLibertyToDataStruct">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parseLibertyToDataStruct</span><span class="p">(</span><span class="n">lib</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; reparses LibertyStructure to a own datastructure</span>
+
+<span class="sd">    return:</span>
+
+<span class="sd">    .. code-block::</span>
+
+<span class="sd">        my_data[cell_name]</span>
+<span class="sd">            [&quot;inputs&quot;]    : integer number of inputs</span>
+<span class="sd">            [&quot;outputs&quot;]    : integer number of outpus</span>
+<span class="sd">            [&quot;inouts&quot;]    : integer number of inouts</span>
+<span class="sd">            [pin_name]</span>
+<span class="sd">                [&quot;function&quot;]    : string</span>
+<span class="sd">                [&quot;direction&quot;]    : string {input, output, inout}</span>
+<span class="sd">                [&quot;capacitance&quot;]    : string</span>
+<span class="sd">                [&quot;rise_capacitance&quot;]    : string</span>
+<span class="sd">                [&quot;fall_capacitance&quot;]    : string</span>
+<span class="sd">                [&quot;max_capacitance&quot;]    : string</span>
+<span class="sd">                [&quot;timing_raw&quot;]    : list</span>
+<span class="sd">                [&quot;timing&quot;]</span>
+<span class="sd">                    [pin_name]: dict&quot;&quot;&quot;</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+
+    <span class="c1"># print(dir(lib))</span>
+    <span class="c1"># ~ offset = 38</span>
+    <span class="c1"># ~ pprint(lib.result[&quot;library&quot;][&quot;osu035_stdcells&quot;][offset+0][&quot;cell&quot;][&quot;AND2X1&quot;])</span>
+    <span class="c1"># cell = lib.result[&quot;library&quot;][&quot;osu035_stdcells&quot;][offset+0][&quot;cell&quot;][&quot;AND2X1&quot;]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;more than 1 cell library in liberty file!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;NangateOpenCellLibrary&quot;</span> <span class="ow">in</span> <span class="n">lib</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">]:</span>
+        <span class="n">stdcell</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">][</span><span class="s2">&quot;NangateOpenCellLibrary&quot;</span><span class="p">]</span>
+        <span class="n">space_is_and</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># And(A,B) is (A &amp; B)</span>
+    <span class="k">elif</span> <span class="s2">&quot;osu035_stdcells&quot;</span> <span class="ow">in</span> <span class="n">lib</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">]:</span>
+        <span class="n">stdcell</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">][</span><span class="s2">&quot;osu035_stdcells&quot;</span><span class="p">]</span>
+        <span class="n">space_is_and</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># And(A,B) is (A B) instead of (A &amp; B)</span>
+    <span class="k">elif</span> <span class="s2">&quot;osu018_stdcells&quot;</span> <span class="ow">in</span> <span class="n">lib</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">]:</span>
+        <span class="n">stdcell</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">][</span><span class="s2">&quot;osu018_stdcells&quot;</span><span class="p">]</span>
+        <span class="n">space_is_and</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># And(A,B) is (A B) instead of (A &amp; B)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;unknown library!&quot;</span><span class="p">)</span>
+
+    <span class="c1"># get rid of &quot;library&quot; information</span>
+    <span class="n">D_cells</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Dict with all std_cells</span>
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">stdcell</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">D_cells</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell&quot;</span><span class="p">))</span>
+
+    <span class="n">my_data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">cell_name</span> <span class="ow">in</span> <span class="n">D_cells</span><span class="p">:</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;outputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inouts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">D_cells</span><span class="p">[</span><span class="n">cell_name</span><span class="p">]:</span>
+            <span class="n">pin</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pin&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pin_name</span> <span class="o">=</span> <span class="n">pin</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="n">pin</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">)</span>
+                <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="c1"># should we check the index [0] or are we sure that direction is always first?</span>
+                <span class="n">direction</span> <span class="o">=</span> <span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;direction&quot;</span><span class="p">)</span>
+                <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">direction</span>
+
+                <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span>
+                    <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;outputs&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;input&quot;</span><span class="p">:</span>
+                    <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inputs&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;inout&quot;</span><span class="p">:</span>
+                    <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inouts&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="n">timing</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">timing_simple_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;capacitance&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;capacitance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                            <span class="s2">&quot;capacitance&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rise_capacitance&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;rise_capacitance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                            <span class="s2">&quot;rise_capacitance&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fall_capacitance&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;fall_capacitance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                            <span class="s2">&quot;fall_capacitance&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_capacitance&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;max_capacitance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                            <span class="s2">&quot;max_capacitance&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;function&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">space_is_and</span><span class="p">:</span>
+                            <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                                <span class="s2">&quot;function&quot;</span>
+                            <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&amp;&quot;</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                                <span class="s2">&quot;function&quot;</span>
+                            <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timing&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="p">):</span>  <span class="c1"># there may be multiple entries starting with &quot;timing&quot;</span>
+                        <span class="n">timing_raw</span> <span class="o">=</span> <span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timing&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">)</span>
+                        <span class="n">timing</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">timing_raw</span><span class="p">)</span>
+
+                        <span class="n">timing_raw_simple</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">timing_raw</span><span class="p">)</span>  <span class="c1"># realy deep copy</span>
+
+                        <span class="n">timing_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+                        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">timing_raw_simple</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_fall&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">timing_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                                    <span class="p">{</span>
+                                        <span class="s2">&quot;cell_fall&quot;</span><span class="p">:</span> <span class="p">(</span>
+                                            <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_fall&quot;</span><span class="p">)</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">)</span>
+                                        <span class="p">)</span>
+                                    <span class="p">}</span>
+                                <span class="p">)</span>
+                            <span class="c1">#             t[&#39;cell_fall&#39;] = (t.get(&#39;cell_fall&#39;).get(&#39;children&#39;)[-1].get(&#39;values&#39;))</span>
+                            <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_rise&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">timing_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                                    <span class="p">{</span>
+                                        <span class="s2">&quot;cell_rise&quot;</span><span class="p">:</span> <span class="p">(</span>
+                                            <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell_rise&quot;</span><span class="p">)</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">)</span>
+                                        <span class="p">)</span>
+                                    <span class="p">}</span>
+                                <span class="p">)</span>
+                            <span class="c1">#             t[&#39;cell_rise&#39;] = (t.get(&#39;cell_rise&#39;).get(&#39;children&#39;)[-1].get(&#39;values&#39;))</span>
+                            <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rise_transition&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">timing_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                                    <span class="p">{</span>
+                                        <span class="s2">&quot;rise_transition&quot;</span><span class="p">:</span> <span class="p">(</span>
+                                            <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rise_transition&quot;</span><span class="p">)</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">)</span>
+                                        <span class="p">)</span>
+                                    <span class="p">}</span>
+                                <span class="p">)</span>
+                            <span class="c1">#             t[&#39;rise_transition&#39;] = (t.get(&#39;rise_transition&#39;).get(&#39;children&#39;)[-1].get(&#39;values&#39;))</span>
+                            <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fall_transition&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">timing_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                                    <span class="p">{</span>
+                                        <span class="s2">&quot;fall_transition&quot;</span><span class="p">:</span> <span class="p">(</span>
+                                            <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fall_transition&quot;</span><span class="p">)</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;children&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                            <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">)</span>
+                                        <span class="p">)</span>
+                                    <span class="p">}</span>
+                                <span class="p">)</span>
+                            <span class="c1">#             t[&#39;fall_transition&#39;] = (t.get(&#39;fall_transition&#39;).get(&#39;children&#39;)[-1].get(&#39;values&#39;))</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">timing_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                        <span class="c1">#     timing_simple.append(timing_dict)</span>
+                        <span class="n">timing_simple_dict</span><span class="p">[</span>
+                            <span class="n">timing_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;related_pin&quot;</span><span class="p">)</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">timing_dict</span><span class="p">)</span>
+
+                <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;timing_raw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">timing</span>
+                <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;timing&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">timing_simple_dict</span>
+
+    <span class="c1"># print(&quot;function: &quot;, my_data[&quot;AND2X1&quot;][&quot;Y&quot;][&quot;function&quot;])</span>
+    <span class="c1"># print(&quot;timing&quot;, my_data[&quot;AND2X1&quot;][&quot;Y&quot;][&quot;timing&quot;])</span>
+    <span class="c1"># print(&quot;timing simple&quot;, my_data[&quot;AND2X1&quot;][&quot;Y&quot;][&quot;timing_simple&quot;])</span>
+    <span class="c1"># import sys</span>
+    <span class="c1"># print(&quot;my_data needs&quot;, sys.getsizeof(cell_lib), &quot;bytes!&quot;)</span>
+    <span class="k">return</span> <span class="n">my_data</span></div>
+
+
+
+<div class="viewcode-block" id="own_parseLibertyToDataStruct">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.liberty_parsing.own_parseLibertyToDataStruct.html#tueisec_myparsing.liberty_parsing.own_parseLibertyToDataStruct">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">own_parseLibertyToDataStruct</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">exprvar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">space_is_and</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; reparses LibertyStructure to a own datastructure</span>
+
+<span class="sd">    return:</span>
+
+<span class="sd">    .. code-block:: </span>
+
+<span class="sd">        my_data[cell_name]</span>
+<span class="sd">            [&quot;inputs&quot;]    : integer number of inputs</span>
+<span class="sd">            [&quot;outputs&quot;]    : integer number of outpus</span>
+<span class="sd">            [&quot;inouts&quot;]    : integer number of inouts</span>
+<span class="sd">            [pin_name]</span>
+<span class="sd">                [&quot;function&quot;]            : string</span>
+<span class="sd">                [&quot;state_function&quot;]        : string</span>
+<span class="sd">                [&quot;direction&quot;]            : string {input, output, inout}</span>
+<span class="sd">                [&quot;three_state&quot;]            : arg</span>
+<span class="sd">            [&quot;ff/latch&quot;] (if vorhanden für cell_name und Auswahl an vorhandenen Daten)</span>
+<span class="sd">                [&quot;next_state&quot;]            : arg</span>
+<span class="sd">                [&quot;clocked_on&quot;]            : arg</span>
+<span class="sd">                [&quot;clear&quot;]                : arg</span>
+<span class="sd">                [&quot;preset&quot;]                : arg</span>
+<span class="sd">                [&quot;clear_preset_var1&quot;]    : arg</span>
+<span class="sd">                [&quot;clear_preset_var2&quot;]    : arg</span>
+<span class="sd">                [&quot;data_in&quot;]                : arg</span>
+<span class="sd">                [&quot;enable&quot;]                : arg</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># MB</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lib</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;more than 1 cell library in liberty file!&quot;</span><span class="p">)</span>
+
+    <span class="n">library_name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">lib</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="n">space_is_and</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Space is and is deprecated, as the root cause was fixed. Ignoring it!&quot;</span><span class="p">)</span>
+    <span class="n">stdcell</span> <span class="o">=</span> <span class="n">lib</span><span class="p">[</span><span class="s2">&quot;library&quot;</span><span class="p">][</span><span class="n">library_name</span><span class="p">]</span>
+
+    <span class="c1"># get rid of &quot;library&quot; information</span>
+    <span class="n">D_cells</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Dict with all std_cells</span>
+    <span class="k">global</span> <span class="n">clockname</span>
+    <span class="n">setclockname</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">stdcell</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">D_cells</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cell&quot;</span><span class="p">))</span>
+
+    <span class="n">my_data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">cell_name</span> <span class="ow">in</span> <span class="n">D_cells</span><span class="p">:</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;outputs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inouts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">D_cells</span><span class="p">[</span><span class="n">cell_name</span><span class="p">]:</span>
+
+            <span class="c1"># first check if register, latch, ...</span>
+            <span class="n">ff</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ff&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">variable_1_2</span> <span class="o">=</span> <span class="n">ff</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;arguments&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">variable_1_2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;variable1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable_1_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Syntax error in liberty file </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;In FF </span><span class="si">{</span><span class="n">cell_name</span><span class="si">}</span><span class="s2">, no variable1 exists. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;Gracefully ignoring...&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;variable2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable_1_2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Syntax error in liberty file </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;In FF </span><span class="si">{</span><span class="n">cell_name</span><span class="si">}</span><span class="s2">, no variable2 exists. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;Gracefully ignoring...&quot;</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Syntax error in liberty file </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;In FF </span><span class="si">{</span><span class="n">cell_name</span><span class="si">}</span><span class="s2">, no variable1 and 2 exist. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Gracefully ignoring...&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">ff_attr</span> <span class="o">=</span> <span class="n">ff</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;attributes&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">ff_attr</span><span class="p">:</span>
+                    <span class="n">nextstate</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;next_state&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">nextstate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;next_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nextstate</span>
+                    <span class="n">clockedon</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clocked_on&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clockedon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;clocked_on&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clockedon</span>
+                        <span class="k">if</span> <span class="n">setclockname</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">clockname</span> <span class="o">=</span> <span class="n">clockedon</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;!|+&amp;^&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                            <span class="n">setclockname</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">clearvar</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clear&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clearvar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;clear&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clearvar</span>
+                    <span class="n">presetvar</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;preset&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">presetvar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;preset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">presetvar</span>
+                    <span class="n">clearpresetvar1</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clear_preset_var1&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clearpresetvar1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;clear_preset_var1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clearpresetvar1</span>
+                    <span class="n">clearpresetvar2</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clear_preset_var2&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clearpresetvar2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;clear_preset_var2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clearpresetvar2</span>
+                    <span class="n">datain</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_in&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">datain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;data_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datain</span>
+                    <span class="n">enablevar</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;enable&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enablevar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;ff&quot;</span><span class="p">][</span><span class="s2">&quot;enable&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">enablevar</span>
+            <span class="n">latch</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;latch&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">latch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">variable_1_2</span> <span class="o">=</span> <span class="n">latch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;arguments&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">variable_1_2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;variable1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable_1_2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Syntax error in liberty file </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;In latch </span><span class="si">{</span><span class="n">cell_name</span><span class="si">}</span><span class="s2">, no variable1 exists. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;Gracefully ignoring...&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;variable2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable_1_2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Syntax error in liberty file </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;In latch </span><span class="si">{</span><span class="n">cell_name</span><span class="si">}</span><span class="s2">, no variable2 exists. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;Gracefully ignoring...&quot;</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Syntax error in liberty file </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;In latch </span><span class="si">{</span><span class="n">cell_name</span><span class="si">}</span><span class="s2">, no variable1 and 2 exist. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Gracefully ignoring...&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">latch_attr</span> <span class="o">=</span> <span class="n">latch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;attributes&quot;</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">latch_attr</span><span class="p">:</span>
+                    <span class="n">nextstate</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;next_state&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">nextstate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;next_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nextstate</span>
+                    <span class="n">clockedon</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clocked_on&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clockedon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;clocked_on&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clockedon</span>
+                        <span class="k">if</span> <span class="n">setclockname</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">clockname</span> <span class="o">=</span> <span class="n">clockedon</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;!|+&amp;^&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                            <span class="n">setclockname</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">clearvar</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clear&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clearvar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;clear&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clearvar</span>
+                    <span class="n">presetvar</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;preset&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">presetvar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;preset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">presetvar</span>
+                    <span class="n">clearpresetvar1</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clear_preset_var1&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clearpresetvar1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span>
+                            <span class="s2">&quot;clear_preset_var1&quot;</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">clearpresetvar1</span>
+                    <span class="n">clearpresetvar2</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clear_preset_var2&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">clearpresetvar2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span>
+                            <span class="s2">&quot;clear_preset_var2&quot;</span>
+                        <span class="p">]</span> <span class="o">=</span> <span class="n">clearpresetvar2</span>
+                    <span class="n">datain</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_in&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">datain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;data_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datain</span>
+                    <span class="n">enablevar</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;enable&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enablevar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;latch&quot;</span><span class="p">][</span><span class="s2">&quot;enable&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">enablevar</span>
+
+            <span class="c1"># next check pins</span>
+            <span class="n">pin</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pin&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pin_name</span> <span class="o">=</span> <span class="n">pin</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+                <span class="n">children</span> <span class="o">=</span> <span class="n">pin</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pinAttr&quot;</span><span class="p">)</span>
+                <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;direction&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">direction</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;direction&quot;</span><span class="p">)</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">direction</span>
+                        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;output&quot;</span><span class="p">:</span>
+                            <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;outputs&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;input&quot;</span><span class="p">:</span>
+                            <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inputs&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;inout&quot;</span><span class="p">:</span>
+                            <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="s2">&quot;inouts&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;function&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_cell_function</span><span class="p">(</span>
+                            <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;function&quot;</span><span class="p">),</span> <span class="n">library_name</span><span class="p">,</span> <span class="n">space_is_and</span><span class="p">,</span> <span class="n">exprvar</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;state_function&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">space_is_and</span><span class="p">:</span>
+                            <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;state_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                                <span class="s2">&quot;state_function&quot;</span>
+                            <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&amp;&quot;</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;state_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                                <span class="s2">&quot;state_function&quot;</span>
+                            <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;three_state&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">threestate</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;three_state&quot;</span><span class="p">)</span>
+                        <span class="n">my_data</span><span class="p">[</span><span class="n">cell_name</span><span class="p">][</span><span class="n">pin_name</span><span class="p">][</span><span class="s2">&quot;three_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">threestate</span>
+
+    <span class="c1"># ~ pprint(my_data)</span>
+    <span class="c1"># ~ input()</span>
+    <span class="k">return</span> <span class="n">my_data</span></div>
+
+
+
+<div class="viewcode-block" id="parse_cell_function">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.liberty_parsing.parse_cell_function.html#tueisec_myparsing.liberty_parsing.parse_cell_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_cell_function</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">library_name</span><span class="p">,</span> <span class="n">space_is_and</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exprvar</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize the cell functions.</span>
+
+<span class="sd">    If the library uses space as and, parse all spaces to ampersand chars. If</span>
+<span class="sd">    the space surrounds a plus sign (as with the osu035 lib), so not replace it.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        function (:obj:`str`): The function string as provided by the library</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">space_is_and</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Space is and is deprecated, as the root cause was fixed. Ignoring it!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">exprvar</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">stringToPyeda</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">function</span></div>
+
+
+
+<div class="viewcode-block" id="parse_liberty_file">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.liberty_parsing.parse_liberty_file.html#tueisec_myparsing.liberty_parsing.parse_liberty_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_liberty_file</span><span class="p">(</span><span class="n">liberty_file</span><span class="p">,</span> <span class="n">pickle_folder</span><span class="p">,</span> <span class="n">debug_lib_parser</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># check if lib was already parsed</span>
+    <span class="n">lib_file_name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_lib.txt&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">liberty_file</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">pickle_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pickle_folder</span><span class="p">,</span> <span class="n">lib_file_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">pickle_file_path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">lib_file_name</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">lib</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">handle</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># own parsing</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">liberty_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">lib_raw</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">own_lexer</span> <span class="o">=</span> <span class="n">plylibparser</span><span class="o">.</span><span class="n">create_lexer</span><span class="p">()</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;sucessful lexer creation&quot;</span><span class="p">)</span>
+        <span class="c1"># ~ input()</span>
+        <span class="n">own_parser</span> <span class="o">=</span> <span class="n">plylibparser</span><span class="o">.</span><span class="n">create_parser</span><span class="p">()</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;successful parser creation&quot;</span><span class="p">)</span>
+        <span class="c1"># ~ input()</span>
+        <span class="n">lib</span> <span class="o">=</span> <span class="n">own_parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span>
+            <span class="n">lib_raw</span><span class="p">,</span> <span class="n">lexer</span><span class="o">=</span><span class="n">own_lexer</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug_lib_parser</span>
+        <span class="p">)</span>  <span class="c1"># debug kann auch entfert werden</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;successful lib&quot;</span><span class="p">)</span>
+        <span class="c1"># pprint(lib)</span>
+        <span class="c1"># ~ input()</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_file_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">lib</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

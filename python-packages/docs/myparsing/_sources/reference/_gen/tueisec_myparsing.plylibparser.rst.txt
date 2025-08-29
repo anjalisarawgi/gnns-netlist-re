@@ -1,0 +1,24 @@
+﻿tueisec\_myparsing.plylibparser
+===============================
+
+.. automodule:: tueisec_myparsing.plylibparser
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      create_lexer
+      create_parser
+   
+   
+
+   
+   
+   
+
+   
+   
+   

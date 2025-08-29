@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_workflow.multi\_run\_wrapper\_legacy
+================================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_workflow
+
+.. autofunction:: re_verilog2features.clustering.clustering_workflow.multi_run_wrapper_legacy

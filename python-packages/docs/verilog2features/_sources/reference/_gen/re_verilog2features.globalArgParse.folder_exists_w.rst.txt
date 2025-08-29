@@ -1,0 +1,6 @@
+re\_verilog2features.globalArgParse.folder\_exists\_w
+=====================================================
+
+.. currentmodule:: re_verilog2features.globalArgParse
+
+.. autofunction:: re_verilog2features.globalArgParse.folder_exists_w

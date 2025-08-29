@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.helpers.setup\_cli
+=========================================
+
+.. currentmodule:: tueisec_myparsing.cli.helpers
+
+.. autofunction:: tueisec_myparsing.cli.helpers.setup_cli

@@ -1,0 +1,24 @@
+﻿tueisec\_myparsing.cli.run\_write\_adjlist
+==========================================
+
+.. automodule:: tueisec_myparsing.cli.run_write_adjlist
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+      write_adj
+   
+   
+
+   
+   
+   
+
+   
+   
+   

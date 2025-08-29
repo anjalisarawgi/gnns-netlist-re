@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_algorithms.cluster\_graph\_louvain\_dend\_unflattened
+=================================================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_algorithms
+
+.. autofunction:: re_verilog2features.clustering.clustering_algorithms.cluster_graph_louvain_dend_unflattened

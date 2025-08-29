@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.calculation\_controllability.input\_nodes\_values\_3
+===============================================================================
+
+.. currentmodule:: re_verilog2features.scoap.calculation_controllability
+
+.. autofunction:: re_verilog2features.scoap.calculation_controllability.input_nodes_values_3

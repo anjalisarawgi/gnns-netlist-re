@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Lvalue
+===============================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Lvalue
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Lvalue.__init__
+      ~Lvalue.children
+      ~Lvalue.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Lvalue.attr_names
+   
+   

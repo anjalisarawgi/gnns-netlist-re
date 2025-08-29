@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.clustering.clustering_cmty &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.clustering.clustering_cmty</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;! from https://github.com/kjahan/community</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rand</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="c1">#this method just reads the graph structure from the file</span>
+<div class="viewcode-block" id="buildG">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.clustering.clustering_cmty.buildG.html#re_verilog2features.clustering.clustering_cmty.buildG">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">buildG</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">file_</span><span class="p">,</span> <span class="n">delimiter_</span><span class="p">):</span>
+    <span class="c1">#construct the weighted version of the contact graph from cgraph.dat file</span>
+    <span class="c1">#reader = csv.reader(open(&quot;/home/kazem/Data/UCI/karate.txt&quot;), delimiter=&quot; &quot;)</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">file_</span><span class="p">),</span> <span class="n">delimiter</span><span class="o">=</span><span class="n">delimiter_</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="c1">#line format: u,v,w</span>
+                <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span><span class="n">weight</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#line format: u,v</span>
+            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span><span class="n">weight</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span></div>
+
+
+<span class="c1">#keep removing edges from Graph until one of the connected components of Graph splits into two</span>
+<span class="c1">#compute the edge betweenness</span>
+<div class="viewcode-block" id="CmtyGirvanNewmanStep">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.clustering.clustering_cmty.CmtyGirvanNewmanStep.html#re_verilog2features.clustering.clustering_cmty.CmtyGirvanNewmanStep">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">CmtyGirvanNewmanStep</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+    <span class="c1">#print &quot;call CmtyGirvanNewmanStep&quot;</span>
+    <span class="n">init_ncomp</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">number_connected_components</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>    <span class="c1">#no of components</span>
+    <span class="n">ncomp</span> <span class="o">=</span> <span class="n">init_ncomp</span>
+    <span class="k">while</span> <span class="n">ncomp</span> <span class="o">&lt;=</span> <span class="n">init_ncomp</span><span class="p">:</span>
+        <span class="n">bw</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">edge_betweenness_centrality</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">)</span>    <span class="c1">#edge betweenness for G</span>
+        <span class="c1">#find the edge with max centrality</span>
+        <span class="n">max_</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">bw</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="c1">#find the edge with the highest centrality and remove all of them if there is more than one!</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">bw</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="n">max_</span><span class="p">:</span>
+                <span class="n">G</span><span class="o">.</span><span class="n">remove_edge</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>    <span class="c1">#remove the central edge</span>
+        <span class="n">ncomp</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">number_connected_components</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>    <span class="c1">#recalculate the no of components</span></div>
+
+
+<span class="c1">#compute the modularity of current split</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_GirvanNewmanGetModularity</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">deg_</span><span class="p">,</span> <span class="n">m_</span><span class="p">):</span>
+    <span class="n">New_A</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">adj_matrix</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+    <span class="n">New_deg</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">New_deg</span> <span class="o">=</span> <span class="n">UpdateDeg</span><span class="p">(</span><span class="n">New_A</span><span class="p">,</span> <span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span>
+    <span class="c1">#Let&#39;s compute the Q</span>
+    <span class="n">comps</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>    <span class="c1">#list of components    </span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;no of comp: </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">nx</span><span class="o">.</span><span class="n">number_connected_components</span><span class="p">(</span><span class="n">G</span><span class="p">))</span>
+    <span class="n">Mod</span> <span class="o">=</span> <span class="mi">0</span>    <span class="c1">#Modularity of a given partitionning</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">comps</span><span class="p">:</span>
+        <span class="n">EWC</span> <span class="o">=</span> <span class="mi">0</span>    <span class="c1">#no of edges within a community</span>
+        <span class="n">RE</span> <span class="o">=</span> <span class="mi">0</span>    <span class="c1">#no of random edges</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">c</span><span class="p">:</span>
+            <span class="n">EWC</span> <span class="o">+=</span> <span class="n">New_deg</span><span class="p">[</span><span class="n">u</span><span class="p">]</span>
+            <span class="n">RE</span> <span class="o">+=</span> <span class="n">deg_</span><span class="p">[</span><span class="n">u</span><span class="p">]</span>        <span class="c1">#count the probability of a random edge</span>
+        <span class="n">Mod</span> <span class="o">+=</span> <span class="p">(</span> <span class="nb">float</span><span class="p">(</span><span class="n">EWC</span><span class="p">)</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">RE</span><span class="o">*</span><span class="n">RE</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">m_</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">Mod</span> <span class="o">=</span> <span class="n">Mod</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">m_</span><span class="p">)</span>
+    <span class="c1">#print &quot;Modularity: %f&quot; % Mod</span>
+    <span class="k">return</span> <span class="n">Mod</span>
+
+<div class="viewcode-block" id="UpdateDeg">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.clustering.clustering_cmty.UpdateDeg.html#re_verilog2features.clustering.clustering_cmty.UpdateDeg">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">UpdateDeg</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+    <span class="n">deg_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>  <span class="c1">#len(A) ---&gt; some ppl get issues when trying len() on sparse matrixes!</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">deg_dict</span><span class="p">[</span><span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">deg_dict</span></div>
+
+
+<span class="c1">#run GirvanNewman algorithm and find the best community split by maximizing modularity measure</span>
+<div class="viewcode-block" id="runGirvanNewman">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.clustering.clustering_cmty.runGirvanNewman.html#re_verilog2features.clustering.clustering_cmty.runGirvanNewman">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">runGirvanNewman</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Orig_deg</span><span class="p">,</span> <span class="n">m_</span><span class="p">):</span>
+    <span class="c1">#let&#39;s find the best split of the graph</span>
+    <span class="n">BestQ</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">clusters</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>    
+        <span class="n">CmtyGirvanNewmanStep</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">_GirvanNewmanGetModularity</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Orig_deg</span><span class="p">,</span> <span class="n">m_</span><span class="p">);</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;current modularity: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">Q</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">Q</span> <span class="o">&gt;</span> <span class="n">BestQ</span><span class="p">:</span>
+            <span class="n">BestQ</span> <span class="o">=</span> <span class="n">Q</span>
+            <span class="n">Bestcomps</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>    <span class="c1">#Best Split</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="n">best</span> <span class="k">for</span> <span class="n">best</span> <span class="ow">in</span> <span class="n">Bestcomps</span><span class="p">]</span>
+            <span class="n">clusters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;comps:&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">G</span><span class="o">.</span><span class="n">number_of_edges</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">BestQ</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Best Q: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">BestQ</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">([</span><span class="n">best</span> <span class="k">for</span> <span class="n">best</span> <span class="ow">in</span> <span class="n">Bestcomps</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Best Q: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">BestQ</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">([</span><span class="n">best</span> <span class="k">for</span> <span class="n">best</span> <span class="ow">in</span> <span class="n">Bestcomps</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">clusters</span></div>
+
+
+<div class="viewcode-block" id="cluster">
+<a class="viewcode-back" href="../../../reference/_gen/re_verilog2features.clustering.clustering_cmty.cluster.html#re_verilog2features.clustering.clustering_cmty.cluster">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cluster</span><span class="p">(</span><span class="n">graph_fn</span> <span class="p">):</span>
+
+ 
+    <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>  <span class="c1">#let&#39;s create the graph first</span>
+    <span class="n">buildG</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">graph_fn</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">())</span>
+    
+    <span class="n">n</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()</span>    <span class="c1">#|V|</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">adj_matrix</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>    <span class="c1">#adjacenct matrix</span>
+
+    <span class="n">m_</span> <span class="o">=</span> <span class="mf">0.0</span>    <span class="c1">#the weighted version for number of edges</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">m_</span> <span class="o">+=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+    <span class="n">m_</span> <span class="o">=</span> <span class="n">m_</span><span class="o">/</span><span class="mf">2.0</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;m: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">m_</span><span class="p">)</span>
+
+    <span class="c1">#calculate the weighted degree for each node</span>
+    <span class="n">Orig_deg</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">Orig_deg</span> <span class="o">=</span> <span class="n">UpdateDeg</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span>
+
+    <span class="c1">#run Newman alg</span>
+    <span class="n">clusters</span> <span class="o">=</span> <span class="n">runGirvanNewman</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Orig_deg</span><span class="p">,</span> <span class="n">m_</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">clusters</span> </div>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

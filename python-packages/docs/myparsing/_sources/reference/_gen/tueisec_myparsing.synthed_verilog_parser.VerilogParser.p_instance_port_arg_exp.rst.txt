@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_parser.VerilogParser.p\_instance\_port\_arg\_exp
+=====================================================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. automethod:: tueisec_myparsing.synthed_verilog_parser.VerilogParser.p_instance_port_arg_exp

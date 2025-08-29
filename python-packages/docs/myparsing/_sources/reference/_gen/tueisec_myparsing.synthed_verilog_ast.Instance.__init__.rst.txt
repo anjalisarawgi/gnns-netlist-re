@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Instance.\_\_init\_\_
+==============================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. automethod:: tueisec_myparsing.synthed_verilog_ast.Instance.__init__

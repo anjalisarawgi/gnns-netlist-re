@@ -1,0 +1,30 @@
+﻿tueisec\_myparsing.synthed\_verilog\_lexer
+==========================================
+
+.. automodule:: tueisec_myparsing.synthed_verilog_lexer
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      dump_tokens
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+    :toctree: .
+   
+      VerilogLexer
+   
+   
+
+   
+   
+   

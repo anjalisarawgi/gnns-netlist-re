@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Description.children
+=============================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. automethod:: tueisec_myparsing.synthed_verilog_ast.Description.children

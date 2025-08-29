@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_walkscan.WalkSCAN.compute\_core\_average\_value
+===========================================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_walkscan
+
+.. automethod:: re_verilog2features.clustering.clustering_walkscan.WalkSCAN.compute_core_average_value

@@ -1,0 +1,6 @@
+re\_verilog2features.read\_graph\_and\_make\_features.multi\_run\_wrapper
+=========================================================================
+
+.. currentmodule:: re_verilog2features.read_graph_and_make_features
+
+.. autofunction:: re_verilog2features.read_graph_and_make_features.multi_run_wrapper

@@ -1,0 +1,23 @@
+﻿re\_verilog2features.scoap.levelization
+=======================================
+
+.. automodule:: re_verilog2features.scoap.levelization
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      create_levelization
+   
+   
+
+   
+   
+   
+
+   
+   
+   

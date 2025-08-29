@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.run\_write\_adjlist.write\_adj
+=====================================================
+
+.. currentmodule:: tueisec_myparsing.cli.run_write_adjlist
+
+.. autofunction:: tueisec_myparsing.cli.run_write_adjlist.write_adj

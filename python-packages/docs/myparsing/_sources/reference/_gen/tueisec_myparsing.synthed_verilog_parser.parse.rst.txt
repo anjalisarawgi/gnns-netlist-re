@@ -1,0 +1,6 @@
+tueisec\_myparsing.synthed\_verilog\_parser.parse
+=================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. autofunction:: tueisec_myparsing.synthed_verilog_parser.parse

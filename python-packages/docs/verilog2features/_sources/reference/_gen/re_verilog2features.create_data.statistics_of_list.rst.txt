@@ -1,0 +1,6 @@
+re\_verilog2features.create\_data.statistics\_of\_list
+======================================================
+
+.. currentmodule:: re_verilog2features.create_data
+
+.. autofunction:: re_verilog2features.create_data.statistics_of_list

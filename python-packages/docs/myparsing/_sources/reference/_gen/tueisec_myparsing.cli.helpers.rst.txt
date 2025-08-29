@@ -1,0 +1,24 @@
+﻿tueisec\_myparsing.cli.helpers
+==============================
+
+.. automodule:: tueisec_myparsing.cli.helpers
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      setup_cli
+      str_to_logginglevel
+   
+   
+
+   
+   
+   
+
+   
+   
+   

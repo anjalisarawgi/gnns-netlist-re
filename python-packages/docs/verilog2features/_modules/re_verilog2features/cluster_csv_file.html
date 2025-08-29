@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>re_verilog2features.cluster_csv_file &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for re_verilog2features.cluster_csv_file</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module for a CSVfile wrapper post feature-generation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">auto</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CSVType">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVType.html#re_verilog2features.cluster_csv_file.CSVType">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CSVType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">design_graph</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+    <span class="n">partition_graph</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+    <span class="n">cluster_graph</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+    <span class="n">small</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="CSVFile">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVFile.html#re_verilog2features.cluster_csv_file.CSVFile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CSVFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;specimen_name&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;module_hierarchy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;module_name&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;cluster_id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;jaccard_index&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;base_design&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tj_no&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tj_status&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;top_module&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;frame&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;basename&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">ID_SEPARATOR</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
+
+    <span class="n">partition_csv_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;^(?P&lt;specimen_name&gt;.*)_partitionReal_(?P&lt;module_hierarchy&gt;.*)_moduleName_(?P&lt;module_name&gt;.*)$&quot;</span>
+    <span class="p">)</span>
+    <span class="n">cluster_csv_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;^(?P&lt;specimen_name&gt;.*)_partitionCluster_(?P&lt;cluster_id&gt;.*)_moduleNames_(?P&lt;module_name&gt;.*)_(?P&lt;jaccard_index&gt;[01]\.[0-9]</span><span class="si">{4}</span><span class="s2">)$&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">design_name_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;^(?P&lt;base_design&gt;.*)-T(?P&lt;tj_no&gt;[\d]{3,4})_(?P&lt;tj_status&gt;TjFree|TjIn)_(?P&lt;top_module&gt;.*)$&quot;</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="CSVFile.from_file">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVFile.from_file.html#re_verilog2features.cluster_csv_file.CSVFile.from_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the CSVFile</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_name (str): </span>
+<span class="sd">            t ([type], optional): Defaults to None. [description]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">csvfile</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+
+        <span class="n">csvfile</span><span class="o">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">csvfile</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="n">csvfile</span><span class="o">.</span><span class="n">build_info</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">csvfile</span></div>
+
+
+<div class="viewcode-block" id="CSVFile.from_iterrows">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVFile.from_iterrows.html#re_verilog2features.cluster_csv_file.CSVFile.from_iterrows">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_iterrows</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="n">csvfile</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="n">csvfile</span><span class="o">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">row</span>
+        <span class="n">csvfile</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="n">csvfile</span><span class="o">.</span><span class="n">build_info</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">csvfile</span></div>
+
+
+<div class="viewcode-block" id="CSVFile.build_info">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVFile.build_info.html#re_verilog2features.cluster_csv_file.CSVFile.build_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">CSVType</span><span class="o">.</span><span class="n">design_graph</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">specimen_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">basename</span>
+            <span class="n">basename_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">design_name_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">basename_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;design_name_re did not match at </span><span class="si">{}</span><span class="s2"> file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">file_name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">basename_match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="s2">&quot;d</span><span class="si">{sep}{s.base_design}{sep}{s.tj_no}{sep}{s.tj_status}{sep}{s.top_module}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_SEPARATOR</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">CSVType</span><span class="o">.</span><span class="n">partition_graph</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">basename_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">partition_csv_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">basename_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;partition_csv_re did not match at </span><span class="si">{}</span><span class="s2"> file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">file_name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">basename_match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+            <span class="n">specimen_name_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">design_name_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">specimen_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">basename_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;design_name_re did not match at </span><span class="si">{}</span><span class="s2"> file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">file_name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">specimen_name_match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="s2">&quot;p</span><span class="si">{sep}{s.base_design}{sep}{s.tj_no}{sep}{s.tj_status}{sep}{s.top_module}{sep}{s.module_hierarchy}{sep}{s.module_name}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_SEPARATOR</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">CSVType</span><span class="o">.</span><span class="n">cluster_graph</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">basename_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cluster_csv_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">basename_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;cluster_csv_re did not match at </span><span class="si">{}</span><span class="s2"> file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">file_name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">basename_match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+            <span class="n">specimen_name_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">design_name_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">specimen_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">specimen_name_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;design_name_re did not match at </span><span class="si">{}</span><span class="s2"> file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">file_name</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">specimen_name_match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="s2">&quot;c</span><span class="si">{sep}{s.base_design}{sep}{s.tj_no}{sep}{s.tj_status}{sep}{s.top_module}{sep}{s.cluster_id}{sep}{s.module_name}{sep}{s.jaccard_index}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_SEPARATOR</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">CSVType</span><span class="o">.</span><span class="n">small</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">specimen_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">basename</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="s2">&quot;s</span><span class="si">{sep}{s.specimen_name}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_SEPARATOR</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Sorry, csv type </span><span class="si">{}</span><span class="s2"> is unknown&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update_dict</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">update_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CSVFile.read_csvs_to_list">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVFile.read_csvs_to_list.html#re_verilog2features.cluster_csv_file.CSVFile.read_csvs_to_list">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_csvs_to_list</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file_names</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">folder_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">file_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;reading in all </span><span class="si">{}</span><span class="s2"> csv files&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">folder_name</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="n">file_names</span><span class="p">:</span>
+            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">files</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span></div>
+
+
+
+<div class="viewcode-block" id="CSVFileContainer">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVFileContainer.html#re_verilog2features.cluster_csv_file.CSVFileContainer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CSVFileContainer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="CSVFileContainer.__init__">
+<a class="viewcode-back" href="../../reference/_gen/re_verilog2features.cluster_csv_file.CSVFileContainer.__init__.html#re_verilog2features.cluster_csv_file.CSVFileContainer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># check if key is a valid enum value</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">CSVType</span><span class="o">.</span><span class="n">__members__</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Sorry, </span><span class="si">{}</span><span class="s2"> is not a known CSVType&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># key is valid, set type for this iteration</span>
+                <span class="n">csv_type</span> <span class="o">=</span> <span class="n">CSVType</span><span class="o">.</span><span class="n">__members__</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+            <span class="c1"># crate container property name</span>
+            <span class="n">csv_list_property</span> <span class="o">=</span> <span class="s2">&quot;all_&quot;</span> <span class="o">+</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;_files&quot;</span>
+            <span class="c1"># set internal property to None</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">csv_list_property</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="c1"># get the csv files from path via glob</span>
+            <span class="n">csv_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;*.csv&quot;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">csv_files</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Sorry, there are no csvs at </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+            <span class="c1"># define the property name</span>
+            <span class="n">csv_filenames_property</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;csv_file_names&quot;</span>
+            <span class="c1"># set the property name</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">csv_filenames_property</span><span class="p">,</span> <span class="n">csv_files</span><span class="p">)</span>
+
+            <span class="c1"># define the getter for the csv list</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">get_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">csv_list_property</span><span class="p">,</span> <span class="n">csv_files</span><span class="p">,</span> <span class="n">csv_type</span><span class="p">):</span>
+                <span class="c1"># if csv not loaded yet, do so now</span>
+                <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">csv_list_property</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="p">,</span>
+                        <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">csv_list_property</span><span class="p">,</span>
+                        <span class="n">CSVFile</span><span class="o">.</span><span class="n">read_csvs_to_list</span><span class="p">(</span><span class="n">csv_files</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">csv_type</span><span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="c1"># and finally return the CSVFile list</span>
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">csv_list_property</span><span class="p">)</span>
+
+            <span class="c1"># set class attribute (the property) to a property-decorated getter</span>
+            <span class="nb">setattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span>
+                <span class="n">csv_list_property</span><span class="p">,</span>
+                <span class="nb">property</span><span class="p">(</span>
+                    <span class="n">partial</span><span class="p">(</span>
+                        <span class="n">get_csv</span><span class="p">,</span>
+                        <span class="n">csv_list_property</span><span class="o">=</span><span class="n">csv_list_property</span><span class="p">,</span>
+                        <span class="n">csv_files</span><span class="o">=</span><span class="n">csv_files</span><span class="p">,</span>
+                        <span class="n">csv_type</span><span class="o">=</span><span class="n">csv_type</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">),</span>
+            <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

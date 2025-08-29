@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Variable
+=================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Variable
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Variable.__init__
+      ~Variable.children
+      ~Variable.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Variable.attr_names
+   
+   

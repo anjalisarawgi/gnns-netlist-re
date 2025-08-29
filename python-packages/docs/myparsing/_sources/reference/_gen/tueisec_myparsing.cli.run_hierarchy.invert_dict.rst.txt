@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.run\_hierarchy.invert\_dict
+==================================================
+
+.. currentmodule:: tueisec_myparsing.cli.run_hierarchy
+
+.. autofunction:: tueisec_myparsing.cli.run_hierarchy.invert_dict

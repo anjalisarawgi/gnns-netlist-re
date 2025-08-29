@@ -1,0 +1,22 @@
+re\_verilog2features.cluster\_csv\_file.CSVFileContainer
+========================================================
+
+.. currentmodule:: re_verilog2features.cluster_csv_file
+
+.. autoclass:: CSVFileContainer
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~CSVFileContainer.__init__
+   
+   
+
+   
+   
+   

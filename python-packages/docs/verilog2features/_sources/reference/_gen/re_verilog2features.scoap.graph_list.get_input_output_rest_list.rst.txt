@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.graph\_list.get\_input\_output\_rest\_list
+=====================================================================
+
+.. currentmodule:: re_verilog2features.scoap.graph_list
+
+.. autofunction:: re_verilog2features.scoap.graph_list.get_input_output_rest_list

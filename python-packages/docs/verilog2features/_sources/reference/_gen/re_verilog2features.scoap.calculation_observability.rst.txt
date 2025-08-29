@@ -1,0 +1,44 @@
+﻿re\_verilog2features.scoap.calculation\_observability
+=====================================================
+
+.. automodule:: re_verilog2features.scoap.calculation_observability
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      and2_nand2_function
+      and3_nand3_function
+      aoi21_function
+      aoi22_function
+      calculation_observability
+      current_cc0
+      current_cc0_3_input
+      current_cc1
+      current_cc1_3_input
+      current_dff
+      current_dffrs
+      current_mux
+      current_oai_aoi
+      dff_function
+      dffrs_function
+      mux2x1_function
+      not_function
+      oai21_function
+      oai22_function
+      or2_nor2_function
+      or3_nor3_function
+      xor_xnor_function
+   
+   
+
+   
+   
+   
+
+   
+   
+   

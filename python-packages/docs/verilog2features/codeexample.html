@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Netlist Clustering Example &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="_static/documentation_options.js?v=0d99103b"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Reference" href="reference/index.html" />
+    <link rel="prev" title="Usage" href="usage.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="index.html">re_verilog2features-0.0.1a22</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="netlist-clustering-example">
+<h1>Netlist Clustering Example<a class="headerlink" href="#netlist-clustering-example" title="Link to this heading">¶</a></h1>
+<p>Example of how to use one or multiple clustering algorithms for adding hierarchical information to a synthesized netlist by grouping it into subgraphs.</p>
+<section id="preparation-steps">
+<h2>Preparation Steps<a class="headerlink" href="#preparation-steps" title="Link to this heading">¶</a></h2>
+<p>Start a virtual environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>path/to/venv/name_of_venv/bin/activate
+</pre></div>
+</div>
+<p>Follow the steps described in Installation.</p>
+<p>Synthesize the verilog file(s) first if no synthesized netlist is given.</p>
+<p>Use the following two parsing steps (for further details see the parsing documentation):</p>
+<ol class="loweralpha">
+<li><p>Convert the design into a graph:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>verilog2graph<span class="w"> </span>qflow/postprocessed/name_of_synthesized_file.v<span class="w"> </span>-o<span class="w"> </span>graph/
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Generate hierarchical data:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>run_hierarchy<span class="w"> </span>qflow/postprocessed/name_of_synthesized_file.v<span class="w"> </span>-D<span class="w"> </span>qflow<span class="w"> </span>-L<span class="w"> </span>qflow/log/synth_name_of_synthesized_file.log<span class="w"> </span>-u<span class="w"> </span>osu035<span class="w"> </span>-o<span class="w"> </span>qflow/hierarchy
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</section>
+<section id="clustering-process">
+<h2>Clustering Process<a class="headerlink" href="#clustering-process" title="Link to this heading">¶</a></h2>
+<p>The goal is to cluster the design into subgraphs using the previously obtained results.
+There are multiple clustering tasks that can be performed. One or multiple of these tasks can be selected: all, cluster, partition, mcl, louvain, louvain_dend, leiden-mod, leiden-cpm, walkscan, walkscan-py, io-bwn, io-bwn-rusto or nsbm.</p>
+<p>Remarks:</p>
+<ul class="simple">
+<li><p><cite>all</cite> means all clustering options; <cite>cluster</cite> means all clustering options except of <cite>partition</cite>.</p></li>
+<li><p><cite>partition</cite> means “golden” hierarchy, i.e., copy cells from hierarchy and re-generate the respective graph. Here the results of the <cite>run_hierarchy</cite> command can be used to partition the synthesized verilog file into subgraphs representing its original modules.</p></li>
+<li><p>Of the remaining clustering algorithms, only <cite>mcl</cite>, <cite>louvain</cite>, <cite>leiden-mod</cite>, <cite>leiden-cpm</cite> are well tested; <cite>io-bwn</cite> is home-grown and not finished yet. Instead of using the <cite>run_hierarchy</cite> result the result from the respective clustering algorithm is used for clustering the design into subgraphs.</p></li>
+<li><p>For some of the clustering options you need additional software or python packages. You will get complaints when executing it.</p></li>
+<li><p>Most algorithms have a default set of parameters that are tried. You can override the default set with <code class="docutils literal notranslate"><span class="pre">--config</span> <span class="pre">clustering_params.toml</span></code>.
+The structure of <code class="docutils literal notranslate"><span class="pre">clustering_params.toml</span></code> is currently undocumented. However, you will get the default params in a file when executing
+<code class="docutils literal notranslate"><span class="pre">run_clustering</span></code> in a folder where no <code class="docutils literal notranslate"><span class="pre">clustering_params.toml</span></code> exists yet.</p></li>
+</ul>
+<p>This example uses the mcl clustering (with multiple parameter settings):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>run_clustering<span class="w"> </span>-u<span class="w"> </span>osu035<span class="w"> </span>graph/top.txt<span class="w"> </span>--cores<span class="w"> </span><span class="m">8</span><span class="w"> </span>--gt_cores<span class="w"> </span><span class="m">8</span><span class="w"> </span>--task<span class="w"> </span>mcl<span class="w"> </span>-T<span class="w"> </span><span class="m">0</span>.0<span class="w"> </span>-i<span class="w"> </span>qflow/hierarchy
+</pre></div>
+</div>
+<p>Remark: The <cite>run_clustering</cite> function only accepts a text file as input graph structure at the moment. This might be changed in the future, which would also allow the user to input graphs in gml format.</p>
+<p>The output is a special format called parquet. This format was chosen because the data stored in a parquet file are especially compact, e.g., compared to the text or gml format.</p>
+<p>There is the graph created by the clustering. This output graph can be analysed in python by reading the adj.pq (the graph/adjacence list) using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nx</span><span class="o">.</span><span class="n">from_pandas_edgelist</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;path/to/adj.pq&quot;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;fastparquet&quot;</span><span class="p">),</span> <span class="n">create_using</span><span class="o">=</span><span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Additionally, there is the Jaccard-index match data for this graph. Using python, the all_matched.pq can be imported like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;path/to/all_matched.pq&quot;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;fastparquet&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each row tells you, to which module in the golden hierarchy the cluster matched, and to which percentage. The Jaccard-index can be calculated by dividing the number of elements in the combined area by the number of elements that are part of one or of both areas. Mostly only the original module that overlaps with the cluster by the highest percentage is relevant. This can be extracted from the <cite>all_matched.pq</cite> file by taking only the module with the highest percentage for each row. However, it is possible that other modules the cluster overlaps with should be analysed as well. Here the <cite>all_matched.pq</cite> could be used as well.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is an ongoing effort to replace the terms cluster and clustering with partition and partitioning in our research. The terms cluster and clustering might lead to confusion with unsupervised learning methods for multidimensional data, and decomposing graphs into subgraphs is more commonly referred to as partitioning. Unfortunately, in this guide you will still find a legacy use of these terms:</p>
+<ul class="simple">
+<li><p>Partition(ing) refers to the decomposition into original modules,</p></li>
+<li><p>Cluster(ing) refers to the decomposition by a subgraph detection algorithm.</p></li>
+</ul>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Netlist Clustering Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preparation-steps">Preparation Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#clustering-process">Clustering Process</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/codeexample.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="reference/index.html" title="Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

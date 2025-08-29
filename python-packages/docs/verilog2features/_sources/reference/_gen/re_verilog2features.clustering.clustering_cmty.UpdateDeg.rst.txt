@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_cmty.UpdateDeg
+==========================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_cmty
+
+.. autofunction:: re_verilog2features.clustering.clustering_cmty.UpdateDeg

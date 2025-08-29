@@ -1,0 +1,6 @@
+re\_verilog2features.cluster\_csv\_file.CSVFile.ID\_SEPARATOR
+=============================================================
+
+.. currentmodule:: re_verilog2features.cluster_csv_file
+
+.. autoattribute:: re_verilog2features.cluster_csv_file.CSVFile.ID_SEPARATOR

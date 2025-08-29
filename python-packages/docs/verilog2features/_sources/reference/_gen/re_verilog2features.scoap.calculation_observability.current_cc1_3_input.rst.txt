@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.calculation\_observability.current\_cc1\_3\_input
+============================================================================
+
+.. currentmodule:: re_verilog2features.scoap.calculation_observability
+
+.. autofunction:: re_verilog2features.scoap.calculation_observability.current_cc1_3_input

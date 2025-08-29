@@ -1,0 +1,6 @@
+re\_verilog2features.hasegawa\_et\_al.check\_node\_type
+=======================================================
+
+.. currentmodule:: re_verilog2features.hasegawa_et_al
+
+.. autofunction:: re_verilog2features.hasegawa_et_al.check_node_type

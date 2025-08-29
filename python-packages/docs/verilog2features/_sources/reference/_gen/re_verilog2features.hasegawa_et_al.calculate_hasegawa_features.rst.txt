@@ -1,0 +1,6 @@
+re\_verilog2features.hasegawa\_et\_al.calculate\_hasegawa\_features
+===================================================================
+
+.. currentmodule:: re_verilog2features.hasegawa_et_al
+
+.. autofunction:: re_verilog2features.hasegawa_et_al.calculate_hasegawa_features

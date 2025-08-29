@@ -1,0 +1,6 @@
+tueisec\_myparsing.parsed\_verilog\_ply.ParsedVerilog.find\_inpins
+==================================================================
+
+.. currentmodule:: tueisec_myparsing.parsed_verilog_ply
+
+.. automethod:: tueisec_myparsing.parsed_verilog_ply.ParsedVerilog.find_inpins

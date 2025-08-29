@@ -1,0 +1,27 @@
+﻿tueisec\_myparsing.cli.genus2hierarchy
+======================================
+
+.. automodule:: tueisec_myparsing.cli.genus2hierarchy
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      get_hierarchy
+      get_hierarchy_tree
+      hierarchy
+      invert_dict
+      main
+   
+   
+
+   
+   
+   
+
+   
+   
+   

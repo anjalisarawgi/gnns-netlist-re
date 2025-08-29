@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.verilog\_statistics.main
+===============================================
+
+.. currentmodule:: tueisec_myparsing.cli.verilog_statistics
+
+.. autofunction:: tueisec_myparsing.cli.verilog_statistics.main

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.cli.genus2hierarchy &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.cli.genus2hierarchy</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;Run hierarchy based on a toml file of regexes per hierarchy module.</span>
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: Synopsys:</span>
+
+<span class="sd">    usage: genus2hierarchy [-h] [--debug] [-o OUTPUT_PATH] [--overwrite]</span>
+<span class="sd">                           [--logger {info,debug,warning,error,critical}]</span>
+<span class="sd">                           [--parsing_loglevel_error] [--cores CORES]</span>
+<span class="sd">                           hierarchyinfo [hierarchyinfo ...]</span>
+
+<span class="sd">    Generate hierarchy files from named cells list, assign glue logic until the next named</span>
+<span class="sd">    signal.</span>
+
+<span class="sd">    positional arguments:</span>
+<span class="sd">      hierarchyinfo         structured hierarchy input data (toml): File containing the hierarchy</span>
+<span class="sd">                            to detect as a tree of modules. Each module defines a signal name as</span>
+<span class="sd">                            a regex to search for.</span>
+
+<span class="sd">    optional arguments:</span>
+<span class="sd">      -h, --help            show this help message and exit</span>
+<span class="sd">      -o OUTPUT_PATH, --output_path OUTPUT_PATH</span>
+<span class="sd">                            The folder where output files will be stored.Default is:</span>
+<span class="sd">                            outputFiles/hierarchy/</span>
+<span class="sd">      --overwrite           Overwrite existing hierarchies</span>
+<span class="sd">      --logger {info,debug,warning,error,critical}</span>
+<span class="sd">                            logger level. Default: info</span>
+<span class="sd">      --parsing_loglevel_error</span>
+<span class="sd">                            Set the parsing loglevel to error, if you want to ignore warnings,</span>
+<span class="sd">                            such as&#39;constant one-bit assignment&#39; etc.</span>
+<span class="sd">      --cores CORES         Cores to use for processing. Default is to use all cores.</span>
+
+<span class="sd">    main:</span>
+<span class="sd">      --debug               Enable debug output. Overrides --logger</span>
+
+
+<span class="sd">.. code-block::</span>
+<span class="sd">    :caption: Example toml</span>
+
+<span class="sd">     [ design ]</span>
+<span class="sd">     filepath = &quot;path_to_verilog_file.v&quot;</span>
+<span class="sd">     lib = &quot;path_to_cell_lib.lib&quot;</span>
+<span class="sd">     type = &quot;top_module_name&quot;</span>
+
+<span class="sd">     [ design.modules.first ]</span>
+<span class="sd">     regex = &quot;.*first.*&quot;</span>
+<span class="sd">     [ design.modules.first.modules.first_firstsub ]</span>
+<span class="sd">     regex = &quot;.*first_firstsub.*&quot;</span>
+<span class="sd">     [ design.modules.first.modules.first_secsub ]</span>
+<span class="sd">     net_regex = &quot;.*first_firstsub_netnames.*&quot;</span>
+<span class="sd">     node_regex = &quot;.*first_firstsub_nodenames.*&quot;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">tueisec_myparsing.myparsing_ply</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">myparsing</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.module_tree_node</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleTreeNode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tueisec_myparsing.pool_wrapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_in_pool_with_progress</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_cli</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">argparse</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArgumentParser</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">toml</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">queue</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">glogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">osu035_default</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;/nas/ei/share/sec/tools/qflow/qflow-1.3-RE/share/qflow/tech/&quot;</span>
+    <span class="s2">&quot;osu035/osu035_stdcells.lib&quot;</span>
+<span class="p">)</span>
+<span class="n">output_path_default</span> <span class="o">=</span> <span class="s2">&quot;outputFiles/hierarchy/&quot;</span>
+
+
+<div class="viewcode-block" id="invert_dict">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.genus2hierarchy.invert_dict.html#tueisec_myparsing.cli.genus2hierarchy.invert_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">invert_dict</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+    <span class="n">inverse</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+        <span class="c1"># Go through the list that is saved in the dict:</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+            <span class="c1"># Check if in the inverted dict the key exists</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">inverse</span><span class="p">:</span>
+                <span class="c1"># If not create a new list</span>
+                <span class="n">inverse</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inverse</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inverse</span></div>
+
+
+
+<div class="viewcode-block" id="get_hierarchy">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.genus2hierarchy.get_hierarchy.html#tueisec_myparsing.cli.genus2hierarchy.get_hierarchy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_hierarchy</span><span class="p">(</span><span class="n">info_file</span><span class="p">):</span>
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">hinfo</span> <span class="o">=</span> <span class="n">toml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">info_file</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">hinfo</span><span class="p">[</span><span class="s2">&quot;design&quot;</span><span class="p">][</span><span class="s2">&quot;filepath&quot;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;info file </span><span class="si">{</span><span class="n">info_file</span><span class="si">}</span><span class="s2"> does not contain design &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;filepath. Please put it at `design.filepath`.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_path</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;hierarchy_&quot;</span> <span class="o">+</span> <span class="n">file_name</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span><span class="p">))</span>
+        <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;hierarchy_modules_&quot;</span> <span class="o">+</span> <span class="n">file_name</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">overwrite</span>
+    <span class="p">):</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Hierarchy file for </span><span class="si">{}</span><span class="s2"> exists already. Skipping. Use --overwrite to overwrite&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">file_name</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">parsing_loglevel_error</span><span class="p">:</span>
+        <span class="n">tulogger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">)</span>
+        <span class="n">tulogger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">libPath</span> <span class="o">=</span> <span class="n">hinfo</span><span class="p">[</span><span class="s2">&quot;design&quot;</span><span class="p">][</span><span class="s2">&quot;lib&quot;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;info file </span><span class="si">{</span><span class="n">info_file</span><span class="si">}</span><span class="s2"> does not contain library &quot;</span>
+            <span class="s2">&quot;setting. Please put it at `design.lib`.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">parsed_verilog</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pickle_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;parsed_&quot;</span> <span class="o">+</span> <span class="n">file_name</span> <span class="o">+</span> <span class="s2">&quot;.pickle&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">pickle_path</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">parsed_verilog</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found pickle file at </span><span class="si">{</span><span class="n">pickle_path</span><span class="si">}</span><span class="s2">. I will not parse the verilog to save time!&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to load pickle file at </span><span class="si">{</span><span class="n">pickle_path</span><span class="si">}</span><span class="s2">. Parsing verilog instead.&quot;</span><span class="p">)</span>
+            <span class="n">parsed_verilog</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">parsed_verilog</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parsed_verilog</span> <span class="o">=</span> <span class="n">myparsing</span><span class="o">.</span><span class="n">parse_to_obj</span><span class="p">(</span>
+            <span class="n">file_path</span><span class="p">,</span> <span class="n">libPath</span><span class="p">,</span> 
+        <span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">parsed_verilog</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pickle file at </span><span class="si">{</span><span class="n">pickle_path</span><span class="si">}</span><span class="s2"> created.&quot;</span><span class="p">)</span>
+        
+    <span class="c1"># find module names</span>
+    <span class="n">module_name</span> <span class="o">=</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">module_name</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Module name is </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">module_name</span><span class="p">))</span>
+
+    <span class="n">all_nodes</span> <span class="o">=</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">all_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">parsed_verilog</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">all_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">parsed_verilog</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;parsing hierarchy...&quot;</span><span class="p">)</span>
+    <span class="n">tree_root</span> <span class="o">=</span> <span class="n">get_hierarchy_tree</span><span class="p">(</span>
+        <span class="n">hinfo</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">parsed_verilog</span><span class="p">,</span> <span class="n">all_nodes</span><span class="p">,</span> <span class="n">module_name</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tree_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Hierarchy generation for </span><span class="si">{</span><span class="n">info_file</span><span class="si">}</span><span class="s2"> failed. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Please see detailed error message above.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">tree_root</span><span class="o">.</span><span class="n">node_hierarchy</span><span class="p">()</span>
+
+    <span class="n">modules_dict</span> <span class="o">=</span> <span class="n">tree_root</span><span class="o">.</span><span class="n">modules_dict</span><span class="p">()</span>
+
+    <span class="n">df_design</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">hierarchy</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;index&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">df_design</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df_design</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;hierarchy_&quot;</span> <span class="o">+</span> <span class="n">file_name</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span><span class="p">))</span>
+
+    <span class="n">df_module</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">modules_dict</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">])</span>
+    <span class="n">df_module</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df_module</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;hierarchy_modules_&quot;</span> <span class="o">+</span> <span class="n">file_name</span> <span class="o">+</span> <span class="s2">&quot;.csv&quot;</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_hierarchy_tree">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.genus2hierarchy.get_hierarchy_tree.html#tueisec_myparsing.cli.genus2hierarchy.get_hierarchy_tree">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_hierarchy_tree</span><span class="p">(</span><span class="n">hinfo</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">parsed_verilog</span><span class="p">,</span> <span class="n">all_nodes</span><span class="p">,</span> <span class="n">module_name</span><span class="p">):</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Building module tree&quot;</span><span class="p">)</span>
+
+    <span class="n">tree_root</span> <span class="o">=</span> <span class="n">ModuleTreeNode</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(),</span> <span class="s2">&quot;tree_root&quot;</span><span class="p">,</span> <span class="s2">&quot;tree_root&quot;</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">top_mod_dict</span> <span class="o">=</span> <span class="n">hinfo</span><span class="p">[</span><span class="s2">&quot;design&quot;</span><span class="p">][</span><span class="s2">&quot;modules&quot;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;top module of </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2"> has no submodules. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;There is no hierarchy to generate here.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">top_module_type</span> <span class="o">=</span> <span class="n">hinfo</span><span class="p">[</span><span class="s2">&quot;design&quot;</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;in </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2"> there is no info about top module type. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Please put it at `design.type`.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">top_module</span> <span class="o">=</span> <span class="n">ModuleTreeNode</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(),</span> <span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">top_module_type</span><span class="p">)</span>
+    <span class="n">tree_root</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">top_module</span><span class="p">)</span>
+
+    <span class="n">to_visit</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">deque</span><span class="p">([(</span><span class="n">top_module</span><span class="p">,</span> <span class="n">top_mod_dict</span><span class="p">)])</span>
+
+    <span class="n">unknown_type_counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="n">to_visit</span><span class="p">:</span>
+        <span class="n">parent_node</span><span class="p">,</span> <span class="n">cur_mod_dict</span> <span class="o">=</span> <span class="n">to_visit</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">for</span> <span class="nb">id</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">cur_mod_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">type</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">glogger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;in </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2"> node data `</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">` has no type. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;the type is not strictly needed. I&#39;ll put &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`unknown_</span><span class="si">{</span><span class="n">unknown_type_counter</span><span class="si">}</span><span class="s2">`. If that&#39;s not OK,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;please put it at `design.&lt;hierarchy...&gt;.</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">.type`.&quot;</span>
+                <span class="p">)</span>
+                <span class="nb">type</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;unknown_</span><span class="si">{</span><span class="n">unknown_type_counter</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">unknown_type_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">child_node</span> <span class="o">=</span> <span class="n">ModuleTreeNode</span><span class="p">(</span>
+                <span class="nb">frozenset</span><span class="p">(),</span>
+                <span class="nb">id</span><span class="p">,</span>
+                <span class="nb">type</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">child_node</span><span class="o">.</span><span class="n">net_regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;net_regex&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;regex&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+            <span class="p">)</span>
+            <span class="n">child_node</span><span class="o">.</span><span class="n">node_regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;node_regex&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;regex&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+            <span class="p">)</span>
+            <span class="n">parent_node</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">child_node</span><span class="p">)</span>
+            <span class="n">to_visit</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">child_node</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;modules&quot;</span><span class="p">,</span> <span class="p">{})))</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;built module tree&quot;</span><span class="p">)</span>
+
+    <span class="c1"># this is an ordered dict of tree nodes. i.e. we can</span>
+    <span class="c1"># search for the first regex, then the second, then...</span>
+    <span class="n">net_hierarchy_names_dict</span> <span class="o">=</span> <span class="n">tree_root</span><span class="o">.</span><span class="n">net_hierarchy_names_DFS_postorder_dict</span><span class="p">()</span>
+
+    <span class="n">glogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;built net_dict&quot;</span><span class="p">)</span>
+
+    <span class="n">assigned_nodes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">module_tree_nodes_set_cache</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># for all nodes check if their name matches the name regex</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">all_nodes</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">module_tree_node</span> <span class="ow">in</span> <span class="n">net_hierarchy_names_dict</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">module_tree_node</span><span class="o">.</span><span class="n">node_regex</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+                <span class="n">assigned_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_tree_node</span>
+                <span class="n">module_tree_nodes_set_cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module_tree_node</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                    <span class="n">node</span>
+                <span class="p">)</span>
+
+    <span class="c1"># for all the nodes check if the incident nets are match the net regex</span>
+    <span class="k">for</span> <span class="n">net</span><span class="p">,</span> <span class="n">node_list</span> <span class="ow">in</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">nets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">module_tree_node</span> <span class="ow">in</span> <span class="n">net_hierarchy_names_dict</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">module_tree_node</span><span class="o">.</span><span class="n">net_regex</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+                <span class="n">unassigned</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span> <span class="o">-</span> <span class="n">assigned_nodes</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="n">module_tree_nodes_set_cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module_tree_node</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">unassigned</span>
+                <span class="p">)</span>
+                <span class="n">assigned_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(((</span><span class="n">u</span><span class="p">,</span> <span class="n">module_tree_node</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">unassigned</span><span class="p">))</span>
+
+    <span class="c1"># for those cells where the output nets have a name like a possible module</span>
+    <span class="k">for</span> <span class="n">net</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">nets_to_nodes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">module_tree_node</span> <span class="ow">in</span> <span class="n">net_hierarchy_names_dict</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">module_tree_node</span><span class="o">.</span><span class="n">net_regex</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">assigned_nodes</span><span class="p">:</span>
+                    <span class="n">module_tree_nodes_set_cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">module_tree_node</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                        <span class="n">node</span>
+                    <span class="p">)</span>
+                    <span class="n">assigned_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_tree_node</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;completed node regexing&quot;</span><span class="p">)</span>
+
+    <span class="c1">########################################################################</span>
+    <span class="c1"># now follow i/o, one step at a time.</span>
+    <span class="c1"># check for each node if output net or input net is a generated net.</span>
+    <span class="c1"># Then the nodes on the other end of these nets also belong to the module.</span>
+    <span class="c1"># only generated nets are handled by this, by ensuring one-step-at-a-time,</span>
+    <span class="c1"># a fair separation between modules is done</span>
+    <span class="n">node_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">assigned_nodes</span><span class="p">)</span>
+    <span class="n">generated_prefix_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;([^.]*\.)*([^.]+_)?n_&quot;</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">node_list</span><span class="p">:</span>
+        <span class="n">node_list_cur</span> <span class="o">=</span> <span class="n">node_list</span>
+        <span class="n">node_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="n">node_list_cur</span><span class="p">:</span>
+            <span class="n">mod_node</span> <span class="o">=</span> <span class="n">node_list_cur</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">all_nodes</span><span class="p">[</span><span class="n">mod_node</span><span class="p">][</span><span class="s2">&quot;dest&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">dest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">generated_prefix_re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">dest</span><span class="p">):</span>
+                    <span class="n">nodes_driven_by_generated_net</span> <span class="o">=</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">nets</span><span class="p">[</span><span class="n">dest</span><span class="p">]</span>
+                    <span class="n">unassigned</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="nb">set</span><span class="p">(</span><span class="n">nodes_driven_by_generated_net</span><span class="p">)</span> <span class="o">-</span> <span class="n">assigned_nodes</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                    <span class="p">)</span>
+                    <span class="n">module_tree_nodes_set_cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+                        <span class="n">assigned_nodes</span><span class="p">[</span><span class="n">mod_node</span><span class="p">],</span> <span class="nb">set</span><span class="p">()</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">unassigned</span><span class="p">)</span>
+                    <span class="n">assigned_nodes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">assigned_nodes</span><span class="p">[</span><span class="n">mod_node</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">unassigned</span>
+                    <span class="p">)</span>
+                    <span class="n">node_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">unassigned</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">all_nodes</span><span class="p">[</span><span class="n">mod_node</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">src</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">hinfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;generated_prefix&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;([^.]*\.)*([^.]+_)?n_&quot;</span><span class="p">)):</span>
+                    <span class="n">driver_node_of_generated_net</span> <span class="o">=</span> <span class="n">parsed_verilog</span><span class="o">.</span><span class="n">nets_to_nodes</span><span class="p">[</span><span class="n">src</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">driver_node_of_generated_net</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">assigned_nodes</span><span class="p">:</span>
+                        <span class="n">module_tree_nodes_set_cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+                            <span class="n">assigned_nodes</span><span class="p">[</span><span class="n">mod_node</span><span class="p">],</span> <span class="nb">set</span><span class="p">()</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">driver_node_of_generated_net</span><span class="p">)</span>
+                        <span class="n">assigned_nodes</span><span class="p">[</span><span class="n">driver_node_of_generated_net</span><span class="p">]</span> <span class="o">=</span> <span class="n">assigned_nodes</span><span class="p">[</span>
+                            <span class="n">mod_node</span>
+                        <span class="p">]</span>
+                        <span class="n">node_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">driver_node_of_generated_net</span><span class="p">)</span>
+
+    <span class="c1">########################################################################</span>
+    <span class="c1"># now for all nodes that do not belong to any module, set module as top</span>
+    <span class="n">unknowns</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_nodes</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="n">assigned_nodes</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">unknowns</span><span class="p">:</span>
+        <span class="n">top_module</span><span class="o">.</span><span class="n">immediate_nodes</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">unknowns</span><span class="p">)</span>
+    <span class="c1">########################################################################</span>
+
+    <span class="c1"># from the cache, populate the nodes,</span>
+    <span class="k">for</span> <span class="n">module_tree_node</span><span class="p">,</span> <span class="n">nodes</span> <span class="ow">in</span> <span class="n">module_tree_nodes_set_cache</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">module_tree_node</span><span class="o">.</span><span class="n">immediate_nodes</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">tree_root</span></div>
+
+
+
+<div class="viewcode-block" id="hierarchy">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.genus2hierarchy.hierarchy.html#tueisec_myparsing.cli.genus2hierarchy.hierarchy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hierarchy</span><span class="p">():</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">hierarchyinfo</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">info_path</span> <span class="o">=</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">hierarchyinfo</span>
+        <span class="k">if</span> <span class="n">info_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.toml&quot;</span><span class="p">):</span>
+            <span class="n">infos</span> <span class="o">=</span> <span class="p">[</span><span class="n">info_path</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">infos</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">info_path</span><span class="p">,</span> <span class="s2">&quot;*.toml&quot;</span><span class="p">))</span>
+            <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> designs.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">infos</span><span class="p">)))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">infos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">info_path</span> <span class="ow">in</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">hierarchyinfo</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">info_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.toml&quot;</span><span class="p">):</span>
+                <span class="n">infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">add_infos</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">info_path</span><span class="p">,</span> <span class="s2">&quot;*.toml&quot;</span><span class="p">))</span>
+                <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> designs in </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">add_infos</span><span class="p">),</span> <span class="n">info_path</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">infos</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">add_infos</span><span class="p">)</span>
+    <span class="n">mult</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">info_file</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">:</span>
+        <span class="n">mult</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">info_file</span><span class="p">)</span>
+        <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Working on </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">info_file</span><span class="p">)))</span>
+
+    <span class="n">run_in_pool_with_progress</span><span class="p">(</span>
+        <span class="n">get_hierarchy</span><span class="p">,</span> <span class="n">mult</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">abort_on_kint</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="n">glogger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Finished hierarchy for </span><span class="si">{}</span><span class="s2"> designs.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">infos</span><span class="p">)))</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../reference/_gen/tueisec_myparsing.cli.genus2hierarchy.main.html#tueisec_myparsing.cli.genus2hierarchy.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">GLOBAL_PARSER</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate hierarchy files from named cells list, assign &quot;</span>
+        <span class="s2">&quot;glue logic until the next named signal.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--debug&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable debug output. Overrides --logger&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;hierarchyinfo&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;structured hierarchy input data (toml): File containing the &quot;</span>
+        <span class="s2">&quot;hierarchy to detect as a tree of modules. &quot;</span>
+        <span class="s2">&quot;Each module defines a signal name as a regex to search for.&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--output_path&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The folder where output files will be stored.&quot;</span>
+        <span class="s2">&quot;Default is: &quot;</span> <span class="o">+</span> <span class="n">output_path_default</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">output_path_default</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--overwrite&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Overwrite existing hierarchies&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--logger&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;logger level. Default: info&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;info&quot;</span><span class="p">,</span> <span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="s2">&quot;warning&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;critical&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--parsing_loglevel_error&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Set the parsing loglevel to error, if you want to ignore warnings, such as&quot;</span>
+        <span class="s2">&quot;&#39;constant one-bit assignment&#39; etc.&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--cores&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Cores to use for processing. Default is to use all cores.&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">GLOBAL_PARSER</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+        <span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="s2">&quot;debug&quot;</span>
+
+    <span class="n">setup_cli</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="n">GLOBAL_PARSER</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span> <span class="n">additional_loggers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;tueisec_myparsing&quot;</span><span class="p">])</span>
+    <span class="n">hierarchy</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

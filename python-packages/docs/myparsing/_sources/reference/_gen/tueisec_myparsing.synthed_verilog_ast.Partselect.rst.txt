@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.Partselect
+===================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: Partselect
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Partselect.__init__
+      ~Partselect.children
+      ~Partselect.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~Partselect.attr_names
+   
+   

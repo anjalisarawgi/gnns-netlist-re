@@ -1,0 +1,6 @@
+tueisec\_myparsing.codegen.ASTCodeGenerator.\_\_init\_\_
+========================================================
+
+.. currentmodule:: tueisec_myparsing.codegen
+
+.. automethod:: tueisec_myparsing.codegen.ASTCodeGenerator.__init__

@@ -1,0 +1,23 @@
+﻿tueisec\_myparsing.cli.verilog\_statistics
+==========================================
+
+.. automodule:: tueisec_myparsing.cli.verilog_statistics
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+   
+   
+
+   
+   
+   
+
+   
+   
+   

@@ -1,0 +1,24 @@
+tueisec\_myparsing.synthed\_verilog\_parser.VerilogFileParser
+=============================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_parser
+
+.. autoclass:: VerilogFileParser
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~VerilogFileParser.__init__
+      ~VerilogFileParser.get_directives
+      ~VerilogFileParser.parse
+   
+   
+
+   
+   
+   

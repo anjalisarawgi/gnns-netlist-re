@@ -1,0 +1,20 @@
+=====
+Usage
+=====
+
+re_verilog2features is primarily useful due to its commandline interface,
+that is installed by default.
+
+Use eg.:
+
+.. code-block:: console
+
+    $ run_write_adjlist /path/to/my/verilog/file.v -l /cell/library/path -o /output/path/ --cores 7
+
+    $ run_make_csv /path/to/my/adjlist.txt --cores 20 --gt_cores 5 --ap_cores 5 -o /output/path --use_fastest
+
+See :py:mod:`re_verilog2features.cli.run_make_csv` for details.
+
+:py:mod:`re_verilog2features.cli.run_csv_to_hdf5` is rather to be seen
+as a template file to ease hdf5-ing your data. At the moment, this
+tool is only suitable for @dahooz's HT-reverse engineering use-case.

@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.verilog2graph.OutputInformation.write\_node\_type
+========================================================================
+
+.. currentmodule:: tueisec_myparsing.cli.verilog2graph
+
+.. autoattribute:: tueisec_myparsing.cli.verilog2graph.OutputInformation.write_node_type

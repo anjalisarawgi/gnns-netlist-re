@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.StringConst
+====================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: StringConst
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~StringConst.__init__
+      ~StringConst.children
+      ~StringConst.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~StringConst.attr_names
+   
+   

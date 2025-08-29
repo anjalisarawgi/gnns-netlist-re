@@ -1,0 +1,6 @@
+tueisec\_myparsing.codegen.ASTCodeGenerator.visit\_Assign
+=========================================================
+
+.. currentmodule:: tueisec_myparsing.codegen
+
+.. automethod:: tueisec_myparsing.codegen.ASTCodeGenerator.visit_Assign

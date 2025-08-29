@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>re_verilog2features.cli.run_clustering &#8212; re_verilog2features 0.0.1a22 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=0d99103b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="re_verilog2features.cli.run_clustering.main" href="re_verilog2features.cli.run_clustering.main.html" />
+    <link rel="prev" title="re_verilog2features.cli.make_features.main" href="re_verilog2features.cli.make_features.main.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">re_verilog2features-0.0.1a22</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../re_verilog2features.html" accesskey="U">re_verilog2features</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-re_verilog2features.cli.run_clustering">
+<span id="re-verilog2features-cli-run-clustering"></span><h1>re_verilog2features.cli.run_clustering<a class="headerlink" href="#module-re_verilog2features.cli.run_clustering" title="Link to this heading">¶</a></h1>
+<p>Run clustering.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Synopsys:</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>usage: run_clustering [-h] [--cores CORES] [--gt_cores GT_CORES]
+                      [-i HIERARCHY_PATH] [-p PARTITION_GRAPH_PATH]
+                      [-c CLUSTERED_GRAPH_PATH]
+                      [--overwrite {all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} [{all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} ...]]
+                      [--task {all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} [{all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} ...]]
+                      [--min_comms MIN_COMMS] [--max_comms MAX_COMMS]
+                      [--max_tries MAX_TRIES] [-T THRESHOLD] [-u USED_LIB]
+                      [--config CONFIG]
+                      [--logger {info,debug,warning,error,critical}]
+                      designs [designs ...]
+
+Run clustering depending on process.
+
+positional arguments:
+  designs               folder where adjacency lists are located (*.txt)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --cores CORES         Cores to use for processing
+  --gt_cores GT_CORES   Cores to use for graphtool/other clustering.
+                        Multiplies by --cores!
+  -i HIERARCHY_PATH, --hierarchy_path HIERARCHY_PATH
+                        The folder where hierarchy files are stored
+  -p PARTITION_GRAPH_PATH, --partition_graph_path PARTITION_GRAPH_PATH
+                        The folder where partition_graph output files will be
+                        stored in a subfolder depending on process
+  -c CLUSTERED_GRAPH_PATH, --clustered_graph_path CLUSTERED_GRAPH_PATH
+                        The folder where clustered_graph output files will be
+                        stored in a subfolder depending on process
+  --overwrite {all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} [{all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} ...]
+                        What to overwrite
+  --task {all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} [{all,cluster,partition,mcl,louvain,louvain_dend,leiden-mod,leiden-cpm,walkscan,walkscan-py,io-bwn,io-bwn-rust,nsbm} ...]
+                        Task to perform
+  --min_comms MIN_COMMS
+                        Minumim number of communities wanted for io-bwn
+  --max_comms MAX_COMMS
+                        Maximum number of communities wanted for io-bwn
+  --max_tries MAX_TRIES
+                        Maximum number of tries removing a edge while doing
+                        girvan_newman
+  -T THRESHOLD, --threshold THRESHOLD
+                        Cluster quality threshold. clusters worse than this
+                        threshold are dropped.
+  -u USED_LIB, --used_lib USED_LIB
+                        The library used for the designs. Specify this to
+                        override autodetection, which may fuction only in a
+                        few cases. The default is to recognize this from the
+                        design file paths (base folder name).
+  --config CONFIG       config file to override params for the clustering
+                        algos.
+
+main:
+  --logger {info,debug,warning,error,critical}
+                        logger level. Default: info
+</pre></div>
+</div>
+</div>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="re_verilog2features.cli.run_clustering.main.html#re_verilog2features.cli.run_clustering.main" title="re_verilog2features.cli.run_clustering.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Netlist Clustering Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../re_verilog2features.html">re_verilog2features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/re_verilog2features.cli.run_clustering.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.cli.run_clustering.main.html" title="re_verilog2features.cli.run_clustering.main"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="re_verilog2features.cli.make_features.main.html" title="re_verilog2features.cli.make_features.main"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

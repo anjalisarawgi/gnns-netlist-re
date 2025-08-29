@@ -1,0 +1,33 @@
+tueisec\_myparsing.synthed\_verilog\_ast.IntConst
+=================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: IntConst
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~IntConst.__init__
+      ~IntConst.bits
+      ~IntConst.children
+      ~IntConst.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~IntConst.attr_names
+      ~IntConst.base_types
+   
+   

@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_algorithms.clustering\_girvan\_newman\_io
+=====================================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_algorithms
+
+.. autofunction:: re_verilog2features.clustering.clustering_algorithms.clustering_girvan_newman_io

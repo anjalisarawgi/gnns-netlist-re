@@ -1,0 +1,6 @@
+re\_verilog2features.clustering.clustering\_workflow.perform\_clustering
+========================================================================
+
+.. currentmodule:: re_verilog2features.clustering.clustering_workflow
+
+.. autofunction:: re_verilog2features.clustering.clustering_workflow.perform_clustering

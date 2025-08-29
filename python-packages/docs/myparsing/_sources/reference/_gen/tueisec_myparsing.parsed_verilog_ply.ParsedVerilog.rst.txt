@@ -1,0 +1,42 @@
+tueisec\_myparsing.parsed\_verilog\_ply.ParsedVerilog
+=====================================================
+
+.. currentmodule:: tueisec_myparsing.parsed_verilog_ply
+
+.. autoclass:: ParsedVerilog
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~ParsedVerilog.AddInput
+      ~ParsedVerilog.AddNet_helper
+      ~ParsedVerilog.AddNode
+      ~ParsedVerilog.AddNode_helper
+      ~ParsedVerilog.AddOutput
+      ~ParsedVerilog.__init__
+      ~ParsedVerilog.add_edge_data
+      ~ParsedVerilog.add_edge_data_multi
+      ~ParsedVerilog.build_final_assign_chain
+      ~ParsedVerilog.build_nets
+      ~ParsedVerilog.build_nodes
+      ~ParsedVerilog.create_nets_expl
+      ~ParsedVerilog.create_nets_impl
+      ~ParsedVerilog.find_inpins
+      ~ParsedVerilog.generate_net_names_for_decls
+      ~ParsedVerilog.generate_net_names_for_ports
+      ~ParsedVerilog.generate_node_functions_dict
+      ~ParsedVerilog.get_graph_with_types_in_names
+      ~ParsedVerilog.get_networkx_graph
+      ~ParsedVerilog.parse_ast_to_self
+      ~ParsedVerilog.rev_lookup
+   
+   
+
+   
+   
+   

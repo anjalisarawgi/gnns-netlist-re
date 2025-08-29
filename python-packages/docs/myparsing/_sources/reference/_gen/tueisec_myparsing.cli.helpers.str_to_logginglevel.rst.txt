@@ -1,0 +1,6 @@
+tueisec\_myparsing.cli.helpers.str\_to\_logginglevel
+====================================================
+
+.. currentmodule:: tueisec_myparsing.cli.helpers
+
+.. autofunction:: tueisec_myparsing.cli.helpers.str_to_logginglevel

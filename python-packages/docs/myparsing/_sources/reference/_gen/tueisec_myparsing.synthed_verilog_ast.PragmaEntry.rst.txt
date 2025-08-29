@@ -1,0 +1,31 @@
+tueisec\_myparsing.synthed\_verilog\_ast.PragmaEntry
+====================================================
+
+.. currentmodule:: tueisec_myparsing.synthed_verilog_ast
+
+.. autoclass:: PragmaEntry
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: .
+   
+      ~PragmaEntry.__init__
+      ~PragmaEntry.children
+      ~PragmaEntry.show
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: .
+   
+      ~PragmaEntry.attr_names
+   
+   

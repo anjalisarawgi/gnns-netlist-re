@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tueisec_myparsing.codegen &#8212; TUEISEC_myparsing 0.0.1a24 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=626804ef"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a24</a> &#187;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tueisec_myparsing.codegen</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">   Code Generator from AST to Verilog HDL source code. </span>
+<span class="sd">   </span>
+<span class="sd">   Modified from Shinya Takamaeda-Yamazaki and Contributors</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jinja2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">FileSystemLoader</span>
+
+<span class="n">DEFAULT_TEMPLATE_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;/codegen_templates/&#39;</span>
+
+<span class="c1"># -------------------------------------------------------------------------------</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">textwrap</span>
+    <span class="n">indent</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">indent</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">indent</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">predicate</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">predicate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">predicate</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="k">return</span> <span class="n">x</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">x</span><span class="o">.</span><span class="n">isspace</span><span class="p">()</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">predicate</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="indent_multiline_assign">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.indent_multiline_assign.html#tueisec_myparsing.codegen.indent_multiline_assign">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">indent_multiline_assign</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">texts</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">texts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+    <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">texts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">indent</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">texts</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+
+
+<span class="c1"># -------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="ConvertVisitor">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ConvertVisitor.html#tueisec_myparsing.codegen.ConvertVisitor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConvertVisitor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="ConvertVisitor.visit">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ConvertVisitor.visit.html#tueisec_myparsing.codegen.ConvertVisitor.visit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;visit_&#39;</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="n">visitor</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">generic_visit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">visitor</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ConvertVisitor.generic_visit">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ConvertVisitor.generic_visit.html#tueisec_myparsing.codegen.ConvertVisitor.generic_visit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generic_visit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">():</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="getfilename">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.getfilename.html#tueisec_myparsing.codegen.getfilename">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;.txt&#39;</span></div>
+
+
+
+<div class="viewcode-block" id="escape">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.escape.html#tueisec_myparsing.codegen.escape">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">escape</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">s</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span>
+    <span class="k">return</span> <span class="n">s</span></div>
+
+
+
+<div class="viewcode-block" id="del_paren">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.del_paren.html#tueisec_myparsing.codegen.del_paren">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">del_paren</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;)&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">s</span></div>
+
+
+
+<div class="viewcode-block" id="del_space">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.del_space.html#tueisec_myparsing.codegen.del_space">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">del_space</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ASTCodeGenerator">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.html#tueisec_myparsing.codegen.ASTCodeGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ASTCodeGenerator</span><span class="p">(</span><span class="n">ConvertVisitor</span><span class="p">):</span>
+<div class="viewcode-block" id="ASTCodeGenerator.__init__">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.__init__.html#tueisec_myparsing.codegen.ASTCodeGenerator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indentsize</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">FileSystemLoader</span><span class="p">(</span><span class="n">DEFAULT_TEMPLATE_DIR</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indent</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">indent</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">indentsize</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">template_cache</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.get_template">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.get_template.html#tueisec_myparsing.codegen.ASTCodeGenerator.get_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_cache</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_cache</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span>
+
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">template_cache</span><span class="p">[</span><span class="n">filename</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span>
+        <span class="k">return</span> <span class="n">template</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Source">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Source.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Source">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">description</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Description">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Description.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Description">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Description</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;definitions&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">definition</span><span class="p">)</span> <span class="k">for</span> <span class="n">definition</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">definitions</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_ModuleDef">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_ModuleDef.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_ModuleDef">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_ModuleDef</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">paramlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">paramlist</span><span class="p">))</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">paramlist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">portlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">portlist</span><span class="p">))</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">portlist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;modulename&#39;</span><span class="p">:</span> <span class="n">escape</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="s1">&#39;paramlist&#39;</span><span class="p">:</span> <span class="n">paramlist</span><span class="p">,</span>
+            <span class="s1">&#39;portlist&#39;</span><span class="p">:</span> <span class="n">portlist</span><span class="p">,</span>
+            <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">item</span><span class="p">))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">items</span><span class="p">]</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">items</span> <span class="k">else</span> <span class="p">(),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Paramlist">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Paramlist.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Paramlist">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Paramlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">param</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">params</span><span class="p">]</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">,</span>
+            <span class="s1">&#39;len_params&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Portlist">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Portlist.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Portlist">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Portlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">ports</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">port</span><span class="p">)</span> <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">ports</span><span class="p">]</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ports&#39;</span><span class="p">:</span> <span class="n">ports</span><span class="p">,</span>
+            <span class="s1">&#39;len_ports&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">ports</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Port">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Port.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Port">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Port</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Width">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Width.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Width">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Width</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;msb&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">msb</span><span class="p">,</span>
+            <span class="s1">&#39;lsb&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">lsb</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Length(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;msb&#39;: del_space(del_paren(self.visit(node.msb))),</span>
+    <span class="c1">#         &#39;lsb&#39;: del_space(del_paren(self.visit(node.lsb))),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Identifier">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Identifier.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Identifier">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">escape</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="c1"># &#39;scope&#39;: &#39;&#39; if node.scope is None else self.visit(node.scope),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Value(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;value&#39;: node.value,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Constant(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;value&#39;: node.value,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_IntConst">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_IntConst.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_IntConst">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_IntConst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_FloatConst">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_FloatConst.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_FloatConst">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_FloatConst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_StringConst">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_StringConst.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_StringConst">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_StringConst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Variable(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.width is None else self.visit(node.width),</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Input">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Input.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Input">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">width</span><span class="p">),</span>
+            <span class="s1">&#39;signed&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">signed</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Output">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Output.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Output">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">width</span><span class="p">),</span>
+            <span class="s1">&#39;signed&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">signed</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Inout(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         # &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;names&#39;: [escape(name) for name in node.names],</span>
+    <span class="c1">#         # &#39;width&#39;: &#39;&#39; if node.width is None else self.visit(node.width),</span>
+    <span class="c1">#         # &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Tri(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.width is None else self.visit(node.width),</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Wire">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Wire.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Wire">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Wire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">width</span><span class="p">),</span>
+            <span class="s1">&#39;signed&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">signed</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Reg(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.width is None else self.visit(node.width),</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_WireArray(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.width is None else self.visit(node.width),</span>
+    <span class="c1">#         &#39;length&#39;: self.visit(node.length),</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_RegArray(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.width is None else self.visit(node.width),</span>
+    <span class="c1">#         &#39;length&#39;: self.visit(node.length),</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Integer(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Real(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Genvar(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Ioport(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;first&#39;: node.first.__class__.__name__.lower(),</span>
+    <span class="c1">#         &#39;second&#39;: &#39;&#39; if node.second is None else node.second.__class__.__name__.lower(),</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.first.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.first.width is None else self.visit(node.first.width),</span>
+    <span class="c1">#         &#39;signed&#39;: node.first.signed or (node.second is not None and node.second.signed)</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Parameter(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     value = self.visit(node.value)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.width is None or (value.startswith(&#39;&quot;&#39;) and value.endswith(&#39;&quot;&#39;)) else self.visit(node.width),</span>
+    <span class="c1">#         &#39;value&#39;: value,</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Localparam(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     value = self.visit(node.value)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;width&#39;: &#39;&#39; if node.width is None or (value.startswith(&#39;&quot;&#39;) and value.endswith(&#39;&quot;&#39;)) else self.visit(node.width),</span>
+    <span class="c1">#         &#39;value&#39;: value,</span>
+    <span class="c1">#         &#39;signed&#39;: node.signed,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Decl">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Decl.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Decl">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Decl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;items&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">list</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Concat(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     items = [del_paren(self.visit(item)) for item in node.list]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;items&#39;: items,</span>
+    <span class="c1">#         &#39;len_items&#39;: len(items),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_LConcat(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     items = [del_paren(self.visit(item)) for item in node.list]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;items&#39;: items,</span>
+    <span class="c1">#         &#39;len_items&#39;: len(items),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Repeat(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;value&#39;: del_paren(self.visit(node.value)),</span>
+    <span class="c1">#         &#39;times&#39;: del_paren(self.visit(node.times)),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Partselect">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Partselect.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Partselect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Partselect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;var&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">var</span><span class="p">),</span>
+            <span class="s1">&#39;msb&#39;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">msb</span><span class="p">,</span>
+            <span class="c1"># &#39;lsb&#39;: del_space(del_paren(self.visit(node.lsb))),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Pointer(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;var&#39;: self.visit(node.var),</span>
+    <span class="c1">#         &#39;ptr&#39;: del_paren(self.visit(node.ptr)),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Lvalue">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Lvalue.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Lvalue">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Lvalue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;var&#39;</span><span class="p">:</span> <span class="n">del_paren</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">var</span><span class="p">)),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Rvalue">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Rvalue.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Rvalue">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Rvalue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;var&#39;</span><span class="p">:</span> <span class="n">del_paren</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">var</span><span class="p">)),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Operator(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     order = op2order(node.__class__.__name__)</span>
+    <span class="c1">#     lorder = op2order(node.left.__class__.__name__)</span>
+    <span class="c1">#     rorder = op2order(node.right.__class__.__name__)</span>
+    <span class="c1">#     left = self.visit(node.left)</span>
+    <span class="c1">#     right = self.visit(node.right)</span>
+    <span class="c1">#     if ((not isinstance(node.left, (Sll, Srl, Sra,</span>
+    <span class="c1">#                                     LessThan, GreaterThan, LessEq, GreaterEq,</span>
+    <span class="c1">#                                     Eq, NotEq, Eql, NotEql))) and</span>
+    <span class="c1">#             (lorder is not None and lorder &lt;= order)):</span>
+    <span class="c1">#         left = del_paren(left)</span>
+    <span class="c1">#     if ((not isinstance(node.right, (Sll, Srl, Sra,</span>
+    <span class="c1">#                                      LessThan, GreaterThan, LessEq, GreaterEq,</span>
+    <span class="c1">#                                      Eq, NotEq, Eql, NotEql))) and</span>
+    <span class="c1">#             (rorder is not None and order &gt; rorder)):</span>
+    <span class="c1">#         right = del_paren(right)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;left&#39;: left,</span>
+    <span class="c1">#         &#39;right&#39;: right,</span>
+    <span class="c1">#         &#39;op&#39;: op2mark(node.__class__.__name__),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_UnaryOperator(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     right = self.visit(node.right)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;right&#39;: right,</span>
+    <span class="c1">#         &#39;op&#39;: op2mark(node.__class__.__name__),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Uplus(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Uminus(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Ulnot(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Unot(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Uand(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Unand(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Uor(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Unor(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Uxor(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Uxnor(self, node):</span>
+    <span class="c1">#     return self.visit_UnaryOperator(node)</span>
+
+    <span class="c1"># def visit_Power(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Times(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Divide(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Mod(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Plus(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Minus(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Sll(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Srl(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Sra(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_LessThan(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_GreaterThan(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_LessEq(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_GreaterEq(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Eq(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_NotEq(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Eql(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_NotEql(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_And(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Xor(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Xnor(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Or(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Land(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Lor(self, node):</span>
+    <span class="c1">#     return self.visit_Operator(node)</span>
+
+    <span class="c1"># def visit_Cond(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     true_value = del_paren(self.visit(node.true_value))</span>
+    <span class="c1">#     false_value = del_paren(self.visit(node.false_value))</span>
+    <span class="c1">#     if isinstance(node.false_value, Cond):</span>
+    <span class="c1">#         false_value = &#39;&#39;.join([&#39;\n&#39;, false_value])</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;cond&#39;: del_paren(self.visit(node.cond)),</span>
+    <span class="c1">#         &#39;true_value&#39;: true_value,</span>
+    <span class="c1">#         &#39;false_value&#39;: false_value,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Assign">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Assign.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Assign">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Assign</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;left&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">left</span><span class="p">),</span>
+            <span class="s1">&#39;right&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">right</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">indent_multiline_assign</span><span class="p">(</span><span class="n">rslt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Always(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;sens_list&#39;: self.visit(node.sens_list),</span>
+    <span class="c1">#         &#39;statement&#39;: self.visit(node.statement),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_SensList(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     items = [self.visit(item) for item in node.list]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;items&#39;: items,</span>
+    <span class="c1">#         &#39;len_items&#39;: len(items),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Sens(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;sig&#39;: &#39;*&#39; if node.type == &#39;all&#39; else self.visit(node.sig),</span>
+    <span class="c1">#         &#39;type&#39;: node.type if node.type == &#39;posedge&#39; or node.type == &#39;negedge&#39; else &#39;&#39;</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Substitution(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;left&#39;: self.visit(node.left),</span>
+    <span class="c1">#         &#39;right&#39;: self.visit(node.right),</span>
+    <span class="c1">#         &#39;ldelay&#39;: &#39;&#39; if node.ldelay is None else self.visit(node.ldelay),</span>
+    <span class="c1">#         &#39;rdelay&#39;: &#39;&#39; if node.rdelay is None else self.visit(node.rdelay),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     rslt = indent_multiline_assign(rslt)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_BlockingSubstitution(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;left&#39;: self.visit(node.left),</span>
+    <span class="c1">#         &#39;right&#39;: self.visit(node.right),</span>
+    <span class="c1">#         &#39;ldelay&#39;: &#39;&#39; if node.ldelay is None else self.visit(node.ldelay),</span>
+    <span class="c1">#         &#39;rdelay&#39;: &#39;&#39; if node.rdelay is None else self.visit(node.rdelay),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     rslt = indent_multiline_assign(rslt)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_NonblockingSubstitution(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;left&#39;: self.visit(node.left),</span>
+    <span class="c1">#         &#39;right&#39;: self.visit(node.right),</span>
+    <span class="c1">#         &#39;ldelay&#39;: &#39;&#39; if node.ldelay is None else self.visit(node.ldelay),</span>
+    <span class="c1">#         &#39;rdelay&#39;: &#39;&#39; if node.rdelay is None else self.visit(node.rdelay),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     rslt = indent_multiline_assign(rslt)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_IfStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     true_statement = &#39;&#39; if node.true_statement is None else self.visit(node.true_statement)</span>
+    <span class="c1">#     false_statement = &#39;&#39; if node.false_statement is None else self.visit(node.false_statement)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;cond&#39;: del_paren(self.visit(node.cond)),</span>
+    <span class="c1">#         &#39;true_statement&#39;: true_statement,</span>
+    <span class="c1">#         &#39;false_statement&#39;: false_statement,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_ForStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;pre&#39;: &#39;&#39; if node.pre is None else del_space(self.visit(node.pre)),</span>
+    <span class="c1">#         &#39;cond&#39;: &#39;&#39; if node.cond is None else del_space(del_paren(self.visit(node.cond))),</span>
+    <span class="c1">#         &#39;post&#39;: &#39;&#39; if node.post is None else del_space(self.visit(node.post).replace(&#39;;&#39;, &#39;&#39;)),</span>
+    <span class="c1">#         &#39;statement&#39;: &#39;&#39; if node.statement is None else self.visit(node.statement),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_WhileStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;cond&#39;: &#39;&#39; if node.cond is None else del_paren(self.visit(node.cond)),</span>
+    <span class="c1">#         &#39;statement&#39;: &#39;&#39; if node.statement is None else self.visit(node.statement),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_CaseStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;comp&#39;: del_paren(self.visit(node.comp)),</span>
+    <span class="c1">#         &#39;caselist&#39;: [self.indent(self.visit(case)) for case in node.caselist],</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_CasexStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;comp&#39;: del_paren(self.visit(node.comp)),</span>
+    <span class="c1">#         &#39;caselist&#39;: [self.indent(self.visit(case)) for case in node.caselist],</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Case(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     condlist = [&#39;default&#39;] if node.cond is None else [</span>
+    <span class="c1">#         del_paren(self.visit(c)) for c in node.cond]</span>
+    <span class="c1">#     cond = []</span>
+    <span class="c1">#     for c in condlist:</span>
+    <span class="c1">#         cond.append(c)</span>
+    <span class="c1">#         cond.append(&#39;, &#39;)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;cond&#39;: &#39;&#39;.join(cond[:-1]),</span>
+    <span class="c1">#         &#39;statement&#39;: self.visit(node.statement),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Block(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;scope&#39;: &#39;&#39; if node.scope is None else escape(node.scope),</span>
+    <span class="c1">#         &#39;statements&#39;: [self.indent(self.visit(statement)) for statement in node.statements],</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Initial(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;statement&#39;: self.visit(node.statement),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_EventStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;senslist&#39;: del_paren(self.visit(node.senslist)),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_WaitStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;cond&#39;: del_paren(self.visit(node.cond)),</span>
+    <span class="c1">#         &#39;statement&#39;: self.visit(node.statement) if node.statement else &#39;&#39;,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_ForeverStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;statement&#39;: self.visit(node.statement),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_DelayStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;delay&#39;: self.visit(node.delay),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_InstanceList(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     parameterlist = [self.indent(self.visit(param)) for param in node.parameterlist]</span>
+    <span class="c1">#     instances = [self.visit(instance) for instance in node.instances]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;module&#39;: escape(node.module),</span>
+    <span class="c1">#         &#39;parameterlist&#39;: parameterlist,</span>
+    <span class="c1">#         &#39;len_parameterlist&#39;: len(parameterlist),</span>
+    <span class="c1">#         &#39;instances&#39;: instances,</span>
+    <span class="c1">#         &#39;len_instances&#39;: len(instances),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Instance">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Instance.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Instance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="c1"># array = &#39;&#39; if node.array is None else self.visit(node.array)</span>
+        <span class="n">portlist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">port</span><span class="p">))</span> <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">portlist</span><span class="p">]</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;module&#39;</span><span class="p">:</span> <span class="n">escape</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">module</span><span class="p">),</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">escape</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="c1"># &#39;array&#39;: array,</span>
+            <span class="s1">&#39;portlist&#39;</span><span class="p">:</span> <span class="n">portlist</span><span class="p">,</span>
+            <span class="s1">&#39;len_portlist&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">portlist</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_ParamArg(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;paramname&#39;: &#39;&#39; if node.paramname is None else escape(node.paramname),</span>
+    <span class="c1">#         &#39;argname&#39;: &#39;&#39; if node.argname is None else del_paren(self.visit(node.argname)),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_PortArg">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_PortArg.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_PortArg">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_PortArg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;portname&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">portname</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">escape</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">portname</span><span class="p">),</span>
+            <span class="s1">&#39;argname&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">argname</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">del_paren</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">argname</span><span class="p">)),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+    <span class="c1"># def visit_Function(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     statement = [self.indent(self.visit(s)) for s in node.statement]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;retwidth&#39;: self.visit(node.retwidth),</span>
+    <span class="c1">#         &#39;statement&#39;: statement,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_FunctionCall(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     args = [self.visit(arg) for arg in node.args]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: self.visit(node.name),</span>
+    <span class="c1">#         &#39;args&#39;: args,</span>
+    <span class="c1">#         &#39;len_args&#39;: len(args),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_Task(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     statement = [self.indent(self.visit(s)) for s in node.statement]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.name),</span>
+    <span class="c1">#         &#39;statement&#39;: statement,</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_TaskCall(self, node):</span>
+    <span class="c1">#    filename = getfilename(node)</span>
+    <span class="c1">#    template = self.get_template(filename)</span>
+    <span class="c1">#    args = [ self.visit(arg) for arg in node.args ]</span>
+    <span class="c1">#    template_dict = {</span>
+    <span class="c1">#        &#39;name&#39; : self.visit(node.name),</span>
+    <span class="c1">#        &#39;args&#39; : args,</span>
+    <span class="c1">#        &#39;len_args&#39; : len(args),</span>
+    <span class="c1">#        }</span>
+    <span class="c1">#    rslt = template.render(template_dict)</span>
+    <span class="c1">#    return rslt</span>
+
+    <span class="c1"># def visit_GenerateStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;items&#39;: [self.visit(item) for item in node.items]</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_SystemCall(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     args = [self.visit(arg) for arg in node.args]</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;syscall&#39;: escape(node.syscall),</span>
+    <span class="c1">#         &#39;args&#39;: args,</span>
+    <span class="c1">#         &#39;len_args&#39;: len(args),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_IdentifierScopeLabel">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_IdentifierScopeLabel.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_IdentifierScopeLabel">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_IdentifierScopeLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">escape</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="s1">&#39;loop&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">loop</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">loop</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_IdentifierScope">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_IdentifierScope.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_IdentifierScope">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_IdentifierScope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">scopes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span> <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">labellist</span><span class="p">]</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;scopes&#39;</span><span class="p">:</span> <span class="n">scopes</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_Pragma">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_Pragma.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_Pragma">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Pragma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;entry&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">entry</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+
+
+<div class="viewcode-block" id="ASTCodeGenerator.visit_PragmaEntry">
+<a class="viewcode-back" href="../../reference/_gen/tueisec_myparsing.codegen.ASTCodeGenerator.visit_PragmaEntry.html#tueisec_myparsing.codegen.ASTCodeGenerator.visit_PragmaEntry">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_PragmaEntry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">getfilename</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">template_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">escape</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">template_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rslt</span></div>
+</div>
+
+
+    <span class="c1"># def visit_Disable(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;name&#39;: escape(node.dest),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_ParallelBlock(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;scope&#39;: &#39;&#39; if node.scope is None else escape(node.scope),</span>
+    <span class="c1">#         &#39;statements&#39;: [self.indent(self.visit(statement)) for statement in node.statements],</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_SingleStatement(self, node):</span>
+    <span class="c1">#     filename = getfilename(node)</span>
+    <span class="c1">#     template = self.get_template(filename)</span>
+    <span class="c1">#     template_dict = {</span>
+    <span class="c1">#         &#39;statement&#39;: self.visit(node.statement),</span>
+    <span class="c1">#     }</span>
+    <span class="c1">#     rslt = template.render(template_dict)</span>
+    <span class="c1">#     return rslt</span>
+
+    <span class="c1"># def visit_EmbeddedCode(self, node):</span>
+    <span class="c1">#     return node.code</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference/index.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 27, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

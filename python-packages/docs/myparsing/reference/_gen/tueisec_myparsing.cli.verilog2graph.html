@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>tueisec_myparsing.cli.verilog2graph &#8212; TUEISEC_myparsing 0.0.1a25 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=34bb78ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pydoctheme.css?v=8635fa60" />
+    
+    <script src="../../_static/documentation_options.js?v=c61080f6"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <script src="../../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="tueisec_myparsing.cli.verilog2graph.main" href="tueisec_myparsing.cli.verilog2graph.main.html" />
+    <link rel="prev" title="tueisec_myparsing.cli.verilog_statistics.main" href="tueisec_myparsing.cli.verilog_statistics.main.html" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="shortcut icon" type="image/png" href="../../_static/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=0.8">
+    
+    
+
+  </head><body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="responsive-menu"><a href="#sidebar-anchor" title="Navigation">&#9776;</a></li>
+        <li><a href="../../index.html">TUEISEC_myparsing-0.0.1a25</a> &#187;</li>
+          <li><a href="../index.html" >Reference</a> &#187;</li>
+          <li><a href="../tueisec_myparsing.html" accesskey="U">tueisec_myparsing</a> &#187;</li> 
+      </ul>
+    </div>
+    
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-tueisec_myparsing.cli.verilog2graph">
+<span id="tueisec-myparsing-cli-verilog2graph"></span><h1>tueisec_myparsing.cli.verilog2graph<a class="headerlink" href="#module-tueisec_myparsing.cli.verilog2graph" title="Link to this heading">¶</a></h1>
+<p>Create a graph from verilog with additional attributes.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Synopsys:</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>usage: verilog2graph [-h] [--debug] [-l CELL_LIBRARY] [-o OUTPUT_PATH]
+                     [--cores CORES] [--sia SIA] [--vparsing-debug]
+                     [--do-not-zip] [--overwrite]
+                     [--output_info {plain,prepend_types,write_node_type,complete_data}]
+                     [--output_format {adjlist,gexf,gml,graphml,json}]
+                     designs [designs ...]
+
+Create a graph from verilog with additional attributes.
+
+positional arguments:
+designs               Specify the designs (*.v) to be parsed as command line
+                      arguments. Either submit a folder name, single, or
+                      multiple file names.
+
+optional arguments:
+-h, --help            show this help message and exit
+-l CELL_LIBRARY, --cell_library CELL_LIBRARY
+                      The cell library path to use. Default: /nas/ei/share/s
+                      ec/tools/qflow/qflow-1.3-RE/share/qflow/tech/osu035/os
+                      u035_stdcells.lib
+-o OUTPUT_PATH, --output_path OUTPUT_PATH
+                      The folder where output files will be stored.You may
+                      use {}, which is replaced with the process name.
+                      Default is: outputFiles/{}/design_graph/
+--cores CORES         Cores to use for processing. Default is all cores
+--sia SIA             Deprecated option kept for compatibility. Do not use.
+--vparsing-debug      Activate debug output of verilog parsing.
+--do-not-zip          No zipping of output files
+--overwrite           Overwrite existing files.
+--output_info {plain,prepend_types,write_node_type,complete_data}
+                      If `plain`, only nodes and edges are in the graph.
+                      This is the default. If `prepend_types`, the graph
+                      nodes will be prepended with the node types, if the
+                      node type is not yet in the node name. Careful: this
+                      is a expensive operation. Consider using a more
+                      complex graph storage format where storing node data
+                      is possible. If `write_node_type`, the graph nodes get
+                      an attribute &quot;nodeType&quot; that contains the cell type.
+                      Careful, output can not be an adjlist any more, but
+                      any other format. If `complete_data`, the graph
+                      contains as much data as possible, as parsed from the
+                      verilog file. Be Careful, output can not be an adjlist
+                      any more, but any other format.
+--output_format {adjlist,gexf,gml,graphml,json}
+                      Choose the output format wisely.
+
+main:
+--debug               Enable debug output
+</pre></div>
+</div>
+</div>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.cli.verilog2graph.main.html#tueisec_myparsing.cli.verilog2graph.main" title="tueisec_myparsing.cli.verilog2graph.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="tueisec_myparsing.cli.verilog2graph.output_graph.html#tueisec_myparsing.cli.verilog2graph.output_graph" title="tueisec_myparsing.cli.verilog2graph.output_graph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_graph</span></code></a>(args)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.cli.verilog2graph.write_graph.html#tueisec_myparsing.cli.verilog2graph.write_graph" title="tueisec_myparsing.cli.verilog2graph.write_graph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_graph</span></code></a>(graph, path, filename, format, ...)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="tueisec_myparsing.cli.verilog2graph.OutputInformation.html#tueisec_myparsing.cli.verilog2graph.OutputInformation" title="tueisec_myparsing.cli.verilog2graph.OutputInformation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OutputInformation</span></code></a>(*values)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+    <a id="sidebar-anchor"></a>
+    
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3><a href="../../index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../codeexample.html">Parsing Example</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../tueisec_myparsing.html">tueisec_myparsing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/reference/_gen/tueisec_myparsing.cli.verilog2graph.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+<div id="sidebarbutton" title="Collapse sidebar">
+<span>«</span>
+</div>
+
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tueisec_myparsing.cli.verilog2graph.main.html" title="tueisec_myparsing.cli.verilog2graph.main"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tueisec_myparsing.cli.verilog_statistics.main.html" title="tueisec_myparsing.cli.verilog_statistics.main"
+             accesskey="P">previous</a> |</li>
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2019, TUEISEC.
+      Last updated on Aug 29, 2025.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

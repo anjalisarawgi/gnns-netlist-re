@@ -1,0 +1,28 @@
+﻿re\_verilog2features.cli.partition2gephi
+========================================
+
+.. automodule:: re_verilog2features.cli.partition2gephi
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+    :toctree: .
+   
+      main
+      partition_to_gephi
+      read_clusters
+      read_original_graph
+      read_partition
+      write_graph
+   
+   
+
+   
+   
+   
+
+   
+   
+   

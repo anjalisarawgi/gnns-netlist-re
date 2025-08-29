@@ -1,0 +1,6 @@
+re\_verilog2features.scoap.run\_and\_parse\_tmax.call\_tmax
+===========================================================
+
+.. currentmodule:: re_verilog2features.scoap.run_and_parse_tmax
+
+.. autofunction:: re_verilog2features.scoap.run_and_parse_tmax.call_tmax
