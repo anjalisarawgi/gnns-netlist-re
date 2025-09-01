@@ -13,7 +13,7 @@ import networkx as nx
 from tqdm import tqdm
 import torch.nn.functional as F
 import pandas as pd
-from torch_geometric.data import Batch
+
 
 def train(model, loader, optimizer):
     model.train()
@@ -67,7 +67,7 @@ def run_training(data, train_loader, in_dim, out_dim):
     return model
 
 
-
+from torch_geometric.data import Batch
 if __name__ == "__main__":
     data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
     train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)

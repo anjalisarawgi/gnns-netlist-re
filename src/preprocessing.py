@@ -205,5 +205,25 @@ def load_GNN_aes_core_gmls(gml_path):
         data.test_mask = test_mask
         data_list.append(data)
 
+# def load_aisec_single_gml(gml_path):
+#     print("calling gnn from path:", gml_path)
+#     random.seed(42)
+    
+#     G = nx.read_gml(gml_path)
+#     nodes = sorted(G.nodes())
+
+#     features = []
+#     labels = []
+#     for node in nodes:
+#         attr = G.nodes[node]
+#         # feat = list(map(int, attr['features'].strip('[]').split(','))) 
+#         feat = list(map(int, attr['features']))
+#         features.append(feat)
+#         labels.append(int(attr['partition']))
+
+
+
+
+
 if __name__ == "__main__":
     load_GNN_aes_core_gmls("data/aes_core")

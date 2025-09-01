@@ -13,7 +13,7 @@ import networkx as nx
 from tqdm import tqdm
 import torch.nn.functional as F
 import pandas as pd
-from torch_geometric.data import Batch
+
 
 def train(model, loader, optimizer):
     model.train()
