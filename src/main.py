@@ -1,5 +1,5 @@
 import torch 
-from preprocessing import normalize_features, load_GNNRE_full, load_GNNRE_gmls, load_GNN_aes_core_gmls
+from preprocessing import normalize_features, load_GNNRE_full, load_GNNRE_gmls, load_GNN_aes_core_gmls,load_aisec_single_gml
 from torch_geometric.loader import DataLoader, GraphSAINTRandomWalkSampler    
 import torch
 from torch_geometric.data import Data
@@ -69,17 +69,17 @@ def run_training(data, train_loader, in_dim, out_dim):
 
 
 if __name__ == "__main__":
-    data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
-    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
-    val_data = data 
-    test_data = data
+    # data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
+    # train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
+    # val_data = data 
+    # test_data = data
 
-    in_dim = data.num_features
-    out_dim = len(torch.unique(data.y))
-    print("Input dimension:", in_dim)
-    print("Output dimension:", out_dim)
-    run_training(data, train_loader, in_dim, out_dim)
-    print("Training complete.")
+    # in_dim = data.num_features
+    # out_dim = len(torch.unique(data.y))
+    # print("Input dimension:", in_dim)
+    # print("Output dimension:", out_dim)
+    # run_training(data, train_loader, in_dim, out_dim)
+    # print("Training complete.")
 
 
     # # gml (GNNRE)
@@ -113,7 +113,14 @@ if __name__ == "__main__":
 
 
 
-    ### gml (AES - single graph)
-    
 
-    
+    ##### gml (AES LOAD SINGLE FILE)
+    data = load_aisec_single_gml("aes_key_expand_128_modified_wfeatures.gml")
+
+    in_dim = data.num_features
+    out_dim = len(torch.unique(data.y))
+    print("in_dim", in_dim)
+    print("out_dim", out_dim)
+
+    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
+    run_training(data, train_loader, in_dim, out_dim)    

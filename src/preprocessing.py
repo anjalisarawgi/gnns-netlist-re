@@ -205,21 +205,74 @@ def load_GNN_aes_core_gmls(gml_path):
         data.test_mask = test_mask
         data_list.append(data)
 
-# def load_aisec_single_gml(gml_path):
-#     print("calling gnn from path:", gml_path)
-#     random.seed(42)
-    
-#     G = nx.read_gml(gml_path)
-#     nodes = sorted(G.nodes())
 
-#     features = []
-#     labels = []
-#     for node in nodes:
-#         attr = G.nodes[node]
-#         # feat = list(map(int, attr['features'].strip('[]').split(','))) 
-#         feat = list(map(int, attr['features']))
-#         features.append(feat)
-#         labels.append(int(attr['partition']))
+def load_aisec_single_gml(gml_path):
+    print("calling gnn from path:", gml_path)
+    random.seed(42)
+    
+    G = nx.read_gml(gml_path, label="id")
+    nodes = list(G.nodes())
+
+    features = []
+    subcircuit_ids = []
+    for node in nodes:
+        attr = G.nodes[node]
+
+        # making features as a list
+        node_feats = attr['features']
+        if isinstance(node_feats, list):
+            feat = list(map(int, node_feats))
+        else:
+            feat = [int(v) for v in G.nodes[node].get("features", [])]
+        features.append(feat)
+
+        subcircuit = attr.get('subcircuit_id') or 'unknown'
+        subcircuit_ids.append(subcircuit)
+
+    # map subcircuit -> integer labels 
+    unique_subcircuits = sorted(set(subcircuit_ids))
+    subcircuit2id = {name: idx for idx, name in enumerate(unique_subcircuits)}
+    labels = torch.tensor([subcircuit2id[s] for s in subcircuit_ids], dtype=torch.long)
+
+    features = normalize_features(np.array(features)) # normalize
+    # edges = list(G.edges())
+    # edge_index = torch.tensor(edges, dtype = torch.long).t().contiguous()
+    node_map = {node: idx for idx, node in enumerate(G.nodes())}
+    edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
+    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
+
+    num_nodes = len(nodes)
+    indices = list(range(num_nodes))
+    random.shuffle(indices)
+
+    train_ratio, test_ratio, val_ratio = 0.8, 0.1, 0.1
+    
+
+    train_cutoff = int(train_ratio*num_nodes )
+    val_cutoff = train_cutoff + int(val_ratio* num_nodes)
+
+    train_idx = indices[:train_cutoff]
+    val_idx = indices[train_cutoff:val_cutoff]
+    test_idx = indices[val_cutoff:]
+
+    train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    test_mask = torch.zeros(num_nodes, dtype=torch.bool)
+
+    train_mask[train_idx] = True
+    val_mask[val_idx] = True
+    test_mask[test_idx] = True
+
+    # creating pyG object 
+    data = Data(x=features, edge_index=edge_index, y = labels)
+    data.train_mask = train_mask
+    data.val_mask = val_mask 
+    data.test_mask = test_mask 
+
+
+    return data
+
+
 
 
 

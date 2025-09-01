@@ -57,7 +57,12 @@ for node in G.nodes():
     is_key = int("key" in clean_label.lower())
     # print(f"Node: {node}, Label: {label}, is_key: {is_key}")
     G.nodes[node]['features'] = [is_pi, is_po, is_key] + onehot + [indeg, outdeg]
-    G.nodes[node]['subcircuit_id'] = parition_cleaned
+    if "INPUT" in clean_label:
+        continue 
+    elif "OUTPUT" in clean_label:
+        continue
+    else:
+        G.nodes[node]['subcircuit_id'] = parition_cleaned
 
 
 output_path = "aes_key_expand_128_modified_wfeatures.gml"
