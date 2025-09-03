@@ -9,6 +9,8 @@ from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat
 # from gml_to_pyg import convert_gml_to_pyg
+from utils.set_seed import set_seed
+from utils.logging import setup_logging
 import networkx as nx
 from tqdm import tqdm
 import torch.nn.functional as F
@@ -20,7 +22,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import argparse
 
-def load_aisec_single_gml(gml_path):
+def load_aisec_single_gml(gml_path, class_reduce):
     print("calling gnn from path:", gml_path)
     random.seed(42)
     
@@ -40,8 +42,12 @@ def load_aisec_single_gml(gml_path):
             feat = [int(v) for v in G.nodes[node].get("features", [])]
         features.append(feat)
 
-        # subcircuit = attr.get('subcircuit_id') or 'unknown'
-        subcircuit = attr.get('subcircuit')
+        #### here we choose if we want to reduce to lesser classes 
+        if class_reduce == True:
+            subcircuit = attr.get('subcircuit')
+        else:
+            subcircuit = attr.get('subcircuit_id') or 'unknown' 
+        
         subcircuit_ids.append(subcircuit)
 
     # map subcircuit -> integer labels 
@@ -207,7 +213,6 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
                 print(f"    Class {cls}: {acc:.4f}")
         
         wandb.log(log_data)
-        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train accuracy : {train_acc:.4f}, val accuracy {val_acc:.4f}')
 
 
 
@@ -247,13 +252,26 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
         G.nodes[node]["predicted_label"] = pred_label
         G.nodes[node]["correct"] = correct
 
+    if data.train_mask[idx]:
+        G.nodes[node]["split"] = "train"
+    elif data.val_mask[idx]:
+        G.nodes[node]["split"] = "val"
+    elif data.test_mask[idx]:
+        G.nodes[node]["split"] = "test"
+    else:
+        G.nodes[node]["split"] = "unknown"
+    
+
     nx.write_gml(G, output_gml_path)
     print(f"Saved GML with predictions to: {output_gml_path}")
 
 if __name__ == "__main__":
+    setup_logging("logs")
+    set_seed(42)
     parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
     parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
+    parser.add_argument("--class_reduce", action="store_true", help="Whether to reduce classes or not", default = False)
     args = parser.parse_args()
 
     gml_path = args.gml_path
@@ -261,16 +279,16 @@ if __name__ == "__main__":
     
     wandb.init(
         project="gnn-subcircuit-detection",
-        name=f"{model_name}-{os.path.basename(gml_path).replace('.gml', '')}",  
-        config={
-            "model": model_name,
-            "hidden_channels": 256,
-            "lr": 0.01,
-            "epochs": 1000,
-            "batch_size": 5000,
-            "walk_length": 3,
-            "dataset": os.path.basename(gml_path)
-        }
+        name=f"{model_name}-{os.path.basename(gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}",  
+        # config={
+        #     "model": model_name,
+        #     # "hidden_channels": 256,
+        #     # "lr": 0.01,
+        #     # "epochs": 1000,
+        #     # "batch_size": 5000,
+        #     # "walk_length": 3,
+        #     # "dataset": os.path.basename(gml_path)
+        # }
     )
 
     # data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
@@ -319,7 +337,7 @@ if __name__ == "__main__":
 
 
     ##### gml (AES LOAD SINGLE FILE)
-    data, id2name = load_aisec_single_gml(gml_path)
+    data, id2name = load_aisec_single_gml(gml_path, class_reduce=args.class_reduce)
 
     in_dim = data.num_features
     out_dim = len(torch.unique(data.y))
@@ -329,13 +347,23 @@ if __name__ == "__main__":
     log_class_distribution(data.y[data.train_mask], "train")
     log_class_distribution(data.y[data.val_mask], "val")
     log_class_distribution(data.y[data.test_mask], "test")
-    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=5000, walk_length=3, shuffle=True)
+
+    random.seed(42)
+    num_nodes = data.num_nodes
+    batch_size = int(0.3 * num_nodes)
+    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=batch_size, walk_length=2, shuffle=True, sample_coverage=50)
 
 
 
 
     model = run_training(data, train_loader, in_dim, out_dim, id2name, model_name)    
     
+    # os.makedirs("results", exist_ok=True)
+    base_name = os.path.splitext(os.path.basename(gml_path))[0]
+    output_dir = os.path.join("results", f"{model_name}_{base_name}")
+    os.makedirs(output_dir, exist_ok=True)
+    output_gml_path = os.path.join(output_dir, "predictions.gml")
+    tsne_path = os.path.join(output_dir, "tsne.png")
 
     # Save predictions to a new GML for Gephi analysis
     save_predictions_to_gml(
@@ -343,10 +371,12 @@ if __name__ == "__main__":
         data=data,
         model=model,
         id2name=id2name,
-        output_gml_path=gml_path.replace(".gml", "_results.gml")
+        output_gml_path=  output_gml_path
+        # output_gml_path=gml_path.replace(".gml", "_results.gml")
     )
 
     features = data.x.cpu().numpy()
     labels = data.y.cpu().numpy()
 
-    plot_tsne(features, labels, id2name, title="t-SNE of Raw Features", save_path=f"tsne_{gml_path}.png")
+    plot_tsne(features, labels, id2name, title=f"t-SNE: {base_name} ({model_name})", save_path=tsne_path)
+    print(f"DONE! GML + t-SNE saved to: {output_dir}")

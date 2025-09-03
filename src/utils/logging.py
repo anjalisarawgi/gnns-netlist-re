@@ -17,6 +17,8 @@ def setup_logging(log_dir="logs"):
         def flush(self):
             for f in self.files:
                 f.flush()
+        def isatty(self):
+            return False
 
     logfile = open(log_path, "w")
     sys.stdout = Tee(sys.stdout, logfile)
