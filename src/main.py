@@ -185,7 +185,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
 
-    epochs = 1000
+    epochs = 100
     for epoch in range(1, epochs+1):
         loss = train(model, train_loader, optimizer)
         train_acc = evaluate(model, data, data.train_mask)
@@ -264,6 +264,8 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 
     nx.write_gml(G, output_gml_path)
     print(f"Saved GML with predictions to: {output_gml_path}")
+
+
 
 if __name__ == "__main__":
     setup_logging("logs")
@@ -351,7 +353,7 @@ if __name__ == "__main__":
     random.seed(42)
     num_nodes = data.num_nodes
     batch_size = int(0.3 * num_nodes)
-    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=batch_size, walk_length=2, shuffle=True, sample_coverage=50)
+    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=batch_size, walk_length=2, shuffle=True)
 
 
 
@@ -378,5 +380,6 @@ if __name__ == "__main__":
     features = data.x.cpu().numpy()
     labels = data.y.cpu().numpy()
 
-    plot_tsne(features, labels, id2name, title=f"t-SNE: {base_name} ({model_name})", save_path=tsne_path)
-    print(f"DONE! GML + t-SNE saved to: {output_dir}")
+    # plot_tsne(features, labels, id2name, title=f"t-SNE: {base_name} ({model_name})", save_path=tsne_path)
+    # print(f"DONE! GML + t-SNE saved to: {output_dir}")
+    print("DONE with phase1!!!")
