@@ -167,15 +167,9 @@ def log_class_distribution(y, name=""):
     for v, c in zip(values.tolist(), counts.tolist()):
         print(f"  Class {v}: {c} nodes")
 
-def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="graphsage"):
-    if model_name == "graphsage":
-        model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-    elif model_name == "GCN":
-        model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-    elif model_name == "GAT":
-        model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-    
-
+def run_training(data, train_loader, in_dim, out_dim, id2name=None):
+    model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+    # model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
 
@@ -251,9 +245,9 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
     print(f"Saved GML with predictions to: {output_gml_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
+    parser = argsparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
-    parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
+    parser.add_argument("--model", type=str, default="graphSAGE", choices=["graphSAGE", "GCN", "GAT"], help="GNN model to use")
     args = parser.parse_args()
 
     gml_path = args.gml_path
@@ -261,15 +255,15 @@ if __name__ == "__main__":
     
     wandb.init(
         project="gnn-subcircuit-detection",
-        name=f"{model_name}-{os.path.basename(gml_path).replace('.gml', '')}",  
+        name=f"{model_name}-aes-single-gml",  
         config={
-            "model": model_name,
+            "model": "graphSAGE",
             "hidden_channels": 256,
             "lr": 0.01,
             "epochs": 1000,
             "batch_size": 5000,
             "walk_length": 3,
-            "dataset": os.path.basename(gml_path)
+            "dataset": "aes_cipher_top_single_gml"
         }
     )
 
@@ -319,7 +313,7 @@ if __name__ == "__main__":
 
 
     ##### gml (AES LOAD SINGLE FILE)
-    data, id2name = load_aisec_single_gml(gml_path)
+    data, id2name = load_aisec_single_gml("aes_key_expand_features.gml")
 
     in_dim = data.num_features
     out_dim = len(torch.unique(data.y))
@@ -330,23 +324,18 @@ if __name__ == "__main__":
     log_class_distribution(data.y[data.val_mask], "val")
     log_class_distribution(data.y[data.test_mask], "test")
     train_loader = GraphSAINTRandomWalkSampler(data, batch_size=5000, walk_length=3, shuffle=True)
-
-
-
-
-    model = run_training(data, train_loader, in_dim, out_dim, id2name, model_name)    
-    
+    model = run_training(data, train_loader, in_dim, out_dim, id2name)    
 
     # Save predictions to a new GML for Gephi analysis
     save_predictions_to_gml(
-        original_gml_path=gml_path,
+        original_gml_path="aes_key_expand_features.gml",
         data=data,
         model=model,
         id2name=id2name,
-        output_gml_path=gml_path.replace(".gml", "_results.gml")
+        output_gml_path="aes_key_expand_features_results.gml"
     )
 
     features = data.x.cpu().numpy()
     labels = data.y.cpu().numpy()
 
-    plot_tsne(features, labels, id2name, title="t-SNE of Raw Features", save_path=f"tsne_{gml_path}.png")
+    plot_tsne(features, labels, id2name, title="t-SNE of Raw Features", save_path="tsne_raw_features.png")

@@ -87,10 +87,8 @@ for node in G.nodes():
     #     G.nodes[node]["subcircuit"] = 3
     # elif parition_cleaned == "top+u0":
     #     G.nodes[node]['subcircuit'] = 4
-    # elif parition_cleaned.startswith("top+u0+u"):
-    #     G.nodes[node]['subcircuit'] = 5
-    elif "top+u" in parition_cleaned: # for key expand
-        G.nodes[node]['subcircuit'] = 3
+    elif parition_cleaned.startswith("top+u0+u"):
+        G.nodes[node]['subcircuit'] = 5
 
 
 

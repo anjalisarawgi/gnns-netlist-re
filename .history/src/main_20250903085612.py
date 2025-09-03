@@ -175,7 +175,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     elif model_name == "GAT":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
     
-
+    # 
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
 
@@ -251,9 +251,9 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
     print(f"Saved GML with predictions to: {output_gml_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
+    parser = argsparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
-    parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
+    parser.add_argument("--model", type=str, default="graphSAGE", choices=["graphSAGE", "GCN", "GAT"], help="GNN model to use")
     args = parser.parse_args()
 
     gml_path = args.gml_path
@@ -343,10 +343,10 @@ if __name__ == "__main__":
         data=data,
         model=model,
         id2name=id2name,
-        output_gml_path=gml_path.replace(".gml", "_results.gml")
+        output_gml_path=gml_path.replace(".gml", "_predictions.gml"
     )
 
     features = data.x.cpu().numpy()
     labels = data.y.cpu().numpy()
 
-    plot_tsne(features, labels, id2name, title="t-SNE of Raw Features", save_path=f"tsne_{gml_path}.png")
+    plot_tsne(features, labels, id2name, title="t-SNE of Raw Features", save_path="tsne_raw_features.png")

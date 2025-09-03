@@ -7,7 +7,7 @@ import json
 import numpy as np
 
 
-gml_path = "mwe/aes_key_expand_128_gephi.gml"
+gml_path = "mwe/aes_cipher_top_gephi.gml"
 
 G = nx.read_gml(gml_path)
 
@@ -75,27 +75,20 @@ for node in G.nodes():
         G.nodes[node]['u0_inst4'] = 0
 
 
-
-    G.nodes[node]['subcircuit'] = -1
-    if "@top" in parition_cleaned:
+    if "u" in parition_cleaned:
         G.nodes[node]["subcircuit"] = 0
-    # elif "+us"  in parition_cleaned and parition_cleaned.endswith("round2"):
-    #     G.nodes[node]["subcircuit"] = 1
+    elif "@top"  in parition_cleaned:
+        G.nodes[node]["subcircuit"] = 1
     elif "inst" in parition_cleaned:
         G.nodes[node]["subcircuit"] = 2
-    # elif "+us" in parition_cleaned and not parition_cleaned.endswith("round2"):
-    #     G.nodes[node]["subcircuit"] = 3
-    # elif parition_cleaned == "top+u0":
-    #     G.nodes[node]['subcircuit'] = 4
-    # elif parition_cleaned.startswith("top+u0+u"):
-    #     G.nodes[node]['subcircuit'] = 5
-    elif "top+u" in parition_cleaned: # for key expand
-        G.nodes[node]['subcircuit'] = 3
+    elif "us" in parition_cleaned:
+        G.nodes[node]["subcircuit"] = 3
+    elif "round2" in parition_cleaned:
+        G.nodes[node]["subcircuit"] = 4
 
 
 
-
-output_path = "aes_key_expand_features.gml"
+output_path = "aes_cipher_top_gephi_features.gml"
 nx.write_gml(G, output_path)
 print(f"Saved modified GML to '{output_path}'")
 

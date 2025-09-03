@@ -253,7 +253,7 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
-    parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
+    parser.add_argument("--model", type=str, default="graphSAGE", choices=["graphSAGE", "GCN", "GAT"], help="GNN model to use")
     args = parser.parse_args()
 
     gml_path = args.gml_path
