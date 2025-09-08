@@ -21,6 +21,11 @@ import wandb
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import argparse
+import json 
+from collections import defaultdict, Counter
+
+subcircuit_map = defaultdict(set) ### ???
+
 
 def load_aisec_single_gml(gml_path, class_reduce):
     print("calling gnn from path:", gml_path)
@@ -117,15 +122,29 @@ def plot_tsne(data, labels, id2name, title="t-SNE of Node Features", save_path="
 def train(model, loader, optimizer):
     model.train()
     total_loss = 0
-    for batch in loader:
+
+    # batch.x = node features
+    # batch.edge_index = edge index of the subgraph
+    # batch.y = true labels
+
+    for batch in loader: # iterates over batches from the graph sampler ( each batch is a subgraph)
         optimizer.zero_grad()
-        out = model(batch.x, batch.edge_index)
-        loss = F.cross_entropy(out, batch.y)
+        out = model(batch.x, batch.edge_index) # (node features, edge index) and out is prediction logits of shape: [num_nodes_in_batch, num_classes]
+
+        # we use -1 now to mark nodes we dont want in training
+        # also input and ouput nodes are already labeled -1 
+        valid_mask = (batch.y != -1) & (batch.train_mask)
+        if valid_mask.sum() == 0:
+            continue
+
+        loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
         loss.backward()
         optimizer.step()
-        total_loss += loss.item() * batch.num_nodes
+        total_loss += loss.item() * valid_mask.sum().item()  # sum loss over valid nodes
+        total_valid_nodes = valid_mask.sum().item()
 
-    return total_loss / len(loader.dataset)  # avg loss per sample
+    return total_loss / total_valid_nodes
+
 
 
 @torch.no_grad()
@@ -133,36 +152,35 @@ def evaluate(model, data, mask):
     model.eval()
     out = model(data.x, data.edge_index)
     pred = out.argmax(dim=1)
-    
-    correct = (pred[mask] == data.y[mask]).sum().item()
+
+    valid_mask = mask & (data.y != -1) 
+    correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
+
     accuracy = correct / mask.sum().item() 
     return accuracy
-    # correct = 0
-    # total = 0 
-    # for data in data_loader:
-    #     out = model(data.x, data.edge_index)
-    #     pred = out.argmax(dim=1)
-    #     correct += (pred == data.y).sum().item()
-    #     total += data.y.size(0)
-    # return correct / total if total > 0 else 0
+
 
 def classwise_accuracy(model, data, mask, id2name=None):
     model.eval()
     out = model(data.x, data.edge_index)
     pred = out.argmax(dim=1)
 
-    y_true = data.y[mask]
-    y_pred = pred[mask]
-    num_classes = len(torch.unique(data.y))
+    # y_true = data.y[mask]
+    # y_pred = pred[mask]
+    valid_mask = mask & (data.y != -1)
+    y_true = data.y[valid_mask]
+    y_pred = pred[valid_mask]
+
+    unique_classes = torch.unique(y_true).tolist()
     acc_per_class = {}
 
-    for c in range(num_classes):
+    for c in unique_classes:
         mask_c = y_true == c 
         total_c = mask_c.sum().item()
         correct_c = (y_pred[mask_c] == c).sum().item()  
         acc = correct_c / total_c if total_c > 0 else 0
         # acc_per_class[c] = acc
-        label_name = id2name[c] if id2name else f"Class {c}"
+        label_name = id2name.get(c, f"Class {c}") if id2name else f"Class {c}"
         acc_per_class[label_name] = acc
 
     return acc_per_class
@@ -185,7 +203,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
 
-    epochs = 100
+    epochs = 500
     for epoch in range(1, epochs+1):
         loss = train(model, train_loader, optimizer)
         train_acc = evaluate(model, data, data.train_mask)
@@ -383,3 +401,133 @@ if __name__ == "__main__":
     # plot_tsne(features, labels, id2name, title=f"t-SNE: {base_name} ({model_name})", save_path=tsne_path)
     # print(f"DONE! GML + t-SNE saved to: {output_dir}")
     print("DONE with phase1!!!")
+
+    
+
+    ####################################################
+    # Phase 2
+    print("Starting phase 2...")
+    subcircuit_json_path = "results/aes_cipher_top_gephi/subcircuit_map.json"
+    with open(subcircuit_json_path, "r") as f:
+        subcircuit_map = json.load(f)
+    print(f"Loaded subcircuit map from: {subcircuit_json_path}")
+    print(json.dumps(subcircuit_map, indent=2))
+
+    model.eval()
+    out = model(data.x, data.edge_index)
+    pred = out.argmax(dim=1)
+
+    ##### ???
+    target_subcircuit_label =2  # or "top+us_..." if class_reduce=True
+    PHASE2_CLASS = [i for i, name in id2name.items() if name == target_subcircuit_label][0]
+    print(f"Target class index: {PHASE2_CLASS} ({id2name[PHASE2_CLASS]})")
+    phase2_mask = pred == PHASE2_CLASS
+
+    G = nx.read_gml(gml_path, label="id")
+    node_list = list(G.nodes())
+    def is_valid_subcircuit(sc_id):
+        # return sc_id.startswith("top+us") and "round2" in sc_id
+        # return sc_id.startswith("top+u0+inst") 
+        return True
+
+    subcircuit_ids = []
+    phase2_indices = []
+    for idx in torch.where(phase2_mask)[0]:
+        node_idx = idx.item()
+        node_name = node_list[node_idx]
+        sc_id = G.nodes[node_name].get("subcircuit_id", "unknown")
+        if is_valid_subcircuit(sc_id):
+            subcircuit_ids.append(sc_id)
+            phase2_indices.append(node_idx)
+
+    ### 
+    k = 5
+    scid_counts = Counter(subcircuit_ids)
+    # top_k_subcircuits = set([s for s, _ in scid_counts.most_common(k)])
+    top_k_subcircuits = set(scid_counts.keys())  # keep all
+
+    filtered_indices = []
+    filtered_labels = []
+    for idx, sid in zip(phase2_indices, subcircuit_ids):
+        if sid in top_k_subcircuits:
+            filtered_indices.append(idx)
+            filtered_labels.append(sid)
+    phase2_indices = filtered_indices
+    subcircuit_ids = filtered_labels
+
+    # Map subcircuit_id -> integer class
+    unique_ids = sorted(set(subcircuit_ids))
+    id_map = {name: i for i, name in enumerate(unique_ids)}
+    id2name_phase2 = {i: name for name, i in id_map.items()}
+
+    # Build label vector for the entire graph (others get -1)
+    new_y = torch.full((data.num_nodes,), -1, dtype=torch.long)
+    for idx, scid in zip(phase2_indices, subcircuit_ids):
+        new_y[idx] = id_map[scid]
+
+    # # Create train/val/test masks
+    # phase2_train_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    # phase2_val_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    # phase2_test_mask = torch.zeros_like(new_y, dtype=torch.bool)
+
+    # indices = phase2_indices
+    # random.shuffle(indices)
+    # n = len(indices)
+    # t_split = int(0.6 * n)
+    # v_split = int(0.8 * n)
+    # phase2_train_mask[indices[:t_split]] = True
+    # phase2_val_mask[indices[t_split:v_split]] = True
+    # phase2_test_mask[indices[v_split:]] = True
+
+    train_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    val_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    test_mask = torch.zeros_like(new_y, dtype=torch.bool)
+
+    for idx, sid in zip(filtered_indices, filtered_labels):
+        new_y[idx] = id_map[sid]
+        if data.train_mask[idx]:
+            train_mask[idx] = True
+        elif data.val_mask[idx]:
+            val_mask[idx] = True
+        elif data.test_mask[idx]:
+            test_mask[idx] = True
+
+    # Create PyG data object
+    phase2_data = Data(
+        x=data.x,
+        edge_index=data.edge_index,
+        y=new_y,
+        train_mask=train_mask,
+        val_mask=val_mask,
+        test_mask=test_mask
+    )
+
+    print("Total nodes in phase 2:", len(phase2_indices))
+    print("Label counts:", torch.unique(new_y[new_y != -1], return_counts=True))
+    print("Train size:", train_mask.sum().item())
+    print("Train size:", val_mask.sum().item())
+    print("Test size:", test_mask.sum().item())
+
+    log_class_distribution(phase2_data.y[phase2_data.train_mask], "PHASE 2 train")
+    log_class_distribution(phase2_data.y[phase2_data.val_mask], "PHASE 2 val")
+    log_class_distribution(phase2_data.y[phase2_data.test_mask], "PHASE 2 test")
+
+    # phase2_loader = [phase2_data] ### ???
+    phase2_loader = GraphSAINTRandomWalkSampler(
+        phase2_data,
+        batch_size=int(0.3 * phase2_data.num_nodes),
+        walk_length=2,
+        shuffle=True,
+        # sample_coverage=50
+    )
+
+
+    print("Running phase 2 training...")
+    phase2_model = run_training(
+        phase2_data,
+        train_loader=phase2_loader,
+        in_dim=in_dim,
+        out_dim=len(unique_ids),
+        id2name=id2name_phase2,
+        model_name=model_name
+    )

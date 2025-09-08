@@ -7,7 +7,7 @@ import json
 import numpy as np
 
 
-gml_path = "mwe/aes_key_expand_128_gephi.gml"
+gml_path = "mwe/aes_cipher_top_gephi.gml"
 
 G = nx.read_gml(gml_path)
 
@@ -75,17 +75,46 @@ for node in G.nodes():
         G.nodes[node]['u0_inst4'] = 0
 
 
-    # key expand - aes
-    G.nodes[node]['subcircuit'] = -1
-    if "@top" in parition_cleaned:
-        G.nodes[node]["subcircuit"] = 0
-    elif "inst" in parition_cleaned:
-        G.nodes[node]["subcircuit"] = 2
-    elif "top+u" in parition_cleaned: 
-        G.nodes[node]['subcircuit'] = 3
+    # # key expand - aes
+    # G.nodes[node]['subcircuit'] = -1
+    # if "@top" in parition_cleaned:
+    #     G.nodes[node]["subcircuit"] = 0
+    # elif "inst" in parition_cleaned:
+    #     G.nodes[node]["subcircuit"] = 2
+    # elif "top+u" in parition_cleaned: 
+    #     G.nodes[node]['subcircuit'] = 3
+
 
     
-    # # top - aes
+    # top - aes
+
+    subcircuit_map = {
+        "@top": 0,
+        "top+us_round2": 1,
+        "top+_+inst4": 2,
+        "top+us_": 3,
+        "top+u0": 4,
+        "top+u0+u_": 5
+    }
+
+    def assign_subcircuit(p):
+        if p == "top+u0":
+            return 4
+        elif p.startswith("top+u0+u"):
+            return 5
+        elif "+us" in p and p.endswith("round2"):
+            return 1
+        elif "+us" in p and not p.endswith("round2"):
+            return 3
+        elif "inst" in p:
+            return 2
+        elif "@top" in p:
+            return 0
+        return -1
+
+    G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned)
+
+
     # G.nodes[node]['subcircuit'] = -1
     # if "@top" in parition_cleaned:
     #     G.nodes[node]["subcircuit"] = 0
@@ -102,7 +131,7 @@ for node in G.nodes():
 
 
 
-output_path = "aes_key_expand_features.gml"
+output_path = "aes_cipher_top_gephi_v2.gml"
 nx.write_gml(G, output_path)
 print(f"Saved modified GML to '{output_path}'")
 
@@ -112,6 +141,7 @@ if log_lines:
         f.write("\n".join(log_lines))
     print(f"Saved detailed log to 'unknown_gate_types.log'")
     
+
 import os 
 import networkx as nx
 import csv
@@ -132,3 +162,25 @@ else:
     print("No unknown gate types found.")
 
 
+#### for testing 
+import os
+import json
+from collections import defaultdict
+
+subcircuit_summary = defaultdict(set)
+
+for node in G.nodes():
+    partition = G.nodes[node].get("partition", "UNKNOWN").strip("'")
+    subcircuit = G.nodes[node].get("subcircuit", -1)
+    subcircuit_summary[subcircuit].add(partition)
+
+subcircuit_summary = {k: sorted(list(v)) for k, v in sorted(subcircuit_summary.items())}
+gml_basename = os.path.splitext(os.path.basename(gml_path))[0]
+output_dir = os.path.join("results", gml_basename)
+os.makedirs(output_dir, exist_ok=True)
+
+json_path = os.path.join(output_dir, "subcircuit_map.json")
+with open(json_path, "w") as f:
+    json.dump(subcircuit_summary, f, indent=2)
+
+print(f"Saved subcircuit mapping to '{json_path}'")
