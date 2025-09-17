@@ -418,17 +418,18 @@ if __name__ == "__main__":
     pred = out.argmax(dim=1)
 
     ##### ???
-    target_subcircuit_label =2  # or "top+us_..." if class_reduce=True
+    target_subcircuit_label = 3# or "top+us_..." if class_reduce=True
     PHASE2_CLASS = [i for i, name in id2name.items() if name == target_subcircuit_label][0]
     print(f"Target class index: {PHASE2_CLASS} ({id2name[PHASE2_CLASS]})")
     phase2_mask = pred == PHASE2_CLASS
-
+    
     G = nx.read_gml(gml_path, label="id")
     node_list = list(G.nodes())
     def is_valid_subcircuit(sc_id):
-        # return sc_id.startswith("top+us") and "round2" in sc_id
-        # return sc_id.startswith("top+u0+inst") 
-        return True
+        return sc_id.startswith("top+us") and not "round2" in sc_id
+        # return sc_id.startswith("top+u0+u") 
+        # return sc_id == "top+u0"
+        # return True
 
     subcircuit_ids = []
     phase2_indices = []
@@ -531,3 +532,125 @@ if __name__ == "__main__":
         id2name=id2name_phase2,
         model_name=model_name
     )
+
+
+    # print("\n==========================")
+    # print("🚀 Starting Phase 2")
+    # print("==========================")
+
+    # target_class = 1  # the predicted class from Phase 1
+    # G = nx.read_gml(gml_path, label="id")
+    # node_list = list(G.nodes())
+
+    # # Get all nodes where Phase 1 model predicted class 3
+    # model.eval()
+    # out = model(data.x, data.edge_index)
+    # pred = out.argmax(dim=1)
+    # phase2_mask = pred == target_class
+    # phase2_indices = torch.where(phase2_mask)[0]
+
+    # print(f"Total nodes predicted as class {target_class}: {len(phase2_indices)}")
+
+    # # Get true subcircuit_ids for these nodes
+    # subcircuit_ids = []
+    # for idx in phase2_indices:
+    #     node_idx = idx.item()
+    #     node_name = node_list[node_idx]
+    #     sc_id = G.nodes[node_name].get("subcircuit_id", "unknown")
+    #     subcircuit_ids.append(sc_id)
+
+    # # Debug print a few examples
+    # print("Sample of nodes predicted as class 3:")
+    # for i in range(min(10, len(phase2_indices))):
+    #     node_idx = phase2_indices[i].item()
+    #     node_name = node_list[node_idx]
+    #     sc_id = subcircuit_ids[i]
+    #     true_label = data.y[node_idx].item()
+    #     print(f"  Node {node_idx} ({node_name}): true_label={true_label}, subcircuit_id={sc_id}")
+
+    # # Map subcircuit_ids to class labels for Phase 2
+    # unique_ids = sorted(set(subcircuit_ids))
+    # id_map = {name: i for i, name in enumerate(unique_ids)}
+    # id2name_phase2 = {i: name for name, i in id_map.items()}
+
+    # print("Unique subcircuit_ids found:")
+    # for i, sid in enumerate(unique_ids):
+    #     print(f"  Class {i}: {sid}")
+
+    # # Assign new labels
+    # new_y = torch.full((data.num_nodes,), -1, dtype=torch.long)
+    # for idx, scid in zip(phase2_indices, subcircuit_ids):
+    #     new_y[idx.item()] = id_map[scid]
+
+
+
+    # # Split into train/val/test
+    # valid_indices = [i.item() for i in phase2_indices]
+    # random.shuffle(valid_indices)
+
+    # n = len(valid_indices)
+    # t_split = int(0.6 * n)
+    # v_split = int(0.8 * n)
+
+    # train_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    # val_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    # test_mask = torch.zeros_like(new_y, dtype=torch.bool)
+
+    # train_mask[valid_indices[:t_split]] = True
+    # val_mask[valid_indices[t_split:v_split]] = True
+    # test_mask[valid_indices[v_split:]] = True
+
+    # # Quick Sanity Check: Unique subcircuit_ids used in Phase 2 training
+    # train_label_ids = new_y[train_mask]
+    # train_subcircuits = [id2name_phase2[label.item()] for label in train_label_ids]
+    # counts = Counter(train_subcircuits)
+
+    # print("Phase 2 - UNIQUE subcircuit_ids used in TRAINING:")
+    # for subcircuit, count in counts.items():
+    #     label_id = id_map[subcircuit]
+    #     print(f"  Label ID: {label_id:2d} | Subcircuit ID: {subcircuit:30s} | Nodes: {count}")
+
+
+    # print(f"Phase 2 label distribution:")
+    # vals, counts = torch.unique(new_y[new_y != -1], return_counts=True)
+    # for v, c in zip(vals.tolist(), counts.tolist()):
+    #     print(f"  Class {v} ({id2name_phase2[v]}): {c} nodes")
+
+    # print(f"Split sizes:")
+    # print(f"  Train: {train_mask.sum().item()} nodes")
+    # print(f"  Val:   {val_mask.sum().item()} nodes")
+    # print(f"  Test:  {test_mask.sum().item()} nodes")
+
+    # # Create PyG Data object
+    # phase2_data = Data(
+    #     x=data.x,
+    #     edge_index=data.edge_index,
+    #     y=new_y,
+    #     train_mask=train_mask,
+    #     val_mask=val_mask,
+    #     test_mask=test_mask
+    # )
+
+    # # Log class distribution
+    # log_class_distribution(phase2_data.y[phase2_data.train_mask], "PHASE 2 train")
+    # log_class_distribution(phase2_data.y[phase2_data.val_mask], "PHASE 2 val")
+    # log_class_distribution(phase2_data.y[phase2_data.test_mask], "PHASE 2 test")
+
+    # # Create loader
+    # phase2_loader = GraphSAINTRandomWalkSampler(
+    #     phase2_data,
+    #     batch_size=int(0.3 * phase2_data.num_nodes),
+    #     walk_length=2,
+    #     shuffle=True,
+    # )
+
+    # # Train model
+    # print("Running Phase 2 training...")
+    # phase2_model = run_training(
+    #     phase2_data,
+    #     train_loader=phase2_loader,
+    #     in_dim=in_dim,
+    #     out_dim=len(unique_ids),
+    #     id2name=id2name_phase2,
+    #     model_name=model_name
+    # )

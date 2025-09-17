@@ -36,10 +36,10 @@ def load_aisec_single_gml(gml_path, task_type):
     count_pos = 0
     for node in all_nodes:
         attr = G.nodes[node]
-        if int(attr.get("u0_inst4", 0)) == 1:
+        if int(attr.get("'top+us0'3", 0)) == 1:
             count_pos += 1
 
-    print(f"[DEBUG] Total nodes with u0_inst4=1: {count_pos}")
+    print(f"[DEBUG] Total nodes with top+us03=1: {count_pos}")
 
     # for node in G.nodes():
     #     attr = G.nodes[node]
@@ -75,9 +75,13 @@ def load_aisec_single_gml(gml_path, task_type):
         labels = []
         for node in valid_nodes:
             attr = G.nodes[node]
-            labels.append(int(attr.get("u0_inst4", 0)))  # Default to 0 if not present
+            subcircuit = attr.get("subcircuit_id", "")
+            if subcircuit == "top+us03":
+                labels.append(1)
+            else:
+                labels.append(0)
         labels = torch.tensor(labels, dtype=torch.long)
-        id2label_map = {0: "not_u0_inst4", 1: "u0_inst4"}
+        id2label_map = {0: "not_top+us03", 1: "top+us03"} 
     else:
         unique_subcircuits = sorted(set(subcircuit_ids))
         subcircuit2id = {name: idx for idx, name in enumerate(unique_subcircuits)}
@@ -256,7 +260,7 @@ def run_training(data, train_loader, in_dim, out_dim, task_type):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--task_type', choices=['multiclass', 'binary'], default='multiclass')
-    parser.add_argument("--gml_path", type=str, default="aes_cipher_top_gephi_features.gml")
+    parser.add_argument("--gml_path", type=str, default="aes_cipher_top_gephi_test.gml")
 
     # data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
     # train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
@@ -304,33 +308,33 @@ if __name__ == "__main__":
     # run_training(data, train_loader, in_dim, out_dim)    
     model = run_training(data, train_loader, in_dim, out_dim, args.task_type) 
 
-    ###tsne 
-    print("🔍 Visualizing node embeddings with t-SNE...")
-    # 
-    label_names = [data.label_id_map[int(label)] for label in data.y.cpu().numpy()]
+    # ###tsne 
+    # print("Visualizing node embeddings with t-SNE...")
+    # # 
+    # label_names = [data.label_id_map[int(label)] for label in data.y.cpu().numpy()]
 
-    model.eval()
-    with torch.no_grad():
-        embeddings = model(data.x, data.edge_index).cpu().numpy()
+    # model.eval()
+    # with torch.no_grad():
+    #     embeddings = model(data.x, data.edge_index).cpu().numpy()
 
-    tsne = TSNE(n_components=2, random_state=42)
-    z_tsne = tsne.fit_transform(embeddings)
-    unique_names = sorted(set(label_names))
-    name_to_color_idx = {name: i for i, name in enumerate(unique_names)}
-    colors = [name_to_color_idx[name] for name in label_names]
+    # tsne = TSNE(n_components=2, random_state=42)
+    # z_tsne = tsne.fit_transform(embeddings)
+    # unique_names = sorted(set(label_names))
+    # name_to_color_idx = {name: i for i, name in enumerate(unique_names)}
+    # colors = [name_to_color_idx[name] for name in label_names]
 
-    plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(z_tsne[:, 0], z_tsne[:, 1], c=colors, cmap='tab20', s=5)
-    handles = [
-        plt.Line2D([], [], marker='o', color='w',
-                markerfacecolor=cm.tab20(i / len(unique_names)),
-                label=name, markersize=8)
-        for i, name in enumerate(unique_names)
-    ]
-    plt.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
+    # plt.figure(figsize=(10, 8))
+    # scatter = plt.scatter(z_tsne[:, 0], z_tsne[:, 1], c=colors, cmap='tab20', s=5)
+    # handles = [
+    #     plt.Line2D([], [], marker='o', color='w',
+    #             markerfacecolor=cm.tab20(i / len(unique_names)),
+    #             label=name, markersize=8)
+    #     for i, name in enumerate(unique_names)
+    # ]
+    # plt.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
 
-    plt.title("t-SNE of GNN Node Embeddings (Colored by Subcircuit ID)")
-    plt.xlabel("t-SNE dim 1")
-    plt.ylabel("t-SNE dim 2")
-    plt.tight_layout()
-    plt.savefig("tsne_with_subcircuit_names.png")
+    # plt.title("t-SNE of GNN Node Embeddings (Colored by Subcircuit ID)")
+    # plt.xlabel("t-SNE dim 1")
+    # plt.ylabel("t-SNE dim 2")
+    # plt.tight_layout()
+    # plt.savefig("tsne_with_subcircuit_names.png")

@@ -64,25 +64,19 @@ for node in G.nodes():
     else:
         G.nodes[node]['subcircuit_id'] = parition_cleaned
         
-    if "top+us00_round2" in parition_cleaned:
-        G.nodes[node]['us00_round2'] = 1
-    else:
-        G.nodes[node]['us00_round2'] = 0
+
+    # if "top+us00_round2" in parition_cleaned:
+    #     G.nodes[node]['us00_round2'] = 1
+    # else:
+    #     G.nodes[node]['us00_round2'] = 0
     
-    if "top+u0+inst4" in parition_cleaned:
-        G.nodes[node]['u0_inst4'] = 1
-    else:
-        G.nodes[node]['u0_inst4'] = 0
+    # if "top+u0+inst4" in parition_cleaned:
+    #     G.nodes[node]['u0_inst4'] = 1
+    # else:
+    #     G.nodes[node]['u0_inst4'] = 0
 
 
-    # # key expand - aes
-    # G.nodes[node]['subcircuit'] = -1
-    # if "@top" in parition_cleaned:
-    #     G.nodes[node]["subcircuit"] = 0
-    # elif "inst" in parition_cleaned:
-    #     G.nodes[node]["subcircuit"] = 2
-    # elif "top+u" in parition_cleaned: 
-    #     G.nodes[node]['subcircuit'] = 3
+
 
 
     
@@ -112,7 +106,27 @@ for node in G.nodes():
             return 0
         return -1
 
+    # def assign_subcircuit(p):
+    #     if p == "@top":
+    #         return 0
+    #     elif "inst" in p:
+    #         return 1
+    #     elif "top+u" in p:
+    #         return 2
+    #     else:
+    #         return -1
+
     G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned)
+
+
+        # # key expand - aes
+    # G.nodes[node]['subcircuit'] = -1
+    # if "@top" in parition_cleaned:
+    #     G.nodes[node]["subcircuit"] = 0
+    # elif "inst" in parition_cleaned:
+    #     G.nodes[node]["subcircuit"] = 2
+    # elif "top+u" in parition_cleaned: 
+    #     G.nodes[node]['subcircuit'] = 3
 
 
     # G.nodes[node]['subcircuit'] = -1
@@ -131,7 +145,7 @@ for node in G.nodes():
 
 
 
-output_path = "aes_cipher_top_gephi_v2.gml"
+output_path = "aes_cipher_top_gephi_test.gml"
 nx.write_gml(G, output_path)
 print(f"Saved modified GML to '{output_path}'")
 
@@ -179,7 +193,7 @@ gml_basename = os.path.splitext(os.path.basename(gml_path))[0]
 output_dir = os.path.join("results", gml_basename)
 os.makedirs(output_dir, exist_ok=True)
 
-json_path = os.path.join(output_dir, "subcircuit_map.json")
+json_path = os.path.join(output_dir, "test.json")
 with open(json_path, "w") as f:
     json.dump(subcircuit_summary, f, indent=2)
 
