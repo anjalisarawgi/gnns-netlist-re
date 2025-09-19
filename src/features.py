@@ -7,7 +7,7 @@ import json
 import numpy as np
 
 
-gml_path = "mwe/aes_cipher_top_gephi.gml"
+gml_path = "graphs/raw/mips_16_latest/nangate/mips_16_core_top_gephi.gml"
 
 G = nx.read_gml(gml_path)
 
@@ -116,6 +116,28 @@ for node in G.nodes():
     #     else:
     #         return -1
 
+    def assign_subcircuit(p):
+        if p == "@top" or p=="top" :
+            return 0 
+        elif "IF_stage" in p :
+            return 1 
+        elif "MEM_stage" in p:
+            return 2 
+        elif "EX_stage" in p:
+            return 3
+        elif "ID_stage" in p:
+            return 3
+        elif "hazard_detection" in p:
+            return 4
+        elif "register_file" in p:
+            return 5 
+        else:
+            return -1
+        
+
+        
+        
+
     G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned)
 
 
@@ -145,7 +167,7 @@ for node in G.nodes():
 
 
 
-output_path = "aes_cipher_top_gephi_test.gml"
+output_path = "mips_16_core_top_gephi_test.gml"
 nx.write_gml(G, output_path)
 print(f"Saved modified GML to '{output_path}'")
 
