@@ -18,7 +18,6 @@ import pandas as pd
 from torch_geometric.data import Batch
 import random
 import wandb
-from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import argparse
 import json 
@@ -98,26 +97,6 @@ def load_aisec_single_gml(gml_path, class_reduce):
     id2subcircuit = {idx: name for name, idx in subcircuit2id.items()}
     
     return data, id2subcircuit
-    
-
-def plot_tsne(data, labels, id2name, title="t-SNE of Node Features", save_path="tsne.png"):
-    tsne = TSNE(n_components=2, perplexity=30, random_state=42)
-    z = tsne.fit_transform(data)
-
-    label_names = [id2name[label] for label in labels]
-    unique_labels = sorted(set(label_names))
-
-    plt.figure(figsize=(10, 8))
-    for lbl in unique_labels:
-        idxs = [i for i, l in enumerate(label_names) if l == lbl]
-        plt.scatter(z[idxs, 0], z[idxs, 1], label=lbl, s=10, alpha=0.6)
-
-    plt.title(title)
-    plt.legend(markerscale=2, bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300)
-    # plt.show()
-    print(f"Saved t-SNE plot to: {save_path}")
 
 def train(model, loader, optimizer):
     model.train()
@@ -198,7 +177,6 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
     elif model_name == "GAT":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-    
 
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
@@ -297,19 +275,7 @@ if __name__ == "__main__":
     gml_path = args.gml_path
     model_name = args.model
     
-    wandb.init(
-        project="gnn-subcircuit-detection",
-        name=f"{model_name}-{os.path.basename(gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}",  
-        # config={
-        #     "model": model_name,
-        #     # "hidden_channels": 256,
-        #     # "lr": 0.01,
-        #     # "epochs": 1000,
-        #     # "batch_size": 5000,
-        #     # "walk_length": 3,
-        #     # "dataset": os.path.basename(gml_path)
-        # }
-    )
+    wandb.init(project="gnn-subcircuit-detection", name=f"{model_name}-{os.path.basename(gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}")
 
     # data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
     # train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
@@ -328,11 +294,8 @@ if __name__ == "__main__":
     # data =load_GNNRE_gmls("data/Interconnected-Modules/")
     # full_data = Batch.from_data_list(data)
     # train_loader = GraphSAINTRandomWalkSampler(full_data, batch_size=3000, walk_length=2, shuffle=True, sample_coverage=50)
-
-    
     # val_data = full_data 
     # test_data = full_data
-
     # in_dim = full_data.num_features
     # out_dim = len(torch.unique(full_data.y))
     # print("Input dimension:", in_dim)
@@ -340,34 +303,19 @@ if __name__ == "__main__":
     # run_training(full_data, train_loader, in_dim, out_dim)
     # print("Training complete.")
 
-    # # gml (AES)
-    # data = load_GNN_aes_core_gmls("data/aes_core/")
-    # full_data = Batch.from_data_list(data)
-    # train_loader = GraphSAINTRandomWalkSampler(full_data, batch_size=3000, walk_length=2, shuffle=True, sample_coverage=50)
-    # val_data = full_data
-    # test_data = full_data
-    # in_dim = full_data.num_features
-    # out_dim = len(torch.unique(full_data.y))
-    # print("Input dimension:", in_dim)
-    # print("Output dimension:", out_dim)
-    # run_training(full_data, train_loader, in_dim, out_dim)
-    # print("Training complete.")
 
 
 
 
     ##### gml (AES LOAD SINGLE FILE)
     data, id2name = load_aisec_single_gml(gml_path, class_reduce=args.class_reduce)
-
     in_dim = data.num_features
     out_dim = len(torch.unique(data.y))
     print("in_dim", in_dim)
     print("out_dim", out_dim)
-
     log_class_distribution(data.y[data.train_mask], "train")
     log_class_distribution(data.y[data.val_mask], "val")
     log_class_distribution(data.y[data.test_mask], "test")
-
     random.seed(42)
     num_nodes = data.num_nodes
     batch_size = int(0.3 * num_nodes)
@@ -383,7 +331,6 @@ if __name__ == "__main__":
     output_dir = os.path.join("results", f"{model_name}_{base_name}")
     os.makedirs(output_dir, exist_ok=True)
     output_gml_path = os.path.join(output_dir, "predictions.gml")
-    tsne_path = os.path.join(output_dir, "tsne.png")
 
     # Save predictions to a new GML for Gephi analysis
     save_predictions_to_gml(
@@ -398,7 +345,6 @@ if __name__ == "__main__":
     features = data.x.cpu().numpy()
     labels = data.y.cpu().numpy()
 
-    # plot_tsne(features, labels, id2name, title=f"t-SNE: {base_name} ({model_name})", save_path=tsne_path)
     # print(f"DONE! GML + t-SNE saved to: {output_dir}")
     print("DONE with phase1!!!")
 
@@ -444,8 +390,8 @@ if __name__ == "__main__":
     ### 
     k = 5
     scid_counts = Counter(subcircuit_ids)
-    # top_k_subcircuits = set([s for s, _ in scid_counts.most_common(k)])
-    top_k_subcircuits = set(scid_counts.keys())  # keep all
+    top_k_subcircuits = set([s for s, _ in scid_counts.most_common(k)])
+    # top_k_subcircuits = set(scid_counts.keys())  # keep all
 
     filtered_indices = []
     filtered_labels = []
