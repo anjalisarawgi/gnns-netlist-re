@@ -84,7 +84,7 @@ for node in G.nodes():
     else:
         G.nodes[node]['subcircuit_id'] = parition_cleaned
         
-    G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned) # subciruit_id - merged
+    G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned) # subciruit_id -
 
 
     

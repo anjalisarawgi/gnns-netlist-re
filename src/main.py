@@ -28,42 +28,40 @@ from sklearn.utils.class_weight import compute_class_weight
 subcircuit_map = defaultdict(set) 
 
 
-def load_aisec_single_gml(gml_path, class_reduce):
+def load_aisec_single_gml(gml_path, label_type="subcircuit"):
     print("calling gnn from path:", gml_path)
     random.seed(42)
-    
+
     G = nx.read_gml(gml_path, label="id")
     nodes = list(G.nodes())
 
     features = []
-    subcircuit_ids = []
+    labels = []
+
     for node in nodes:
         attr = G.nodes[node]
 
-        # making features as a list
-        node_feats = attr['features']
-        if isinstance(node_feats, list):
-            feat = list(map(int, node_feats))
-        else:
-            feat = [int(v) for v in G.nodes[node].get("features", [])]
+        feat = list(map(int, attr.get("features", [])))
         features.append(feat)
 
-        #### here we choose if we want to reduce to lesser classes 
-        if class_reduce == True:
-            subcircuit = attr.get('subcircuit')
+        if label_type == "subcircuit":
+            label = attr.get("subcircuit", "unknown")
         else:
-            subcircuit = attr.get('subcircuit_id') or 'unknown' 
-        
-        subcircuit_ids.append(subcircuit)
+            label = int(attr.get("subcircuit_original", -1))
 
-    # map subcircuit -> integer labels 
-    unique_subcircuits = sorted(set(subcircuit_ids))
-    subcircuit2id = {name: idx for idx, name in enumerate(unique_subcircuits)}
-    labels = torch.tensor([subcircuit2id[s] for s in subcircuit_ids], dtype=torch.long)
+        labels.append(label)
 
-    features = normalize_features(np.array(features)) # normalize
-    # edges = list(G.edges())
-    # edge_index = torch.tensor(edges, dtype = torch.long).t().contiguous()
+    features = normalize_features(np.array(features))
+
+    if label_type == "subcircuit":
+        label_set = sorted(set(labels))
+        label_map = {v: i for i, v in enumerate(label_set)}
+        labels = torch.tensor([label_map[l] for l in labels], dtype=torch.long)
+        id2label = {i: l for l, i in label_map.items()}
+    else:
+        labels = torch.tensor(labels, dtype=torch.long)
+        id2label = {int(l): str(l) for l in sorted(set(labels.tolist()))}
+
     node_map = {node: idx for idx, node in enumerate(G.nodes())}
     edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
@@ -72,37 +70,33 @@ def load_aisec_single_gml(gml_path, class_reduce):
     indices = list(range(num_nodes))
     random.shuffle(indices)
 
-    train_ratio, test_ratio, val_ratio = 0.6, 0.2, 0.2
-    
-
-    train_cutoff = int(train_ratio*num_nodes )
-    val_cutoff = train_cutoff + int(val_ratio* num_nodes)
-
-    train_idx = indices[:train_cutoff]
-    val_idx = indices[train_cutoff:val_cutoff]
-    test_idx = indices[val_cutoff:]
+    train_cutoff = int(0.6 * num_nodes)
+    val_cutoff = train_cutoff + int(0.2 * num_nodes)
 
     train_mask = torch.zeros(num_nodes, dtype=torch.bool)
     val_mask = torch.zeros(num_nodes, dtype=torch.bool)
     test_mask = torch.zeros(num_nodes, dtype=torch.bool)
 
-    train_mask[train_idx] = True
-    val_mask[val_idx] = True
-    test_mask[test_idx] = True
+    train_mask[indices[:train_cutoff]] = True
+    val_mask[indices[train_cutoff:val_cutoff]] = True
+    test_mask[indices[val_cutoff:]] = True
 
-    # creating pyG object 
-    data = Data(x=features, edge_index=edge_index, y = labels)
-    data.train_mask = train_mask
-    data.val_mask = val_mask 
-    data.test_mask = test_mask 
-    
-    id2subcircuit = {idx: name for name, idx in subcircuit2id.items()}
-    
-    return data, id2subcircuit
+    data = Data(
+        x=torch.tensor(features, dtype=torch.float),
+        edge_index=edge_index,
+        y=labels,
+        train_mask=train_mask,
+        val_mask=val_mask,
+        test_mask=test_mask
+    )
+
+    return data, id2label
+
 
 def train(model, loader, optimizer, class_weights = None):
     model.train()
     total_loss = 0
+    
 
     # batch.x = node features
     # batch.edge_index = edge index of the subgraph
@@ -281,7 +275,8 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 
 def run_phase1(args):
     print("=== Phase 1: Fine-grained subcircuit classification ===")
-    data, id2name = load_aisec_single_gml(args.gml_path, class_reduce=args.class_reduce)
+    # data, id2name = load_aisec_single_gml(args.gml_path, class_reduce=args.class_reduce)
+    data, id2name = load_aisec_single_gml(args.gml_path, label_type=args.label_type)
 
     in_dim = data.num_features
     out_dim = len(torch.unique(data.y))
@@ -409,13 +404,31 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
     parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
-    parser.add_argument("--class_reduce", action="store_true", help="Whether to reduce classes or not", default=False)
+    # parser.add_argument("--class_reduce", action="store_true", help="Whether to reduce classes or not, ", default=False)
     parser.add_argument("--weighted_loss", action="store_true", help="Use class-weighted cross entropy loss")
+    parser.add_argument(
+        "--label_type",
+        choices=["subcircuit", "subcircuit_original"],
+        default="subcircuit",
+        help="Label type to use for training (only 'subcircuit' supports phase 2)"
+    )
+    parser.add_argument(
+        "--class_reduce",
+        action="store_true",
+        help="Enable class reduction in phase 2 (only used if label_type=subcircuit)"
+    )
+
     args = parser.parse_args()
 
     wandb.init(project="gnn-subcircuit-detection", name=f"{args.model}-{os.path.basename(args.gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}")
 
     data, model, id2name = run_phase1(args)
+
+    if args.label_type == "subcircuit":
+        run_phase2(data, model, args, id2name)
+    else:
+        print("Skipping Phase 2: subcircuit_original does not support it.")
+        
 
     output_dir = os.path.join("results", f"{args.model}_{os.path.basename(args.gml_path).replace('.gml', '')}")
     os.makedirs(output_dir, exist_ok=True)
