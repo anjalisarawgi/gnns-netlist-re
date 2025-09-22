@@ -45,7 +45,9 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         feat = list(map(int, attr.get("features", [])))
         features.append(feat)
 
-        if label_type == "subcircuit":
+        if binary_label:
+            label = int(attr.get("subcircuit_original", -1))  # <-- Use fine-grained labels for binary
+        elif label_type == "subcircuit":
             label = attr.get("subcircuit", "unknown")
         else:
             label = int(attr.get("subcircuit_original", -1))
@@ -53,6 +55,17 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         labels.append(label)
 
     features = normalize_features(np.array(features))
+    print(f"Total labels: {len(labels)}")
+    print(f"Unique labels before encoding: {sorted(set(labels))}")
+    label_counts = Counter(labels)
+    print("Label counts (raw):")
+    for label, count in label_counts.items():
+        print(f"  Label {label}: {count}")
+
+    # If you also want the dictionary explicitly:
+    print("Label count dictionary:", dict(label_counts))
+    
+    
 
     if label_type == "subcircuit":
         label_set = sorted(set(labels))
@@ -63,11 +76,15 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         labels = torch.tensor(labels, dtype=torch.long)
         id2label = {int(l): str(l) for l in sorted(set(labels.tolist()))}
 
+
     if binary_label:
         if positive_class is None:
             raise ValueError("You must set --positive_class when using --binary_label")
         print(f"Binary classification: Positive class = {positive_class}")
         labels = torch.where(labels == positive_class, 1, 0)
+        print("Label counts after binarization:")
+        print("Positive (1):", (labels == 1).sum().item())
+        print("Negative (0):", (labels == 0).sum().item())
         id2label = {0: "negative", 1: "positive"}
 
     node_map = {node: idx for idx, node in enumerate(G.nodes())}
