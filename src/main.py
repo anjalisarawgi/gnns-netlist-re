@@ -279,21 +279,149 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
     print(f"Saved GML with predictions to: {output_gml_path}")
 
 
+def run_phase1(args):
+    print("=== Phase 1: Fine-grained subcircuit classification ===")
+    data, id2name = load_aisec_single_gml(args.gml_path, class_reduce=args.class_reduce)
+
+    in_dim = data.num_features
+    out_dim = len(torch.unique(data.y))
+    print("in_dim", in_dim)
+    print("out_dim", out_dim)
+
+    log_class_distribution(data.y[data.train_mask], "train")
+    log_class_distribution(data.y[data.val_mask], "val")
+    log_class_distribution(data.y[data.test_mask], "test")
+
+    batch_size = int(0.3 * data.num_nodes)
+    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=batch_size, walk_length=2, shuffle=True)
+
+    model = run_training(
+        data,
+        train_loader,
+        in_dim,
+        out_dim,
+        id2name,
+        model_name=args.model,
+        use_weighted_loss=args.weighted_loss,
+    )
+
+    return data, model, id2name
+
+
+def run_phase2(data, model, args, id2name):
+    print("=== Phase 2: Zoom-in on target subcircuit class ===")
+    with open("results/aes_cipher_top_gephi/subcircuit_map.json", "r") as f:
+        subcircuit_map = json.load(f)
+    print(f"Loaded subcircuit map from JSON.")
+    print(json.dumps(subcircuit_map, indent=2))
+
+    model.eval()
+    out = model(data.x, data.edge_index)
+    pred = out.argmax(dim=1)
+
+    target_subcircuit_label = 3  # hardcoded for now
+    PHASE2_CLASS = [i for i, name in id2name.items() if name == target_subcircuit_label][0]
+    phase2_mask = pred == PHASE2_CLASS
+
+    G = nx.read_gml(args.gml_path, label="id")
+    node_list = list(G.nodes())
+
+    def is_valid_subcircuit(sc_id):
+        return sc_id.startswith("top+us") and not "round2" in sc_id
+
+    subcircuit_ids = []
+    phase2_indices = []
+    for idx in torch.where(phase2_mask)[0]:
+        node_idx = idx.item()
+        node_name = node_list[node_idx]
+        sc_id = G.nodes[node_name].get("subcircuit_id", "unknown")
+        if is_valid_subcircuit(sc_id):
+            subcircuit_ids.append(sc_id)
+            phase2_indices.append(node_idx)
+
+    k = 5
+    scid_counts = Counter(subcircuit_ids)
+    top_k_subcircuits = set([s for s, _ in scid_counts.most_common(k)])
+
+    filtered_indices = []
+    filtered_labels = []
+    for idx, sid in zip(phase2_indices, subcircuit_ids):
+        if sid in top_k_subcircuits:
+            filtered_indices.append(idx)
+            filtered_labels.append(sid)
+
+    unique_ids = sorted(set(filtered_labels))
+    id_map = {name: i for i, name in enumerate(unique_ids)}
+    id2name_phase2 = {i: name for name, i in id_map.items()}
+
+    new_y = torch.full((data.num_nodes,), -1, dtype=torch.long)
+    for idx, sid in zip(filtered_indices, filtered_labels):
+        new_y[idx] = id_map[sid]
+
+    train_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    val_mask = torch.zeros_like(new_y, dtype=torch.bool)
+    test_mask = torch.zeros_like(new_y, dtype=torch.bool)
+
+    for idx, sid in zip(filtered_indices, filtered_labels):
+        new_y[idx] = id_map[sid]
+        if data.train_mask[idx]:
+            train_mask[idx] = True
+        elif data.val_mask[idx]:
+            val_mask[idx] = True
+        elif data.test_mask[idx]:
+            test_mask[idx] = True
+
+    phase2_data = Data(
+        x=data.x,
+        edge_index=data.edge_index,
+        y=new_y,
+        train_mask=train_mask,
+        val_mask=val_mask,
+        test_mask=test_mask,
+    )
+
+    log_class_distribution(phase2_data.y[phase2_data.train_mask], "PHASE 2 train")
+    log_class_distribution(phase2_data.y[phase2_data.val_mask], "PHASE 2 val")
+    log_class_distribution(phase2_data.y[phase2_data.test_mask], "PHASE 2 test")
+
+    phase2_loader = GraphSAINTRandomWalkSampler(
+        phase2_data,
+        batch_size=int(0.3 * phase2_data.num_nodes),
+        walk_length=2,
+        shuffle=True,
+    )
+
+    print("Running Phase 2 training...")
+    run_training(
+        phase2_data,
+        train_loader=phase2_loader,
+        in_dim=phase2_data.num_node_features,
+        out_dim=len(unique_ids),
+        id2name=id2name_phase2,
+        model_name=args.model,
+        use_weighted_loss=args.weighted_loss,
+    )
 
 if __name__ == "__main__":
     setup_logging("logs")
     set_seed(42)
+
     parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
     parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
-    parser.add_argument("--class_reduce", action="store_true", help="Whether to reduce classes or not", default = False)
+    parser.add_argument("--class_reduce", action="store_true", help="Whether to reduce classes or not", default=False)
     parser.add_argument("--weighted_loss", action="store_true", help="Use class-weighted cross entropy loss")
     args = parser.parse_args()
 
-    gml_path = args.gml_path
-    model_name = args.model
-    
-    wandb.init(project="gnn-subcircuit-detection", name=f"{model_name}-{os.path.basename(gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}")
+    wandb.init(project="gnn-subcircuit-detection", name=f"{args.model}-{os.path.basename(args.gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}")
+
+    data, model, id2name = run_phase1(args)
+
+    output_dir = os.path.join("results", f"{args.model}_{os.path.basename(args.gml_path).replace('.gml', '')}")
+    os.makedirs(output_dir, exist_ok=True)
+    save_predictions_to_gml(args.gml_path, data, model, id2name, output_gml_path=os.path.join(output_dir, "predictions.gml"))
+
+    run_phase2(data, model, args, id2name)
 
     # data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
     # train_loader = GraphSAINTRandomWalkSampler(data, batch_size=3000, walk_length=3, shuffle=True, sample_coverage=50)
@@ -320,189 +448,3 @@ if __name__ == "__main__":
     # print("Output dimension:", out_dim)
     # run_training(full_data, train_loader, in_dim, out_dim)
     # print("Training complete.")
-
-
-
-
-
-    ##### gml (AES LOAD SINGLE FILE)
-    data, id2name = load_aisec_single_gml(gml_path, class_reduce=args.class_reduce)
-    in_dim = data.num_features
-    out_dim = len(torch.unique(data.y))
-    print("in_dim", in_dim)
-    print("out_dim", out_dim)
-    log_class_distribution(data.y[data.train_mask], "train")
-    log_class_distribution(data.y[data.val_mask], "val")
-    log_class_distribution(data.y[data.test_mask], "test")
-    random.seed(42)
-    num_nodes = data.num_nodes
-    batch_size = int(0.3 * num_nodes)
-    train_loader = GraphSAINTRandomWalkSampler(data, batch_size=batch_size, walk_length=2, shuffle=True)
-
-
-
-
-    model = run_training(
-        data,
-        train_loader,
-        in_dim,
-        out_dim,
-        id2name,
-        model_name,
-        use_weighted_loss=args.weighted_loss
-    )
-    
-    # os.makedirs("results", exist_ok=True)
-    base_name = os.path.splitext(os.path.basename(gml_path))[0]
-    output_dir = os.path.join("results", f"{model_name}_{base_name}")
-    os.makedirs(output_dir, exist_ok=True)
-    output_gml_path = os.path.join(output_dir, "predictions.gml")
-
-    # Save predictions to a new GML for Gephi analysis
-    save_predictions_to_gml(
-        original_gml_path=gml_path,
-        data=data,
-        model=model,
-        id2name=id2name,
-        output_gml_path=  output_gml_path
-        # output_gml_path=gml_path.replace(".gml", "_results.gml")
-    )
-
-    features = data.x.cpu().numpy()
-    labels = data.y.cpu().numpy()
-
-    # print(f"DONE! GML + t-SNE saved to: {output_dir}")
-    print("DONE with phase1!!!")
-
-    
-
-    ####################################################
-    # Phase 2
-    print("Starting phase 2...")
-    subcircuit_json_path = "results/aes_cipher_top_gephi/subcircuit_map.json"
-    with open(subcircuit_json_path, "r") as f:
-        subcircuit_map = json.load(f)
-    print(f"Loaded subcircuit map from: {subcircuit_json_path}")
-    print(json.dumps(subcircuit_map, indent=2))
-
-    model.eval()
-    out = model(data.x, data.edge_index)
-    pred = out.argmax(dim=1)
-
-    ##### ???
-    target_subcircuit_label = 2 # or "top+us_..." if class_reduce=True
-    PHASE2_CLASS = [i for i, name in id2name.items() if name == target_subcircuit_label][0]
-    print(f"Target class index: {PHASE2_CLASS} ({id2name[PHASE2_CLASS]})")
-    phase2_mask = pred == PHASE2_CLASS
-    
-    G = nx.read_gml(gml_path, label="id")
-    node_list = list(G.nodes())
-    def is_valid_subcircuit(sc_id):
-        # return sc_id.startswith("top+us") and not "round2" in sc_id
-        # return sc_id.startswith("top+u0+u") 
-        # return sc_id == "top+u0"
-        return "inst" in sc_id
-        # return True
-
-    subcircuit_ids = []
-    phase2_indices = []
-    for idx in torch.where(phase2_mask)[0]:
-        node_idx = idx.item()
-        node_name = node_list[node_idx]
-        sc_id = G.nodes[node_name].get("subcircuit_id", "unknown")
-        if is_valid_subcircuit(sc_id):
-            subcircuit_ids.append(sc_id)
-            phase2_indices.append(node_idx)
-
-    ### 
-    k = 5
-    scid_counts = Counter(subcircuit_ids)
-    top_k_subcircuits = set([s for s, _ in scid_counts.most_common(k)])
-    # top_k_subcircuits = set(scid_counts.keys())  # keep all
-
-    filtered_indices = []
-    filtered_labels = []
-    for idx, sid in zip(phase2_indices, subcircuit_ids):
-        if sid in top_k_subcircuits:
-            filtered_indices.append(idx)
-            filtered_labels.append(sid)
-    phase2_indices = filtered_indices
-    subcircuit_ids = filtered_labels
-
-    # Map subcircuit_id -> integer class
-    unique_ids = sorted(set(subcircuit_ids))
-    id_map = {name: i for i, name in enumerate(unique_ids)}
-    id2name_phase2 = {i: name for name, i in id_map.items()}
-
-    # Build label vector for the entire graph (others get -1)
-    new_y = torch.full((data.num_nodes,), -1, dtype=torch.long)
-    for idx, scid in zip(phase2_indices, subcircuit_ids):
-        new_y[idx] = id_map[scid]
-
-    # # Create train/val/test masks
-    # phase2_train_mask = torch.zeros_like(new_y, dtype=torch.bool)
-    # phase2_val_mask = torch.zeros_like(new_y, dtype=torch.bool)
-    # phase2_test_mask = torch.zeros_like(new_y, dtype=torch.bool)
-
-    # indices = phase2_indices
-    # random.shuffle(indices)
-    # n = len(indices)
-    # t_split = int(0.6 * n)
-    # v_split = int(0.8 * n)
-    # phase2_train_mask[indices[:t_split]] = True
-    # phase2_val_mask[indices[t_split:v_split]] = True
-    # phase2_test_mask[indices[v_split:]] = True
-
-    train_mask = torch.zeros_like(new_y, dtype=torch.bool)
-    val_mask = torch.zeros_like(new_y, dtype=torch.bool)
-    test_mask = torch.zeros_like(new_y, dtype=torch.bool)
-
-    for idx, sid in zip(filtered_indices, filtered_labels):
-        new_y[idx] = id_map[sid]
-        if data.train_mask[idx]:
-            train_mask[idx] = True
-        elif data.val_mask[idx]:
-            val_mask[idx] = True
-        elif data.test_mask[idx]:
-            test_mask[idx] = True
-
-    # Create PyG data object
-    phase2_data = Data(
-        x=data.x,
-        edge_index=data.edge_index,
-        y=new_y,
-        train_mask=train_mask,
-        val_mask=val_mask,
-        test_mask=test_mask,
-    )
-
-    print("Total nodes in phase 2:", len(phase2_indices))
-    print("Label counts:", torch.unique(new_y[new_y != -1], return_counts=True))
-    print("Train size:", train_mask.sum().item())
-    print("Train size:", val_mask.sum().item())
-    print("Test size:", test_mask.sum().item())
-
-    log_class_distribution(phase2_data.y[phase2_data.train_mask], "PHASE 2 train")
-    log_class_distribution(phase2_data.y[phase2_data.val_mask], "PHASE 2 val")
-    log_class_distribution(phase2_data.y[phase2_data.test_mask], "PHASE 2 test")
-
-    # phase2_loader = [phase2_data] ### ???
-    phase2_loader = GraphSAINTRandomWalkSampler(
-        phase2_data,
-        batch_size=int(0.3 * phase2_data.num_nodes),
-        walk_length=2,
-        shuffle=True,
-        # sample_coverage=50
-    )
-
-
-    print("Running phase 2 training...")
-    phase2_model = run_training(
-        phase2_data,
-        train_loader=phase2_loader,
-        in_dim=in_dim,
-        out_dim=len(unique_ids),
-        id2name=id2name_phase2,
-        model_name=model_name, 
-        use_weighted_loss=args.weighted_loss
-    )

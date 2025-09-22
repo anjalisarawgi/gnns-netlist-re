@@ -5,11 +5,15 @@ from torch_geometric.data import Data
 import scipy.sparse as sp
 import json
 import numpy as np
+import csv
+from collections import defaultdict
 
 
-gml_path = "graphs/raw/mips_16_latest/nangate/mips_16_core_top_gephi.gml"
+input_gml = "graphs/raw/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
+output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
 
-G = nx.read_gml(gml_path)
+
+G = nx.read_gml(input_gml)
 
 
 # should we make it directed?
@@ -28,6 +32,22 @@ def extract_gate_type(label):
     return "UNKNOWN"
 
 log_lines = []
+
+# top - aes
+def assign_subcircuit(p):
+    if p == "top+u0":
+        return 4
+    elif p.startswith("top+u0+u"):
+        return 5
+    elif "+us" in p and p.endswith("round2"):
+        return 1
+    elif "+us" in p and not p.endswith("round2"):
+        return 3
+    elif "inst" in p:
+        return 2
+    elif "@top" in p:
+        return 0
+    return -1
 
 for node in G.nodes():
     raw_label = G.nodes[node].get("label", node)
@@ -64,47 +84,78 @@ for node in G.nodes():
     else:
         G.nodes[node]['subcircuit_id'] = parition_cleaned
         
-
-    # if "top+us00_round2" in parition_cleaned:
-    #     G.nodes[node]['us00_round2'] = 1
-    # else:
-    #     G.nodes[node]['us00_round2'] = 0
-    
-    # if "top+u0+inst4" in parition_cleaned:
-    #     G.nodes[node]['u0_inst4'] = 1
-    # else:
-    #     G.nodes[node]['u0_inst4'] = 0
-
-
-
+    G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned) # subciruit_id - merged
 
 
     
-    # top - aes
 
-    subcircuit_map = {
-        "@top": 0,
-        "top+us_round2": 1,
-        "top+_+inst4": 2,
-        "top+us_": 3,
-        "top+u0": 4,
-        "top+u0+u_": 5
-    }
+partition_set = sorted(set(G.nodes[node].get("partition", "UNKNOWN").strip("'") for node in G.nodes()))
+partition2id = {part: idx for idx, part in enumerate(partition_set)}
 
-    def assign_subcircuit(p):
-        if p == "top+u0":
-            return 4
-        elif p.startswith("top+u0+u"):
-            return 5
-        elif "+us" in p and p.endswith("round2"):
-            return 1
-        elif "+us" in p and not p.endswith("round2"):
-            return 3
-        elif "inst" in p:
-            return 2
-        elif "@top" in p:
-            return 0
-        return -1
+# Store original subcircuit label ID
+for node in G.nodes():
+    raw_partition = G.nodes[node].get("partition", "UNKNOWN")
+    cleaned_partition = raw_partition.strip("'")
+    G.nodes[node]['subcircuit_original'] = partition2id[cleaned_partition]
+
+
+
+output_dir = os.path.dirname(output_gml)
+os.makedirs(output_dir, exist_ok=True)
+nx.write_gml(G, output_gml)
+print(f"Saved modified GML to '{output_gml}'")
+
+if log_lines:
+    log_path = os.path.join(os.path.dirname(output_gml), "unknown_gate_types.log")
+    with open(log_path, "w") as f:
+        f.write("\n".join(log_lines))
+    print(f"Saved detailed logs to {log_path}")
+    
+
+if unknown_gates:
+    unknown_counts = {}
+    for gate in unknown_gates:
+        unknown_counts[gate] = unknown_counts.get(gate, 0) + 1
+
+    log_path = os.path.join(os.path.dirname(output_gml), "unknown_gate_types.csv")
+    with open(log_path, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["gate_type", "count"])
+        for gate, count in sorted(unknown_counts.items(), key=lambda x: -x[1]):
+            writer.writerow([gate, count])
+    print(f"\nSaved {len(unknown_counts)} unknown gate types to 'unknown_gate_types.csv'")
+else:
+    print("No unknown gate types found.")
+
+partition_map_path = os.path.join(os.path.dirname(output_gml), "partition2id.json")
+with open(partition_map_path, "w") as f:
+    json.dump(partition2id, f, indent=2)
+
+print(f"Saved partition-to-ID mapping to '{partition_map_path}'")
+
+
+# Build subcircuit map from partition names
+subcircuit_map = defaultdict(list)
+
+for node in G.nodes():
+    raw_partition = G.nodes[node].get("partition", "UNKNOWN")
+    cleaned_partition = raw_partition.strip("'")
+    subcircuit_id = assign_subcircuit(cleaned_partition)
+    subcircuit_map[subcircuit_id].append(cleaned_partition)
+
+# Remove duplicates and sort partition names
+for k in subcircuit_map:
+    subcircuit_map[k] = sorted(list(set(subcircuit_map[k])))
+
+# Save to JSON
+subcircuit_map_path = os.path.join(os.path.dirname(output_gml), "subcircuit_map.json")
+with open(subcircuit_map_path, "w") as f:
+    json.dump(subcircuit_map, f, indent=2)
+
+print(f"Saved subcircuit-to-partition mapping to '{subcircuit_map_path}'")
+
+
+
 
     # def assign_subcircuit(p):
     #     if p == "@top":
@@ -116,107 +167,20 @@ for node in G.nodes():
     #     else:
     #         return -1
 
-    def assign_subcircuit(p):
-        if p == "@top" or p=="top" :
-            return 0 
-        elif "IF_stage" in p :
-            return 1 
-        elif "MEM_stage" in p:
-            return 2 
-        elif "EX_stage" in p:
-            return 3
-        elif "ID_stage" in p:
-            return 3
-        elif "hazard_detection" in p:
-            return 4
-        elif "register_file" in p:
-            return 5 
-        else:
-            return -1
-        
-
-        
-        
-
-    G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned)
-
-
-        # # key expand - aes
-    # G.nodes[node]['subcircuit'] = -1
-    # if "@top" in parition_cleaned:
-    #     G.nodes[node]["subcircuit"] = 0
-    # elif "inst" in parition_cleaned:
-    #     G.nodes[node]["subcircuit"] = 2
-    # elif "top+u" in parition_cleaned: 
-    #     G.nodes[node]['subcircuit'] = 3
-
-
-    # G.nodes[node]['subcircuit'] = -1
-    # if "@top" in parition_cleaned:
-    #     G.nodes[node]["subcircuit"] = 0
-    # elif "+us"  in parition_cleaned and parition_cleaned.endswith("round2"):
-    #     G.nodes[node]["subcircuit"] = 1
-    # elif "inst" in parition_cleaned:
-    #     G.nodes[node]["subcircuit"] = 2
-    # elif "+us" in parition_cleaned and not parition_cleaned.endswith("round2"):
-    #     G.nodes[node]["subcircuit"] = 3
-    # elif parition_cleaned == "top+u0":
-    #     G.nodes[node]['subcircuit'] = 4
-    # elif parition_cleaned.startswith("top+u0+u"):
-    #     G.nodes[node]['subcircuit'] = 5
-
-
-
-output_path = "mips_16_core_top_gephi_test.gml"
-nx.write_gml(G, output_path)
-print(f"Saved modified GML to '{output_path}'")
-
-# Save log file
-if log_lines:
-    with open("unknown_gate_types.log", "w") as f:
-        f.write("\n".join(log_lines))
-    print(f"Saved detailed log to 'unknown_gate_types.log'")
-    
-
-import os 
-import networkx as nx
-import csv
-# Save unknown gate types to CSV
-if unknown_gates:
-    unknown_counts = {}
-    for gate in unknown_gates:
-        unknown_counts[gate] = unknown_counts.get(gate, 0) + 1
-
-    with open("unknown_gate_types.csv", "w", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["gate_type", "count"])
-        for gate, count in sorted(unknown_counts.items(), key=lambda x: -x[1]):
-            writer.writerow([gate, count])
-
-    print(f"\nSaved {len(unknown_counts)} unknown gate types to 'unknown_gate_types.csv'")
-else:
-    print("No unknown gate types found.")
-
-
-#### for testing 
-import os
-import json
-from collections import defaultdict
-
-subcircuit_summary = defaultdict(set)
-
-for node in G.nodes():
-    partition = G.nodes[node].get("partition", "UNKNOWN").strip("'")
-    subcircuit = G.nodes[node].get("subcircuit", -1)
-    subcircuit_summary[subcircuit].add(partition)
-
-subcircuit_summary = {k: sorted(list(v)) for k, v in sorted(subcircuit_summary.items())}
-gml_basename = os.path.splitext(os.path.basename(gml_path))[0]
-output_dir = os.path.join("results", gml_basename)
-os.makedirs(output_dir, exist_ok=True)
-
-json_path = os.path.join(output_dir, "test.json")
-with open(json_path, "w") as f:
-    json.dump(subcircuit_summary, f, indent=2)
-
-print(f"Saved subcircuit mapping to '{json_path}'")
+    # def assign_subcircuit(p):
+    #     if p == "@top" or p=="top" :
+    #         return 0 
+    #     elif "IF_stage" in p :
+    #         return 1 
+    #     elif "MEM_stage" in p:
+    #         return 2 
+    #     elif "EX_stage" in p:
+    #         return 3
+    #     elif "ID_stage" in p:
+    #         return 3
+    #     elif "hazard_detection" in p:
+    #         return 4
+    #     elif "register_file" in p:
+    #         return 5 
+    #     else:
+    #         return -1
