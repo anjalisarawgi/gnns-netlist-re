@@ -23,12 +23,13 @@ import argparse
 import json 
 from collections import defaultdict, Counter
 from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 
 subcircuit_map = defaultdict(set) 
 
 
-def load_aisec_single_gml(gml_path, label_type="subcircuit"):
+def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None):
     print("calling gnn from path:", gml_path)
     random.seed(42)
 
@@ -61,6 +62,13 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit"):
     else:
         labels = torch.tensor(labels, dtype=torch.long)
         id2label = {int(l): str(l) for l in sorted(set(labels.tolist()))}
+
+    if binary_label:
+        if positive_class is None:
+            raise ValueError("You must set --positive_class when using --binary_label")
+        print(f"Binary classification: Positive class = {positive_class}")
+        labels = torch.where(labels == positive_class, 1, 0)
+        id2label = {0: "negative", 1: "positive"}
 
     node_map = {node: idx for idx, node in enumerate(G.nodes())}
     edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
@@ -137,6 +145,21 @@ def evaluate(model, data, mask):
 
     accuracy = correct / mask.sum().item() 
     return accuracy
+
+
+def evaluate_binary(model, data, mask):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    pred = out.argmax(dim=1)
+    valid_mask = mask & (data.y != -1)
+
+    y_true = data.y[valid_mask].cpu().numpy()
+    y_pred = pred[valid_mask].cpu().numpy()
+
+    f1 = f1_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    return f1, precision, recall
 
 
 def classwise_accuracy(model, data, mask, id2name=None):
@@ -276,10 +299,11 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 def run_phase1(args):
     print("=== Phase 1: Fine-grained subcircuit classification ===")
     # data, id2name = load_aisec_single_gml(args.gml_path, class_reduce=args.class_reduce)
-    data, id2name = load_aisec_single_gml(args.gml_path, label_type=args.label_type)
+    data, id2name = load_aisec_single_gml(args.gml_path, label_type=args.label_type,  binary_label=args.binary_label, positive_class=args.positive_class,)
 
     in_dim = data.num_features
-    out_dim = len(torch.unique(data.y))
+    # out_dim = len(torch.unique(data.y))
+    out_dim = 2 if args.binary_label else len(torch.unique(data.y))
     print("in_dim", in_dim)
     print("out_dim", out_dim)
 
@@ -416,6 +440,19 @@ if __name__ == "__main__":
         "--class_reduce",
         action="store_true",
         help="Enable class reduction in phase 2 (only used if label_type=subcircuit)"
+    )
+
+    parser.add_argument(
+        "--binary_label",
+        action="store_true",
+        help="Enable binary classification (label is 1 if it matches --positive_class, else 0)"
+    )
+
+    parser.add_argument(
+        "--positive_class",
+        type=int,
+        default=None,
+        help="Label ID to treat as positive class when using binary classification"
     )
 
     args = parser.parse_args()
