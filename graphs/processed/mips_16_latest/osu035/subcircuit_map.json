@@ -1,0 +1,19 @@
+{
+  "0": [
+    "@top"
+  ],
+  "2": [
+    "top+EX_stage_inst",
+    "top+ID_stage_inst",
+    "top+IF_stage_inst",
+    "top+IF_stage_inst+imem",
+    "top+MEM_stage_inst",
+    "top+MEM_stage_inst+dmem",
+    "top+WB_stage_inst",
+    "top+hazard_detection_unit_inst",
+    "top+register_file_inst"
+  ],
+  "-1": [
+    "UNKNOWN"
+  ]
+}

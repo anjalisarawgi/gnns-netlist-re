@@ -25,3 +25,8 @@ Note: this is necessary for the third step, so that we have a graph file for eac
 ### verilog2graph netlist --output_format txt  --do-not-zip -o adjlist/ -l osu035_stdcells.lib
 ### run_clustering adjlist/ -i partition/aes_cipher -u osu035 --task partition 
 ### partition2gephi adjlist/aes_cipher_top.txt --do-not-zip -t gml -o . -p outputFiles/osu035/partition_graph/ --cores 1
+
+
+### verilog2graph tum-eisec-benchmarks-main/netlist/des_latest/verilog/osu035/des.v --output_format txt  --do-not-zip -o adjlist/des_latest/osu035 -l lib/osu035_stdcells.lib
+### run_clustering adjlist/des_latest/osu035 -i tum-eisec-benchmarks-main/partition/des_latest/osu035/ -u des_latest/osu035/ --task partition --cores 1
+### partition2gephi adjlist/des_latest/osu035/des.txt --do-not-zip -t gml -o ../graphs/raw/des_latest/osu035 -p outputFiles/des_latest/osu035/partition_graph --cores 1

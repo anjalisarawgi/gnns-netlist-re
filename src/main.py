@@ -24,6 +24,7 @@ import json
 from collections import defaultdict, Counter
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import f1_score, precision_score, recall_score
+from torch_geometric.loader import GraphSAINTEdgeSampler
 
 
 subcircuit_map = defaultdict(set) 
@@ -164,18 +165,24 @@ def evaluate(model, data, mask):
     return accuracy
 
 
+from sklearn.metrics import f1_score, precision_score, recall_score
+
 def evaluate_binary(model, data, mask):
     model.eval()
     out = model(data.x, data.edge_index)
-    pred = out.argmax(dim=1)
+    
+    # pred = out.argmax(dim=1) # agressive 
+    probs = torch.softmax(out, dim=1) # not so agressive (1) 
+    pred = (probs[:, 1] > 0.7).long() # not so agressive (2) 
+
     valid_mask = mask & (data.y != -1)
 
     y_true = data.y[valid_mask].cpu().numpy()
     y_pred = pred[valid_mask].cpu().numpy()
 
-    f1 = f1_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred)
-    recall = recall_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
     return f1, precision, recall
 
 
@@ -245,7 +252,11 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
             "val_accuracy": val_acc
         }
 
-        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train accuracy : {train_acc:.4f}, val accuracy {val_acc:.4f}')
+        if out_dim == 2:
+            f1, precision, recall = evaluate_binary(model, data, data.val_mask)
+            print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}, F1: {f1:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}')
+        else:
+            print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}')
 
         if epoch % 100 == 0 or epoch == 1:
             classwise_acc = classwise_accuracy(model, data, data.val_mask, id2name)
@@ -266,6 +277,13 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     test_acc = evaluate(model, data, data.test_mask)
     wandb.log({"final_test_accuracy": test_acc})
     print(f"Final test accuracy: {test_acc:.4f}")
+
+    if out_dim == 2:  # binary classification
+        f1, precision, recall = evaluate_binary(model, data, data.test_mask)
+        print(f"Binary classification metrics:")
+        print(f"  F1 Score    : {f1:.4f}")
+        print(f"  Precision   : {precision:.4f}")
+        print(f"  Recall      : {recall:.4f}")
     
     classwise_acc = classwise_accuracy(model, data, data.test_mask, id2name)
     print("  Test Class-wise Accuracy:")
@@ -330,6 +348,7 @@ def run_phase1(args):
 
     batch_size = int(0.3 * data.num_nodes)
     train_loader = GraphSAINTRandomWalkSampler(data, batch_size=batch_size, walk_length=2, shuffle=True)
+    # train_loader = GraphSAINTEdgeSampler(data,batch_size=batch_size, num_steps=2,shuffle=True)
 
     model = run_training(
         data,
@@ -478,11 +497,13 @@ if __name__ == "__main__":
 
     data, model, id2name = run_phase1(args)
 
-    if args.label_type == "subcircuit":
+    if args.binary_label:
+        print("Skipping Phase 2: Binary classification selected.")
+    elif args.label_type == "subcircuit":
         run_phase2(data, model, args, id2name)
     else:
         print("Skipping Phase 2: subcircuit_original does not support it.")
-        
+            
 
     output_dir = os.path.join("results", f"{args.model}_{os.path.basename(args.gml_path).replace('.gml', '')}")
     os.makedirs(output_dir, exist_ok=True)

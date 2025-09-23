@@ -9,8 +9,8 @@ import csv
 from collections import defaultdict
 
 
-input_gml = "graphs/raw/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
-output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
+input_gml = "graphs/raw/mips_16_latest/osu035/mips_16_core_top_gephi.gml"
+output_gml = "graphs/processed/mips_16_latest/osu035/mips_16_core_top_gephi.gml"
 
 
 G = nx.read_gml(input_gml)
@@ -49,6 +49,7 @@ def assign_subcircuit(p):
         return 0
     return -1
 
+clustering = nx.clustering(G.to_undirected())
 for node in G.nodes():
     raw_label = G.nodes[node].get("label", node)
     raw_partition = G.nodes[node].get("partition", node)
@@ -77,6 +78,21 @@ for node in G.nodes():
     is_key = int("key" in clean_label.lower())
     # print(f"Node: {node}, Label: {label}, is_key: {is_key}")
     G.nodes[node]['features'] = [is_pi, is_po, is_key] + onehot + [indeg, outdeg]
+
+    # fan_io_ratio = indeg / (outdeg + 1e-5)  # avoid divide by zero
+    # logic_cone_size = len(nx.ancestors(G, node))
+    # transitive_fanout = len(nx.descendants(G, node))
+    # # hierarchy_depth = parition_cleaned.count("+")
+    # clustering_coeff = clustering.get(node, 0)
+
+    # # Combine all into final features
+    # G.nodes[node]['features'] = (
+    #     [is_pi, is_po, is_key] +
+    #     onehot +
+    #     [indeg, outdeg] +
+    #     [fan_io_ratio, logic_cone_size, transitive_fanout, clustering_coeff]
+    # )
+
     if "INPUT" in clean_label:
         G.nodes[node]['is_IO'] = "INPUT"
     elif "OUTPUT" in clean_label:
