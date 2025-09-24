@@ -1,5 +1,5 @@
 import torch 
-from preprocessing import normalize_features, load_GNNRE_full, load_GNNRE_gmls, load_GNN_aes_core_gmls,load_aisec_single_gml
+from preprocessing import normalize_features, load_GNNRE_full, load_GNNRE_gmls, load_GNN_aes_core_gmls,load_aisec_single_gml, load_aisec_multiple_gmls
 from torch_geometric.loader import DataLoader, GraphSAINTRandomWalkSampler    
 import torch
 from torch_geometric.data import Data
@@ -333,8 +333,32 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 
 def run_phase1(args):
     print("=== Phase 1: Fine-grained subcircuit classification ===")
-    # data, id2name = load_aisec_single_gml(args.gml_path, class_reduce=args.class_reduce)
-    data, id2name = load_aisec_single_gml(args.gml_path, label_type=args.label_type,  binary_label=args.binary_label, positive_class=args.positive_class,)
+    
+    # data, id2name = load_aisec_single_gml(args.gml_path, label_type=args.label_type,  binary_label=args.binary_label, positive_class=args.positive_class)
+    # data, id2name = load_aisec_multiple_gmls(
+    #     gml_paths=args.gml_paths,
+    #     label_type=args.label_type,
+    #     binary_label=args.binary_label,
+    #     positive_class=args.positive_class
+    # )
+    if args.gml_paths:  # multiple GMLs
+        data, id2name = load_aisec_multiple_gmls(
+            gml_paths=args.gml_paths,
+            label_type=args.label_type,
+            binary_label=args.binary_label,
+            positive_class=args.positive_class
+        )
+    elif args.gml_path:  # single GML
+        data, id2name = load_aisec_single_gml(
+            gml_path=args.gml_path,
+            label_type=args.label_type,
+            binary_label=args.binary_label,
+            positive_class=args.positive_class
+        )
+    else:
+        raise ValueError("You must specify either --gml_path or --gml_paths")
+
+
 
     in_dim = data.num_features
     # out_dim = len(torch.unique(data.y))
@@ -463,6 +487,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
+    parser.add_argument("--gml_paths", nargs="+",  help="List of GML paths to combine")
     parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
     # parser.add_argument("--class_reduce", action="store_true", help="Whether to reduce classes or not, ", default=False)
     parser.add_argument("--weighted_loss", action="store_true", help="Use class-weighted cross entropy loss")

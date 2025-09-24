@@ -275,6 +275,117 @@ def load_aisec_single_gml(gml_path):
 
 
 
+def load_aisec_multiple_gmls(gml_paths, label_type="subcircuit", binary_label=False, positive_class=None):
+    import random
+    from collections import Counter
+    import networkx as nx
+    import torch
+    import numpy as np
+    from torch_geometric.data import Data
+    from preprocessing import normalize_features
+
+    print(f"Loading {len(gml_paths)} GMLs and combining...")
+
+    all_features = []
+    all_labels = []
+    all_edges = []
+    all_nodes = []
+    id2label_global = {}
+    offset = 0
+
+    for path in gml_paths:
+        G = nx.read_gml(path, label="id")
+        nodes = list(G.nodes())
+        node_map = {node: idx + offset for idx, node in enumerate(nodes)}
+        all_nodes.extend(nodes)
+
+        for node in nodes:
+            attr = G.nodes[node]
+            feat = list(map(int, attr.get("features", [])))
+            all_features.append(feat)
+
+            label_prefix = os.path.basename(path).replace(".gml", "")
+            
+            if binary_label:
+                label = f"{label_prefix}::{attr.get('subcircuit_original', -1)}"
+            elif label_type == "subcircuit":
+                label = f"{label_prefix}::{attr.get('subcircuit', 'unknown')}"
+            else:
+                label = f"{label_prefix}::{attr.get('subcircuit_original', -1)}"
+
+            all_labels.append(label)
+
+        # Edges
+        for src, dst in G.edges():
+            all_edges.append((node_map[src], node_map[dst]))
+
+        offset += len(nodes)
+
+    all_features = normalize_features(np.array(all_features))
+    label_counts = Counter(all_labels)
+    print("Global label counts:", dict(label_counts))
+
+    if label_type == "subcircuit":
+        label_set = sorted(set(all_labels))
+        label_map = {v: i for i, v in enumerate(label_set)}
+        all_labels = [label_map[l] for l in all_labels]
+        id2label_global = {i: l for l, i in label_map.items()}
+        labels = torch.tensor(all_labels, dtype=torch.long)
+        label_counts = Counter(labels.tolist())  # Count number of nodes per class ID
+        print("\n=== Global Label Mapping ===")
+        for i, label in id2label_global.items():
+            count = label_counts.get(i, 0)
+            print(f"{i}: {label} — {count} nodes")
+    else:
+        id2label_global = {int(l): str(l) for l in sorted(set(all_labels))}
+
+    labels = torch.tensor(all_labels, dtype=torch.long)
+
+    if binary_label:
+        if positive_class is None:
+            raise ValueError("You must provide --positive_class in binary mode.")
+
+        if isinstance(positive_class, str):
+            name_to_id = {v: k for k, v in id2label_global.items()}
+            if positive_class not in name_to_id:
+                raise ValueError(f"Label '{positive_class}' not found. Available labels:\n{list(name_to_id.keys())}")
+            positive_class_id = name_to_id[positive_class]
+        else:
+            positive_class_id = positive_class
+
+        print(f"Binary classification: Positive class = {positive_class} (mapped ID: {positive_class_id})")
+        labels = torch.where(labels == positive_class_id, 1, 0)
+        id2label_global = {0: "negative", 1: "positive"}
+        print("After binarization:", Counter(labels.tolist()))
+
+    edge_index = torch.tensor(all_edges, dtype=torch.long).t().contiguous()
+    num_nodes = len(all_features)
+
+    indices = list(range(num_nodes))
+    random.shuffle(indices)
+
+    train_cutoff = int(0.6 * num_nodes)
+    val_cutoff = train_cutoff + int(0.2 * num_nodes)
+
+    train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    test_mask = torch.zeros(num_nodes, dtype=torch.bool)
+
+    train_mask[indices[:train_cutoff]] = True
+    val_mask[indices[train_cutoff:val_cutoff]] = True
+    test_mask[indices[val_cutoff:]] = True
+
+    data = Data(
+        x=torch.tensor(all_features, dtype=torch.float),
+        edge_index=edge_index,
+        y=labels,
+        train_mask=train_mask,
+        val_mask=val_mask,
+        test_mask=test_mask
+    )
+
+    return data, id2label_global
+
 
 
 
