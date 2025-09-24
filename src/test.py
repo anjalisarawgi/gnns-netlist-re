@@ -14,6 +14,7 @@ from preprocessing import normalize_features
 import numpy as np
 from collections import defaultdict, Counter
 from torch_geometric.data import Data
+from gnn.gat import gat
 
 
 wandb.init(project="gnn-subcircuit-detection", name="aes_to_des_test")
@@ -152,7 +153,7 @@ print("  Sum of masks   :", (aes_data.train_mask.sum() +
 aes_loader = GraphSAINTRandomWalkSampler(
     aes_data,
     batch_size=int(0.3 * aes_data.num_nodes),
-    walk_length=2,
+    walk_length=8,
     shuffle=True,
 )
 
@@ -162,7 +163,7 @@ model = run_training(
     in_dim=aes_data.num_features,
     out_dim=2,   # binary classification
     id2name=id2label,
-    model_name="graphsage",
+    model_name="gat",
     use_weighted_loss=True,
 )
 
@@ -190,6 +191,28 @@ mask = torch.ones_like(des_data.y, dtype=torch.bool)
 f1, precision, recall = evaluate_binary(model, des_data, mask)
 print(f"\n=== Cross-graph test (AES→DES) ===")
 print(f"F1 = {f1:.4f}, Precision = {precision:.4f}, Recall = {recall:.4f}")
+
+# === Per-class and total accuracy on DES ===
+model.eval()
+out = model(des_data.x, des_data.edge_index)
+pred = out.argmax(dim=1)
+
+y_true = des_data.y.cpu().numpy()
+y_pred = pred.cpu().numpy()
+
+total_correct = (y_true == y_pred).sum()
+total_acc = total_correct / len(y_true)
+
+sbox_mask = (y_true == 1)
+not_sbox_mask = (y_true == 0)
+
+sbox_acc = (y_pred[sbox_mask] == y_true[sbox_mask]).sum() / sbox_mask.sum()
+not_sbox_acc = (y_pred[not_sbox_mask] == y_true[not_sbox_mask]).sum() / not_sbox_mask.sum()
+
+print("\n=== DES Accuracy Breakdown ===")
+print(f"Total Accuracy   : {total_acc:.4f}")
+print(f"SBOX Accuracy    : {sbox_acc:.4f}")
+print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
 
 # Save DES graph with predictions
 output_dir = "results/aes_to_des"

@@ -239,12 +239,12 @@ def log_class_distribution(y, name=""):
     for v, c in zip(values.tolist(), counts.tolist()):
         print(f"  Class {v}: {c} nodes")
 
-def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="graphsage", use_weighted_loss=False):
+def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False):
     if model_name == "graphsage":
         model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-    elif model_name == "GCN":
+    elif model_name == "gcn":
         model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-    elif model_name == "GAT":
+    elif model_name == "gat":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
 
     
@@ -513,7 +513,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GNN for Subcircuit Detection")
     parser.add_argument("--gml_path", type=str, default="aes_key_expand_features.gml", help="Path to the input GML file")
     parser.add_argument("--gml_paths", nargs="+",  help="List of GML paths to combine")
-    parser.add_argument("--model", type=str, default="graphsage", choices=["graphsage", "GCN", "GAT"], help="GNN model to use")
+    parser.add_argument("--model", type=str, default="gat", choices=["graphsage", "gcn", "gat"], help="GNN model to use")
     # parser.add_argument("--class_reduce", action="store_true", help="Whether to reduce classes or not, ", default=False)
     parser.add_argument("--weighted_loss", action="store_true", help="Use class-weighted cross entropy loss")
     parser.add_argument(
