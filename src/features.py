@@ -9,8 +9,8 @@ import csv
 from collections import defaultdict
 
 
-input_gml = "graphs/raw/mips_16_latest/osu035/mips_16_core_top_gephi.gml"
-output_gml = "graphs/processed/mips_16_latest/osu035/mips_16_core_top_gephi.gml"
+input_gml = "graphs/raw/des_latest/osu035/des_gephi.gml"
+output_gml = "graphs/processed/des_latest/osu035/des_gephi.gml"
 
 
 G = nx.read_gml(input_gml)
@@ -33,20 +33,58 @@ def extract_gate_type(label):
 
 log_lines = []
 
-# top - aes
+# # top - aes
+# def assign_subcircuit(p):
+#     if p == "top+u0":
+#         return 4
+#     elif p.startswith("top+u0+u"):
+#         return 5
+#     elif "+us" in p and p.endswith("round2"):
+#         return 1
+#     elif "+us" in p and not p.endswith("round2"):
+#         return 3
+#     elif "inst" in p:
+#         return 2
+#     elif "@top" in p:
+#         return 0
+#     return -1
+
+
+# def assign_subcircuit_name(p):
+#     if p == "@top" or p=="top":
+#         return "top"
+#     elif p == "@top+u0" or p=="top+u0":
+#         return "key_expand"
+#     elif "inst" in p or "top+u0+" in p or "round2" in p or "top+us" in p :
+#         return "sbox"
+#     return -1
+
+# des
 def assign_subcircuit(p):
-    if p == "top+u0":
-        return 4
-    elif p.startswith("top+u0+u"):
-        return 5
-    elif "+us" in p and p.endswith("round2"):
+    if p =="@top":
+        return 0 
+    elif p=="top":
         return 1
-    elif "+us" in p and not p.endswith("round2"):
-        return 3
-    elif "inst" in p:
+    elif p=="@top+u0":
         return 2
-    elif "@top" in p:
-        return 0
+    elif p=="top+u0":
+        return 3
+    elif p=="top+u1":
+        return 4
+    elif "top+u0+" in p:
+        return 5
+    return -1 
+
+
+def assign_subcircuit_name(p):
+    if p == "@des" or p=="des":
+        return "des"
+    elif p == "@top+u0" or p=="top+u0":
+        return "crp"
+    elif p=="top+u1":
+        return "key_selh"
+    elif "top+u0+" in p:
+        return "sbox"
     return -1
 
 clustering = nx.clustering(G.to_undirected())
@@ -101,6 +139,7 @@ for node in G.nodes():
         G.nodes[node]['subcircuit_id'] = parition_cleaned
         
     G.nodes[node]['subcircuit'] = assign_subcircuit(parition_cleaned) # subciruit_id -
+    G.nodes[node]['subcircuit_name'] = assign_subcircuit_name(parition_cleaned) # subciruit_id -
 
 
     

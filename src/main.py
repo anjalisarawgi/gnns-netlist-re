@@ -30,7 +30,7 @@ from torch_geometric.loader import GraphSAINTEdgeSampler
 subcircuit_map = defaultdict(set) 
 
 
-def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None):
+def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None, remove_edges=False):
     print("calling gnn from path:", gml_path)
     random.seed(42)
 
@@ -92,6 +92,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
 
+
     num_nodes = len(nodes)
     indices = list(range(num_nodes))
     random.shuffle(indices)
@@ -106,6 +107,27 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     train_mask[indices[:train_cutoff]] = True
     val_mask[indices[train_cutoff:val_cutoff]] = True
     test_mask[indices[val_cutoff:]] = True
+
+    
+    # --- Remove cross-split edges (inductive setup) ---
+    if remove_edges:
+        print("removing edge information to prevent leakage")
+        train_nodes = set(torch.where(train_mask)[0].tolist())
+        val_nodes   = set(torch.where(val_mask)[0].tolist())
+        test_nodes  = set(torch.where(test_mask)[0].tolist())
+
+        new_edges = []
+        for src, dst in edge_index.t().tolist():
+            if (src in train_nodes and dst in train_nodes) \
+            or (src in val_nodes and dst in val_nodes) \
+            or (src in test_nodes and dst in test_nodes):
+                new_edges.append([src, dst])
+
+        edge_index = torch.tensor(new_edges, dtype=torch.long).t().contiguous()
+    else:
+        print("keeping all edge information")
+        ####    ---------------------------------------------
+
 
     data = Data(
         x=torch.tensor(features, dtype=torch.float),
@@ -354,7 +376,8 @@ def run_phase1(args):
             gml_path=args.gml_path,
             label_type=args.label_type,
             binary_label=args.binary_label,
-            positive_class=args.positive_class
+            positive_class=args.positive_class,
+            remove_edges=args.remove_edges
         )
     else:
         raise ValueError("You must specify either --gml_path or --gml_paths")
@@ -515,6 +538,11 @@ if __name__ == "__main__":
         type=int,
         default=None,
         help="Label ID to treat as positive class when using binary classification"
+    )
+    parser.add_argument(
+        "--remove_edges",
+        action="store_true",
+        help="If set, Remove edges between train/val/test splits to simulate inductive setup"
     )
 
     args = parser.parse_args()
