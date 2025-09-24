@@ -341,6 +341,7 @@ def run_phase1(args):
     #     binary_label=args.binary_label,
     #     positive_class=args.positive_class
     # )
+
     if args.gml_paths:  # multiple GMLs
         data, id2name = load_aisec_multiple_gmls(
             gml_paths=args.gml_paths,
@@ -532,8 +533,20 @@ if __name__ == "__main__":
 
     output_dir = os.path.join("results", f"{args.model}_{os.path.basename(args.gml_path).replace('.gml', '')}")
     os.makedirs(output_dir, exist_ok=True)
-    save_predictions_to_gml(args.gml_path, data, model, id2name, output_gml_path=os.path.join(output_dir, "predictions.gml"))
+    # save_predictions_to_gml(args.gml_path, data, model, id2name, output_gml_path=os.path.join(output_dir, "predictions.gml"))
 
+    # only save if its a single gml input (gml_path)
+    if args.gml_path and os.path.exists(args.gml_path):
+        save_predictions_to_gml(
+            args.gml_path,
+            data,
+            model,
+            id2name,
+            output_gml_path=os.path.join(output_dir, "predictions.gml"),
+        )
+    else:
+        print("Skipping save_predictions_to_gml since it is not single GML input.")
+        
     run_phase2(data, model, args, id2name)
 
     # data = load_GNNRE_full('data/Interconnected-Modules/adj_full.npz', 'data/Interconnected-Modules/feats.npy', 'data/Interconnected-Modules/class_map.json', 'data/Interconnected-Modules/role.json')
