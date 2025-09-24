@@ -125,7 +125,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
 
         edge_index = torch.tensor(new_edges, dtype=torch.long).t().contiguous()
     else:
-        print("keeping all edge information")
+        print("keeping all edges to retain all information")
         ####    ---------------------------------------------
 
 
@@ -338,6 +338,7 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
         G.nodes[node]["true_label"] = true_label
         G.nodes[node]["predicted_label"] = pred_label
         G.nodes[node]["correct"] = correct
+        
 
     if data.train_mask[idx]:
         G.nodes[node]["split"] = "train"
