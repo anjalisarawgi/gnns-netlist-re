@@ -118,7 +118,7 @@ def speckled_gateIDError(G, error_rate=0.01, min_area=2, max_area=5):
 
 
 
-#######
+####### each file is saved with a different name 
 G_error_random_netIDError = random_netIDError(G, error_rate=0.01)
 G_error_layout_netIDError = layout_netIDError(G, error_rate=0.01, layout_radius=3)
 G_error_speckeled_gateIDError = speckled_gateIDError(G, error_rate=0.01, min_area=2, max_area=5)
