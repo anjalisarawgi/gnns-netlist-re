@@ -153,7 +153,7 @@ print("  Sum of masks   :", (aes_data.train_mask.sum() +
 aes_loader = GraphSAINTRandomWalkSampler(
     aes_data,
     batch_size=int(0.3 * aes_data.num_nodes),
-    walk_length=8,
+    walk_length=5,
     shuffle=True,
 )
 
@@ -163,7 +163,7 @@ model = run_training(
     in_dim=aes_data.num_features,
     out_dim=2,   # binary classification
     id2name=id2label,
-    model_name="gat",
+    model_name="graphsage",
     use_weighted_loss=True,
 )
 
