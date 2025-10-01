@@ -9,7 +9,6 @@ os.makedirs(output_file_path, exist_ok=True)
 
 G = nx.read_gml(gml_file_path)
 
-# Group nodes by subcircuit
 partition_to_nodes = defaultdict(list)
 for node_id, node_data in G.nodes(data=True):
     subcircuit_id = node_data.get('subcircuit_id')
@@ -26,22 +25,18 @@ for label, node_list in partition_to_nodes.items():
     sg = G.subgraph(node_list).copy()
     existing_nodes = list(sg.nodes)
 
-    # Get candidate noise nodes (outside this partition)
     noise_candidates = list(all_nodes_set - set(node_list))
     if len(noise_candidates) < n_noise:
         print(f"Warning: not enough noise candidates for {label}, using {len(noise_candidates)} instead of {n_noise}")
     selected_noise_nodes = random.sample(noise_candidates, min(n_noise, len(noise_candidates)))
 
     for noise_node in selected_noise_nodes:
-        # Add the node and its attributes from the main graph
         sg.add_node(noise_node, **G.nodes[noise_node])
-
-        # Connect it to a random node in the subgraph
         target_node = random.choice(existing_nodes)
         if G.has_edge(noise_node, target_node):
             sg.add_edge(noise_node, target_node, **G.get_edge_data(noise_node, target_node))
         else:
-            sg.add_edge(noise_node, target_node)  # just create an artificial link if no real edge
+            sg.add_edge(noise_node, target_node)  
 
     filename = f"{label.replace('+', '_').replace('/', '_')}.gml"
     path = os.path.join(output_file_path, filename)
