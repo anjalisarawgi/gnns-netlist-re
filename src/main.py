@@ -282,22 +282,22 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
         if epoch % 100 == 0 or epoch == 1:
             classwise_acc = classwise_accuracy(model, data, data.val_mask, id2name)
-            wandb.log({
-                "epoch": epoch,
-                "val_classwise_accuracy": {
-                    cls: acc for cls, acc in classwise_acc.items()
-                }
-            })
-            print("  Val Class-wise Accuracy:")
-            for cls, acc in classwise_acc.items():
-                print(f"    Class {cls}: {acc:.4f}")
+        #     wandb.log({
+        #         "epoch": epoch,
+        #         "val_classwise_accuracy": {
+        #             cls: acc for cls, acc in classwise_acc.items()
+        #         }
+        #     })
+        #     print("  Val Class-wise Accuracy:")
+        #     for cls, acc in classwise_acc.items():
+        #         print(f"    Class {cls}: {acc:.4f}")
         
-        wandb.log(log_data)
+        # wandb.log(log_data)
 
 
 
     test_acc = evaluate(model, data, data.test_mask)
-    wandb.log({"final_test_accuracy": test_acc})
+    # wandb.log({"final_test_accuracy": test_acc})
     print(f"Final test accuracy: {test_acc:.4f}")
 
     if out_dim == 2:  # binary classification
@@ -310,7 +310,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     classwise_acc = classwise_accuracy(model, data, data.test_mask, id2name)
     print("  Test Class-wise Accuracy:")
     for cls, acc in classwise_acc.items():
-        wandb.log({f"test_acc/{cls}": acc})
+        # wandb.log({f"test_acc/{cls}": acc})
         print(f"    Class {cls}: {acc:.4f}")
         
     return model
@@ -548,7 +548,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    wandb.init(project="gnn-subcircuit-detection", name=f"{args.model}-{os.path.basename(args.gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}")
+    # wandb.init(project="gnn-subcircuit-detection", name=f"{args.model}-{os.path.basename(args.gml_path).replace('.gml', '')}-class_reduce-{args.class_reduce}")
 
     data, model, id2name = run_phase1(args)
 
