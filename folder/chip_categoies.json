@@ -1,0 +1,124 @@
+{
+    "alu": [
+        "8051_latest", 
+        "Aquarius_latest",
+        "cpu8080_latest"
+    ],
+    "add": [
+        "8bit_vedic_multiplier_latest",
+        "8051_latest", 
+        "RSA-Verilog-master", 
+        "aes-128_pipelined_encryption_latest",
+        "double_fpu_latest",
+        "ecg_latest"
+    ],
+    "mult": [
+        "8bit_vedic_multiplier_latest", 
+        "8051_latest", 
+        "Aquarius_latest",
+        "double_fpu_latest",
+        "ecg_latest"
+       
+    ],
+    "memory": [
+        "8051_latest",
+        "Aquarius_latest",
+        "cpu8080_latest"
+      
+    ],
+    "uart": [
+        "8051_latest", 
+        "Aquarius_latest", 
+        "RSA-Verilog-master"
+    ],
+    "control": [
+        "apbtoaes128_latest",
+        "cavlc_latest",
+        "crcahb_latest"
+    ],
+    "crypto": [
+        "aes-128_pipelined_encryption_latest",
+        "aes-encryption_latest",
+        "aes_cipher", 
+        "aes_decrypt_fpga_latest",
+        "des_latest", 
+        "ecg_latest_final_func11",
+        "present_encryptor_latest",
+        "gost28147-89_latest",
+        "gcm-aes_latest",
+        "hight_latest",
+        "sha3_latest",
+        "sha_core_latest",
+        "tiny_aes_latest",
+        "xtea_latest"
+    ],
+    "cpu": [
+        "Aquarius_latest",
+        "cpu8080_latest"
+        
+    ],
+    "eth": [
+    ],
+    "spi": [
+        "asynchronous_master_spi"
+    ],
+    "shift":[
+        "RSA-Verilog-master", 
+        "aes-128_pipelined_encryption_latest",
+        "apbtoaes128_latest"
+    ],
+    "log":[
+        "RSA-Verilog-master"
+    ],
+    "vga": [
+       
+    ],
+    "fpu": [
+        "double_fpu_latest"
+    ],
+    "neg": [
+        
+    ],
+    "sub": [
+        "aes-128_pipelined_encryption_latest"
+
+    ],
+    "div": [
+        "RSA-CRYPTOSYSTEM-using-verilog-master",
+        "8051_latest",
+        "cr_div",
+        "double_fpu_latest",
+        "dpll-isdn_latest"
+        
+    ],
+    "pci": [
+
+    ],
+    "usb": [
+       "csa_latest"
+    ],
+    "gpio": [
+       
+    ],
+    "adc": [
+       
+    ],
+    "axi": [
+       
+    ],
+    "dac": [
+    ],
+    "gpu": [
+            ],
+    "crc": [
+        "configurable_crc_core_latest",
+        "crcahb_latest"
+
+    ],
+    "ecc": [
+        
+    ],
+    "arith":[
+        "cr_div"
+    ]
+}

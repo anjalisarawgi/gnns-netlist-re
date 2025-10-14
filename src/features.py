@@ -9,8 +9,8 @@ import csv
 from collections import defaultdict
 
 
-input_gml = "graphs/raw/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
-output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
+input_gml = "graphs/raw/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml"
+output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml"
 
 
 G = nx.read_gml(input_gml)
@@ -48,6 +48,11 @@ def assign_subcircuit(p):
     elif "@top" in p:
         return 0
     return -1
+
+
+# # key expand - aes
+def assign_subcircuit(p):
+    pass
 
 
 def assign_subcircuit_name(p):

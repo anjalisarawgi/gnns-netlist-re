@@ -2,8 +2,6 @@ import torch
 import os
 from torch_geometric.loader import GraphSAINTRandomWalkSampler
 from main import (
-    run_training,
-    evaluate_binary,
     set_seed,
     save_predictions_to_gml
 )
@@ -14,13 +12,228 @@ from preprocessing import normalize_features
 import numpy as np
 from collections import defaultdict, Counter
 from torch_geometric.data import Data
+from gnn.graphSAGE import graphSAGE
+from gnn.gcn import GCN
 from gnn.gat import gat
+from sklearn.utils.class_weight import compute_class_weight
+import torch.nn.functional as F
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 
 wandb.init(project="gnn-subcircuit-detection", name="aes_to_des_test")
-# For reproducibility
 set_seed(42)
 
+
+
+def train(model, loader, optimizer, class_weights = None):
+    model.train()
+    total_loss = 0
+    
+
+    # batch.x = node features
+    # batch.edge_index = edge index of the subgraph
+    # batch.y = true labels
+
+    for batch in loader: # iterates over batches from the graph sampler ( each batch is a subgraph)
+        optimizer.zero_grad()
+        out = model(batch.x, batch.edge_index) # (node features, edge index) and out is prediction logits of shape: [num_nodes_in_batch, num_classes]
+
+        # we use -1 now to mark nodes we dont want in training
+        # also input and ouput nodes are already labeled -1 
+        valid_mask = (batch.y != -1) & (batch.train_mask)
+        if valid_mask.sum() == 0:
+            continue
+
+        if class_weights is not None:
+            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight=class_weights)
+        else:
+            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
+            
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item() * valid_mask.sum().item()  # sum loss over valid nodes
+        total_valid_nodes = valid_mask.sum().item()
+
+    return total_loss / total_valid_nodes
+
+@torch.no_grad()
+def evaluate(model, data, mask):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    pred = out.argmax(dim=1)
+
+    valid_mask = mask & (data.y != -1) 
+    correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
+
+    accuracy = correct / mask.sum().item() 
+    return accuracy
+
+@torch.no_grad()
+def evaluate_binary(model, data, mask):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    
+    # pred = out.argmax(dim=1) # agressive 
+    probs = torch.softmax(out, dim=1) # not so agressive (1) 
+    pred = (probs[:, 1] > 0.7).long() # not so agressive (2) 
+
+    valid_mask = mask & (data.y != -1)
+
+    y_true = data.y[valid_mask].cpu().numpy()
+    y_pred = pred[valid_mask].cpu().numpy()
+
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+    return f1, precision, recall
+
+
+
+def classwise_accuracy(model, data, mask, id2name=None):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    pred = out.argmax(dim=1)
+
+    # y_true = data.y[mask]
+    # y_pred = pred[mask]
+    valid_mask = mask & (data.y != -1)
+    y_true = data.y[valid_mask]
+    y_pred = pred[valid_mask]
+
+    unique_classes = torch.unique(y_true).tolist()
+    acc_per_class = {}
+
+    for c in unique_classes:
+        mask_c = y_true == c 
+        total_c = mask_c.sum().item()
+        correct_c = (y_pred[mask_c] == c).sum().item()  
+        acc = correct_c / total_c if total_c > 0 else 0
+        # acc_per_class[c] = acc
+        label_name = id2name.get(c, f"Class {c}") if id2name else f"Class {c}"
+        acc_per_class[label_name] = acc
+
+    return acc_per_class
+
+def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="graphsage", use_weighted_loss=False):
+    if model_name == "graphsage":
+        model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+    elif model_name == "gcn":
+        model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+    elif model_name == "gat":
+        model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+
+    
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
+
+    if use_weighted_loss:
+        train_labels = data.y[data.train_mask].cpu().numpy()
+        classes = np.unique(train_labels)
+        weights = compute_class_weight('balanced', classes=classes, y=train_labels)
+        class_weights = torch.tensor(weights, dtype=torch.float, device=data.x.device)
+        print("Using weighted cross entropy loss.")
+    else:
+        class_weights = None
+        print("Using standard cross entropy loss.")
+        
+
+    epochs = 500
+    for epoch in range(1, epochs+1):
+        loss = train(model, train_loader, optimizer, class_weights)
+        train_acc = evaluate(model, data, data.train_mask)
+        val_acc = evaluate(model, data, data.val_mask)
+
+        log_data = {
+            "epoch": epoch,
+            "loss": loss,
+            "train_accuracy": train_acc,
+            "val_accuracy": val_acc
+        }
+
+        if out_dim == 2:
+            f1, precision, recall = evaluate_binary(model, data, data.val_mask)
+            print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}, F1: {f1:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}')
+        else:
+            print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}')
+
+        if epoch % 100 == 0 or epoch == 1:
+            classwise_acc = classwise_accuracy(model, data, data.val_mask, id2name)
+        #     wandb.log({
+        #         "epoch": epoch,
+        #         "val_classwise_accuracy": {
+        #             cls: acc for cls, acc in classwise_acc.items()
+        #         }
+        #     })
+        #     print("  Val Class-wise Accuracy:")
+        #     for cls, acc in classwise_acc.items():
+        #         print(f"    Class {cls}: {acc:.4f}")
+        
+        # wandb.log(log_data)
+
+
+
+    test_acc = evaluate(model, data, data.test_mask)
+    # wandb.log({"final_test_accuracy": test_acc})
+    print(f"Final test accuracy: {test_acc:.4f}")
+
+    if out_dim == 2:  # binary classification
+        f1, precision, recall = evaluate_binary(model, data, data.test_mask)
+        print(f"Binary classification metrics:")
+        print(f"  F1 Score    : {f1:.4f}")
+        print(f"  Precision   : {precision:.4f}")
+        print(f"  Recall      : {recall:.4f}")
+    
+    classwise_acc = classwise_accuracy(model, data, data.test_mask, id2name)
+    print("  Test Class-wise Accuracy:")
+    for cls, acc in classwise_acc.items():
+        # wandb.log({f"test_acc/{cls}": acc})
+        print(f"    Class {cls}: {acc:.4f}")
+        
+    return model
+
+
+def load_multiple_gmls(gml_paths, binary_label=True, remove_edges=False):
+    all_x = []
+    all_y = []
+    all_edge_index = []
+    all_train_mask = []
+    all_val_mask = []
+    all_test_mask = []
+    offset = 0
+
+    for path in gml_paths:
+        data, _ = load_aisec_single_gml(
+            gml_path=path,
+            binary_label=binary_label,
+            remove_edges=remove_edges,
+        )
+
+        all_x.append(data.x)
+        all_y.append(data.y)
+
+        # Offset edge indices
+        edge_idx = data.edge_index + offset
+        all_edge_index.append(edge_idx)
+
+        # Adjust masks
+        all_train_mask.append(data.train_mask)
+        all_val_mask.append(data.val_mask)
+        all_test_mask.append(data.test_mask)
+
+        offset += data.num_nodes
+
+    # Concatenate everything
+    merged_data = Data(
+        x=torch.cat(all_x, dim=0),
+        edge_index=torch.cat(all_edge_index, dim=1),
+        y=torch.cat(all_y, dim=0),
+        train_mask=torch.cat(all_train_mask),
+        val_mask=torch.cat(all_val_mask),
+        test_mask=torch.cat(all_test_mask)
+    )
+
+    # Create dummy id2label (assuming binary classification)
+    id2label = {0: "not_sbox", 1: "sbox"}
+    return merged_data, id2label
 
 def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None, remove_edges=False):
     print("calling gnn from path:", gml_path)
@@ -38,9 +251,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         feat = list(map(int, attr.get("features", [])))
         features.append(feat)
 
-        # === LABEL ASSIGNMENT ===
         if binary_label:
-            # Use subcircuit_name directly
             label_name = attr.get("subcircuit_name", "unknown")
             if label_name == "sbox":
                 labels.append(1)   # positive
@@ -51,10 +262,9 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         else:
             labels.append(int(attr.get("subcircuit_original", -1)))
 
-    # Normalize features
     features = normalize_features(np.array(features))
 
-    # === ID2LABEL mapping ===
+    
     if binary_label:
         id2label = {0: "not_sbox", 1: "sbox"}
         labels = torch.tensor(labels, dtype=torch.long)
@@ -67,18 +277,15 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         labels = torch.tensor(labels, dtype=torch.long)
         id2label = {int(l): str(l) for l in sorted(set(labels.tolist()))}
 
-    # === Print distribution ===
     print(f"Total labels: {len(labels)}")
     print(f"Unique labels: {sorted(set(labels.tolist()))}")
     label_counts = Counter(labels.tolist())
     print("Label counts:", label_counts)
 
-    # === Build edge_index ===
     node_map = {node: idx for idx, node in enumerate(G.nodes())}
     edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
 
-    # === Masks ===
     num_nodes = len(nodes)
     indices = list(range(num_nodes))
     random.shuffle(indices)
@@ -126,12 +333,26 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
 
 
 
-# === Train on AES ===
-aes_data, id2label = load_aisec_single_gml(
-    gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
-    binary_label=True,   # sbox vs not_sbox
-)
-# Debugging: check AES label distribution
+# aes_data, id2label = load_aisec_single_gml(
+#     gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
+#     binary_label=True,   # sbox vs not_sbox
+# )
+
+# train on single vs train on multiple graphs
+train_on_multiple = False  # set this flag to False if you want to switch back
+
+if train_on_multiple:
+    graph_paths = [
+        "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
+        "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
+    ]
+    aes_data, id2label = load_multiple_gmls(graph_paths, binary_label=True)
+else:
+    aes_data, id2label = load_aisec_single_gml(
+        gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
+        binary_label=True,
+    )
+
 print("\n[DEBUG] AES dataset:")
 print("id2label:", id2label)
 print("Total nodes:", aes_data.num_nodes)
@@ -154,7 +375,7 @@ aes_loader = GraphSAINTRandomWalkSampler(
     aes_data,
     batch_size=int(0.3 * aes_data.num_nodes),
     walk_length=5,
-    shuffle=True,
+    shuffle=False,
 )
 
 model = run_training(
@@ -163,36 +384,30 @@ model = run_training(
     in_dim=aes_data.num_features,
     out_dim=2,   # binary classification
     id2name=id2label,
-    model_name="graphsage",
+    model_name="gat",
     use_weighted_loss=True,
 )
 
-# === Test on DES ===
 des_data, _ = load_aisec_single_gml(
-    gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    binary_label=True,   # same labeling logic
+    # gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    gml_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+    binary_label=True, 
 )
 
-# Debugging: check DES label distribution
 print("\n[DEBUG] DES dataset:")
 print("Total nodes:", des_data.num_nodes)
 print("SBOX nodes:", (des_data.y == 1).sum().item())
 print("Not-SBOX nodes:", (des_data.y == 0).sum().item())
-
-# Ensure no DES nodes are used for training
 print("\n[DEBUG] DES dataset check (should have *no* training here):")
 print("  Train nodes:", des_data.train_mask.sum().item())
 print("  Val nodes:", des_data.val_mask.sum().item())
 print("  Test nodes:", des_data.test_mask.sum().item())
-
-# Use all DES nodes for testing
 mask = torch.ones_like(des_data.y, dtype=torch.bool)
 
 f1, precision, recall = evaluate_binary(model, des_data, mask)
 print(f"\n=== Cross-graph test (AES→DES) ===")
 print(f"F1 = {f1:.4f}, Precision = {precision:.4f}, Recall = {recall:.4f}")
 
-# === Per-class and total accuracy on DES ===
 model.eval()
 out = model(des_data.x, des_data.edge_index)
 pred = out.argmax(dim=1)
@@ -214,12 +429,12 @@ print(f"Total Accuracy   : {total_acc:.4f}")
 print(f"SBOX Accuracy    : {sbox_acc:.4f}")
 print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
 
-# Save DES graph with predictions
 output_dir = "results/aes_to_des"
 os.makedirs(output_dir, exist_ok=True)
 print("\n[DEBUG] Saving DES predictions to results/aes_to_des/des_predictions.gml")
 save_predictions_to_gml(
-    original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    # original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    original_gml_path =  "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
     data=des_data,
     model=model,
     id2name={0: "not_sbox", 1: "sbox"},
