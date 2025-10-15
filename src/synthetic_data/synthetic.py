@@ -115,7 +115,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="graphs/processed/aes_encryption_latest/osu035/synth/1_perc",
+        default="graphs/synthetic/raw/aes_encryption_latest/osu035/1",
         help="Directory to save output .gml files"
     )
 
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     set_seed = 42
     random.seed(set_seed)
 
-    gml_file_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
+    gml_file_path = "graphs/raw/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
     G = nx.read_gml(gml_file_path)
 
     print("number of nodes:", G.number_of_nodes())

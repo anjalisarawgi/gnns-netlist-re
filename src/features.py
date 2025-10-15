@@ -9,8 +9,13 @@ import csv
 from collections import defaultdict
 
 
-input_gml = "graphs/raw/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml"
-output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml"
+input_gml = "graphs/raw/aes_encryption_latest/nangate/aes_key_expand_128_gephi.gml"
+output_gml = "graphs/processed/aes_encryption_latest/nangate/aes_key_expand_128_gephi.gml"
+
+
+# input_gml = "graphs/synthetic/raw/aes_encryption_latest/osu035/2/aes_cipher_top_gephi_mixedError_2.gml"
+# output_gml = "graphs/synthetic/processed/aes_encryption_latest/osu035/2/aes_cipher_top_gephi_mixedError_2.gml"
+
 
 
 G = nx.read_gml(input_gml)
@@ -33,7 +38,7 @@ def extract_gate_type(label):
 
 log_lines = []
 
-# # top - aes
+# # # top - aes ##
 # def assign_subcircuit(p):
 #     if p == "top+u0":
 #         return 4
@@ -62,8 +67,7 @@ log_lines = []
 #         return "sbox"
 #     return -1
 
-# # key expand - aes
-
+# key expand - aes ##
 def assign_subcircuit(p):
     if p == "@top" or  p=="top":
         return 0
@@ -85,7 +89,7 @@ def assign_subcircuit_name(p):
     return -1
 
 
-# des
+# des ##
 # def assign_subcircuit(p):
 #     if p =="@top":
 #         return 0 
