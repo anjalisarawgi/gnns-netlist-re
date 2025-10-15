@@ -34,35 +34,56 @@ def extract_gate_type(label):
 log_lines = []
 
 # # top - aes
-def assign_subcircuit(p):
-    if p == "top+u0":
-        return 4
-    elif p.startswith("top+u0+u"):
-        return 5
-    elif "+us" in p and p.endswith("round2"):
-        return 1
-    elif "+us" in p and not p.endswith("round2"):
-        return 3
-    elif "inst" in p:
-        return 2
-    elif "@top" in p:
-        return 0
-    return -1
+# def assign_subcircuit(p):
+#     if p == "top+u0":
+#         return 4
+#     elif p.startswith("top+u0+u"):
+#         return 5
+#     elif "+us" in p and p.endswith("round2"):
+#         return 1
+#     elif "+us" in p and not p.endswith("round2"):
+#         return 3
+#     elif "inst" in p:
+#         return 2
+#     elif "@top" in p:
+#         return 0
+#     return -1
 
+
+
+
+
+# def assign_subcircuit_name(p):
+#     if p == "@top" or p=="top":
+#         return "top"
+#     elif p == "@top+u0" or p=="top+u0":
+#         return "key_expand"
+#     elif "inst" in p or "top+u0+" in p or "round2" in p or "top+us" in p :
+#         return "sbox"
+#     return -1
 
 # # key expand - aes
+
 def assign_subcircuit(p):
-    pass
+    if p == "@top" or  p=="top":
+        return 0
+    # elif p == "top+inst4":
+    #     return 2
+    elif "top+u" or "inst" in p :
+        return 1
+    return -1
+
 
 
 def assign_subcircuit_name(p):
     if p == "@top" or p=="top":
-        return "top"
-    elif p == "@top+u0" or p=="top+u0":
         return "key_expand"
-    elif "inst" in p or "top+u0+" in p or "round2" in p or "top+us" in p :
+    # elif p == "top+inst4":
+    #     return "rcon"
+    elif "top+u" or "inst" in p :
         return "sbox"
     return -1
+
 
 # des
 # def assign_subcircuit(p):

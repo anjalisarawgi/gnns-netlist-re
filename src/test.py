@@ -191,50 +191,6 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     return model
 
 
-def load_multiple_gmls(gml_paths, binary_label=True, remove_edges=False):
-    all_x = []
-    all_y = []
-    all_edge_index = []
-    all_train_mask = []
-    all_val_mask = []
-    all_test_mask = []
-    offset = 0
-
-    for path in gml_paths:
-        data, _ = load_aisec_single_gml(
-            gml_path=path,
-            binary_label=binary_label,
-            remove_edges=remove_edges,
-        )
-
-        all_x.append(data.x)
-        all_y.append(data.y)
-
-        # Offset edge indices
-        edge_idx = data.edge_index + offset
-        all_edge_index.append(edge_idx)
-
-        # Adjust masks
-        all_train_mask.append(data.train_mask)
-        all_val_mask.append(data.val_mask)
-        all_test_mask.append(data.test_mask)
-
-        offset += data.num_nodes
-
-    # Concatenate everything
-    merged_data = Data(
-        x=torch.cat(all_x, dim=0),
-        edge_index=torch.cat(all_edge_index, dim=1),
-        y=torch.cat(all_y, dim=0),
-        train_mask=torch.cat(all_train_mask),
-        val_mask=torch.cat(all_val_mask),
-        test_mask=torch.cat(all_test_mask)
-    )
-
-    # Create dummy id2label (assuming binary classification)
-    id2label = {0: "not_sbox", 1: "sbox"}
-    return merged_data, id2label
-
 def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None, remove_edges=False):
     print("calling gnn from path:", gml_path)
     random.seed(42)
@@ -332,26 +288,44 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     return data, id2label
 
 
+def merge_data(data1, data2):
+    # Offset node indices in data2's edge_index
+    offset = data1.num_nodes
+    data2_edge_index = data2.edge_index + offset
 
-# aes_data, id2label = load_aisec_single_gml(
-#     gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
-#     binary_label=True,   # sbox vs not_sbox
+    # Concatenate all fields
+    x = torch.cat([data1.x, data2.x], dim=0)
+    edge_index = torch.cat([data1.edge_index, data2_edge_index], dim=1)
+    y = torch.cat([data1.y, data2.y], dim=0)
+
+    train_mask = torch.cat([data1.train_mask, data2.train_mask], dim=0)
+    val_mask = torch.cat([data1.val_mask, data2.val_mask], dim=0)
+    test_mask = torch.cat([data1.test_mask, data2.test_mask], dim=0)
+
+    return Data(
+        x=x,
+        edge_index=edge_index,
+        y=y,
+        train_mask=train_mask,
+        val_mask=val_mask,
+        test_mask=test_mask
+    )
+
+aes_data, id2label = load_aisec_single_gml(
+    gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
+    binary_label=True,   # sbox vs not_sbox
+)
+
+
+# another_data, _ = load_aisec_single_gml(
+#     # gml_path="graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
+#     gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+#     # gml_path="graphs/processed/mips_16_latest/osu035/mips_16_core_top_gephi.gml",
+#     binary_label=True,
 # )
 
-# train on single vs train on multiple graphs
-train_on_multiple = False  # set this flag to False if you want to switch back
+# combined_data = merge_data(aes_data, another_data)
 
-if train_on_multiple:
-    graph_paths = [
-        "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
-        "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
-    ]
-    aes_data, id2label = load_multiple_gmls(graph_paths, binary_label=True)
-else:
-    aes_data, id2label = load_aisec_single_gml(
-        gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
-        binary_label=True,
-    )
 
 print("\n[DEBUG] AES dataset:")
 print("id2label:", id2label)
@@ -373,10 +347,13 @@ print("  Sum of masks   :", (aes_data.train_mask.sum() +
 
 aes_loader = GraphSAINTRandomWalkSampler(
     aes_data,
+    # combined_data,
     batch_size=int(0.3 * aes_data.num_nodes),
     walk_length=5,
-    shuffle=False,
+    num_steps=5,  
+    shuffle=True,
 )
+print("aes_loader lemgth - batch size:", len(aes_loader))
 
 model = run_training(
     data=aes_data,
@@ -389,8 +366,8 @@ model = run_training(
 )
 
 des_data, _ = load_aisec_single_gml(
-    # gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    gml_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+    gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    # gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
     binary_label=True, 
 )
 
@@ -433,10 +410,10 @@ output_dir = "results/aes_to_des"
 os.makedirs(output_dir, exist_ok=True)
 print("\n[DEBUG] Saving DES predictions to results/aes_to_des/des_predictions.gml")
 save_predictions_to_gml(
-    # original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    original_gml_path =  "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+    original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    # original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
     data=des_data,
     model=model,
     id2name={0: "not_sbox", 1: "sbox"},
     output_gml_path=os.path.join(output_dir, "des_predictions.gml"),
-)
+) 
