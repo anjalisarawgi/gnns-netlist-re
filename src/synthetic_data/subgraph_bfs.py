@@ -18,10 +18,11 @@ def generate_k_hop_subgraphs(G, num_subgraphs=10, radius=2, output_dir="subgraph
 
 # === Set your paths and config ===
 
-INPUT_GML_PATH = "graphs/processed/aes_encryption_latest/osu035/synth/1_perc/aes_cipher_top_gephi_randomError_1.gml"
-OUTPUT_DIR = "graphs/processed/aes_encryption_latest/osu035/subgraphs_khop"
+# INPUT_GML_PATH = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
+INPUT_GML_PATH = "graphs/synthetic/processed/aes_encryption_latest/osu035/1/aes_cipher_top_gephi_mixedError_1.gml"
+OUTPUT_DIR = "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/"
 NUM_SUBGRAPHS = 10
-RADIUS = 10 
+RADIUS = 20 
 SEED = 42
 
 # === Run ===

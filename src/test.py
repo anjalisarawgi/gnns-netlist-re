@@ -172,7 +172,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print("Using standard cross entropy loss.")
         
 
-    epochs = 250
+    epochs = 500
     for epoch in range(1, epochs+1):
         loss = train(model, train_loader, optimizer, class_weights)
         train_acc = evaluate(model, data, data.train_mask)
@@ -354,8 +354,8 @@ aes_data, id2label = load_aisec_single_gml(
 
 
 second_data, _ = load_aisec_single_gml(
-    # gml_path="graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
-    gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+    gml_path="graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
+    # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
     # gml_path="graphs/processed/mips_16_latest/osu035/mips_16_core_top_gephi.gml",
     binary_label=True,
 )
@@ -365,8 +365,8 @@ third_data, _ = load_aisec_single_gml(
     binary_label=True,
 )
 
-combined_data = merge_data(aes_data, second_data)
-# combined_data = merge_data(combined_data, third_data) # for third
+combined_data_a = merge_data(aes_data, second_data)
+combined_data = merge_data(combined_data_a, third_data) # for third
 
 print("\n[DEBUG] AES dataset:")
 print("id2label:", id2label)
@@ -398,8 +398,8 @@ print("  Sum of masks   :", (aes_data.train_mask.sum() +
 if args.sampling_method == "graphsaint":
     print("[INFO] Using GraphSAINT sampling...")
     aes_loader = GraphSAINTRandomWalkSampler(
-        aes_data, 
-        # combined_data,
+        # aes_data, 
+        combined_data,
         batch_size=int(0.3 * aes_data.num_nodes),
         walk_length=5,
         # num_steps=5,
@@ -413,15 +413,15 @@ elif args.sampling_method == "khop":
     num_khop_subgraphs = 500 #int(0.3 * aes_data.num_nodes)
     subgraph_list = ego_subgraphs_from_data(
         aes_data,
-        radius=2,
+        radius=3,
         num_subgraphs=num_khop_subgraphs
     )
     aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
 
 
 model = run_training(
-        data=aes_data,
-        # data = combined_data,
+        # data=aes_data,
+        data = combined_data,
         train_loader=aes_loader,
         in_dim=aes_data.num_features,
         out_dim=2,   # binary classification
@@ -432,8 +432,8 @@ model = run_training(
 
 
 des_data, _ = load_aisec_single_gml(
-    # gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
+    gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    # gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
     binary_label=True, 
 )
 des_data.train_mask[:] = False
@@ -479,8 +479,8 @@ output_dir = "results/aes_to_des"
 os.makedirs(output_dir, exist_ok=True)
 print("\n[DEBUG] Saving DES predictions to results/aes_to_des/des_predictions.gml")
 save_predictions_to_gml(
-    # original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
+    original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    # original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
     data=des_data,
     model=model,
     id2name={0: "not_sbox", 1: "sbox"},
