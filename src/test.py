@@ -353,20 +353,49 @@ aes_data, id2label = load_aisec_single_gml(
 )
 
 
-second_data, _ = load_aisec_single_gml(
-    gml_path="graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
-    # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
-    # gml_path="graphs/processed/mips_16_latest/osu035/mips_16_core_top_gephi.gml",
-    binary_label=True,
-)
+# second_data, _ = load_aisec_single_gml(
+#     gml_path="graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
+#     # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+#     # gml_path="graphs/processed/mips_16_latest/osu035/mips_16_core_top_gephi.gml",
+#     binary_label=True,
+# )
 
-third_data, _ = load_aisec_single_gml(
-    gml_path= "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
-    binary_label=True,
-)
+# third_data, _ = load_aisec_single_gml(
+#     gml_path= "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+#     binary_label=True,
+# )
 
-combined_data_a = merge_data(aes_data, second_data)
-combined_data = merge_data(combined_data_a, third_data) # for third
+# combined_data_a = merge_data(aes_data, second_data)
+# combined_data = merge_data(combined_data_a, third_data) # for third
+
+######################################
+gml_paths = [
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_1.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_2.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_3.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_4.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_5.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_6.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_7.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_8.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_9.gml",
+    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_10.gml",
+
+]
+
+data_list = []
+for i, path in enumerate(gml_paths):
+    data, labels = load_aisec_single_gml(gml_path=path, binary_label=True)
+    if i == 0:
+        id2label = labels  # Save from first
+    data_list.append(data)
+
+from functools import reduce
+
+combined_data = reduce(merge_data, data_list)
+aes_data = data_list[0]  # To keep masks for logging or sampling
+
+########################################
 
 print("\n[DEBUG] AES dataset:")
 print("id2label:", id2label)
@@ -410,9 +439,10 @@ if args.sampling_method == "graphsaint":
 
 elif args.sampling_method == "khop":
     print(f"[INFO] Using k-hop sampling...")
-    num_khop_subgraphs = 500 #int(0.3 * aes_data.num_nodes)
+    num_khop_subgraphs = 1000 #int(0.3 * aes_data.num_nodes)
     subgraph_list = ego_subgraphs_from_data(
-        aes_data,
+        # aes_data,
+        combined_data,
         radius=3,
         num_subgraphs=num_khop_subgraphs
     )
@@ -423,7 +453,7 @@ model = run_training(
         # data=aes_data,
         data = combined_data,
         train_loader=aes_loader,
-        in_dim=aes_data.num_features,
+        in_dim=aes_data.num_features, # combined_data.num_features
         out_dim=2,   # binary classification
         id2name=id2label,
         model_name="gat",
@@ -432,8 +462,8 @@ model = run_training(
 
 
 des_data, _ = load_aisec_single_gml(
-    gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    # gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
+    # gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
     binary_label=True, 
 )
 des_data.train_mask[:] = False
@@ -477,10 +507,10 @@ print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
 
 output_dir = "results/aes_to_des"
 os.makedirs(output_dir, exist_ok=True)
-print("\n[DEBUG] Saving DES predictions to results/aes_to_des/des_predictions.gml")
+print("\n[DEBUG] Saving DES predictions to results/aes_to_des/aes_cipher_noise1.gml")
 save_predictions_to_gml(
-    original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    # original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
+    # original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
+    original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
     data=des_data,
     model=model,
     id2name={0: "not_sbox", 1: "sbox"},
