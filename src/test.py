@@ -61,21 +61,48 @@ def ego_subgraphs_from_data(full_data, radius=2, num_subgraphs=10, seed=42):
 
     return subgraph_data_list
 
-def train(model, loader, optimizer, class_weights = None):
-    model.train()
-    total_loss = 0
+# def train(model, loader, optimizer, class_weights = None):
+#     model.train()
+#     total_loss = 0
     
 
-    # batch.x = node features
-    # batch.edge_index = edge index of the subgraph
-    # batch.y = true labels
+#     # batch.x = node features
+#     # batch.edge_index = edge index of the subgraph
+#     # batch.y = true labels
 
-    for batch in loader: # iterates over batches from the graph sampler ( each batch is a subgraph)
+#     for batch in loader: # iterates over batches from the graph sampler ( each batch is a subgraph)
+#         optimizer.zero_grad()
+#         out = model(batch.x, batch.edge_index) # (node features, edge index) and out is prediction logits of shape: [num_nodes_in_batch, num_classes]
+
+#         # we use -1 now to mark nodes we dont want in training
+#         # also input and ouput nodes are already labeled -1 
+#         valid_mask = (batch.y != -1) & (batch.train_mask)
+#         if valid_mask.sum() == 0:
+#             continue
+
+#         if class_weights is not None:
+#             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight=class_weights)
+#         else:
+#             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
+            
+#         loss.backward()
+#         optimizer.step()
+#         total_loss += loss.item() * valid_mask.sum().item()  # sum loss over valid nodes
+#         total_valid_nodes = valid_mask.sum().item()
+        
+#     return total_loss / total_valid_nodes
+
+
+def train(model, loader, optimizer, class_weights=None):
+    model.train()
+    total_loss = 0
+    batch_count = 0  # new counter
+
+    for batch in loader:
         optimizer.zero_grad()
-        out = model(batch.x, batch.edge_index) # (node features, edge index) and out is prediction logits of shape: [num_nodes_in_batch, num_classes]
+        out = model(batch.x, batch.edge_index)
 
-        # we use -1 now to mark nodes we dont want in training
-        # also input and ouput nodes are already labeled -1 
+        # only train on valid, labeled nodes
         valid_mask = (batch.y != -1) & (batch.train_mask)
         if valid_mask.sum() == 0:
             continue
@@ -84,13 +111,17 @@ def train(model, loader, optimizer, class_weights = None):
             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight=class_weights)
         else:
             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
-            
+
         loss.backward()
         optimizer.step()
-        total_loss += loss.item() * valid_mask.sum().item()  # sum loss over valid nodes
-        total_valid_nodes = valid_mask.sum().item()
 
-    return total_loss / total_valid_nodes
+        total_loss += loss.item()   # no multiplication
+        batch_count += 1            # count batches
+
+    # return average loss per batch (easy to read)
+    avg_loss = total_loss / batch_count if batch_count > 0 else 0
+    return avg_loss
+
 
 @torch.no_grad()
 def evaluate(model, data, mask):
@@ -101,7 +132,7 @@ def evaluate(model, data, mask):
     valid_mask = mask & (data.y != -1) 
     correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
 
-    accuracy = correct / mask.sum().item() 
+    accuracy = correct / valid_mask.sum().item() 
     return accuracy
 
 @torch.no_grad()
@@ -163,6 +194,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
     if use_weighted_loss:
         train_labels = data.y[data.train_mask].cpu().numpy()
+        train_labels = train_labels[train_labels != -1]
         classes = np.unique(train_labels)
         weights = compute_class_weight('balanced', classes=classes, y=train_labels)
         class_weights = torch.tensor(weights, dtype=torch.float, device=data.x.device)
@@ -240,8 +272,14 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     for node in nodes:
         attr = G.nodes[node]
 
-        feat = list(map(int, attr.get("features", [])))
-        features.append(feat)
+        # feat = list(map(int, attr.get("features", [])))
+        # features.append(feat)
+
+        feat = attr.get("features", [])
+        if isinstance(feat, (list, tuple, np.ndarray)):
+            features.append(feat)
+        else:
+            features.append([])
 
         if binary_label:
             label_name = attr.get("subcircuit_name", "unknown")
@@ -313,7 +351,8 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
 
     # === Final Data object ===
     data = Data(
-        x=torch.tensor(features, dtype=torch.float),
+        # x=torch.tensor(features, dtype=torch.float),
+        x=torch.as_tensor(features, dtype=torch.float32),
         edge_index=edge_index,
         y=labels,
         train_mask=train_mask,
@@ -439,12 +478,11 @@ if args.sampling_method == "graphsaint":
 
 elif args.sampling_method == "khop":
     print(f"[INFO] Using k-hop sampling...")
-    num_khop_subgraphs = 1000 #int(0.3 * aes_data.num_nodes)
     subgraph_list = ego_subgraphs_from_data(
         # aes_data,
         combined_data,
         radius=3,
-        num_subgraphs=num_khop_subgraphs
+        num_subgraphs=500  #int(0.3 * aes_data.num_nodes)
     )
     aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
 
@@ -453,7 +491,7 @@ model = run_training(
         # data=aes_data,
         data = combined_data,
         train_loader=aes_loader,
-        in_dim=aes_data.num_features, # combined_data.num_features
+        in_dim= combined_data.num_features, # aes_data.num_features, # combined_data.num_features
         out_dim=2,   # binary classification
         id2name=id2label,
         model_name="gat",

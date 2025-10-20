@@ -73,7 +73,7 @@ def assign_subcircuit(p):
         return 0
     # elif p == "top+inst4":
     #     return 2
-    elif "top+u" or "inst" in p :
+    elif "top+u" in p or "inst" in p :
         return 1
     return -1
 
