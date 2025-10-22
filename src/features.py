@@ -10,7 +10,7 @@ from collections import defaultdict
 
 
 input_gml = "graphs/raw/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml"
-output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test2.gml"
+output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test4.gml"
 
 
 # input_gml = "graphs/synthetic/raw/aes_encryption_latest/osu035/2/aes_cipher_top_gephi_mixedError_2.gml"
@@ -25,7 +25,8 @@ G = nx.read_gml(input_gml)
 G = G.to_directed()
 # should we create an encoding just for the type?
 
-gate_types = [ "INPUT", "OUTPUT", "XOR", "XNOR", "AND", "OR",  "NAND", "NOR", "INV", "BUF", "AOI", "OAI", "DFF", "MUX"] # not sure if we should handle dff like this 
+# gate_types = [ "INPUT", "OUTPUT", "XOR", "XNOR", "AND", "OR",  "NAND", "NOR", "INV", "BUF", "AOI", "OAI", "DFF", "MUX"] # not sure if we should handle dff like this 
+gate_types = [ "XOR", "XNOR", "AND", "OR",  "NAND", "NOR", "INV", "BUF", "AOI", "OAI", "DFF", "MUX"] 
 gate2idx = {gate: idx for idx, gate in enumerate(gate_types)}
 unknown_gates = []
 
@@ -168,7 +169,8 @@ for node in G.nodes():
     # transitive_fanout = len(nx.descendants(G, node))
     # clustering_coeff = clustering.get(node, 0)
 
-    G.nodes[node]['features'] = [indeg, outdeg] +  onehot + neighbor_gate_onehot
+    gate_type_combined = [onehot[i] + neighbor_gate_onehot[i] for i in range(len(gate_types))] ### combine both 
+    G.nodes[node]['features'] = [indeg, outdeg] +  gate_type_combined #onehot + neighbor_gate_onehot
 
     # fan_io_ratio = indeg / (outdeg + 1e-5)  # avoid divide by zero
     
