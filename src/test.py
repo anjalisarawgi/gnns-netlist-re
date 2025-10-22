@@ -387,7 +387,8 @@ def merge_data(data1, data2):
     )
 
 aes_data, id2label = load_aisec_single_gml(
-    gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
+    # gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
+    gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
     binary_label=True,   # sbox vs not_sbox
 )
 
@@ -408,31 +409,31 @@ aes_data, id2label = load_aisec_single_gml(
 # combined_data = merge_data(combined_data_a, third_data) # for third
 
 ######################################
-gml_paths = [
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_1.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_2.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_3.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_4.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_5.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_6.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_7.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_8.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_9.gml",
-    "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_10.gml",
+# gml_paths = [
+#     "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_1.gml",
+#     "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_2.gml",
+#     "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_3.gml",
+#     "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_4.gml",
+#     "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_5.gml",
+#     # "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_6.gml",
+#     # "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_7.gml",
+#     # "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_8.gml",
+#     # "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_9.gml",
+#     # "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_10.gml",
 
-]
+# ]
 
-data_list = []
-for i, path in enumerate(gml_paths):
-    data, labels = load_aisec_single_gml(gml_path=path, binary_label=True)
-    if i == 0:
-        id2label = labels  # Save from first
-    data_list.append(data)
+# data_list = []
+# for i, path in enumerate(gml_paths):
+#     data, labels = load_aisec_single_gml(gml_path=path, binary_label=True)
+#     if i == 0:
+#         id2label = labels  # Save from first
+#     data_list.append(data)
 
-from functools import reduce
+# from functools import reduce
 
-combined_data = reduce(merge_data, data_list)
-aes_data = data_list[0]  # To keep masks for logging or sampling
+# combined_data = reduce(merge_data, data_list)
+# # aes_data = data_list[0]  # To keep masks for logging or sampling
 
 ########################################
 
@@ -466,10 +467,10 @@ print("  Sum of masks   :", (aes_data.train_mask.sum() +
 if args.sampling_method == "graphsaint":
     print("[INFO] Using GraphSAINT sampling...")
     aes_loader = GraphSAINTRandomWalkSampler(
-        # aes_data, 
-        combined_data,
-        batch_size=int(0.3 * aes_data.num_nodes),
-        walk_length=5,
+        aes_data, 
+        # combined_data,
+        batch_size=int(0.35 * aes_data.num_nodes),
+        walk_length=10,
         # num_steps=5,
         shuffle=True,
     )
@@ -479,19 +480,19 @@ if args.sampling_method == "graphsaint":
 elif args.sampling_method == "khop":
     print(f"[INFO] Using k-hop sampling...")
     subgraph_list = ego_subgraphs_from_data(
-        # aes_data,
-        combined_data,
+        aes_data,
+        # combined_data,
         radius=3,
-        num_subgraphs=500  #int(0.3 * aes_data.num_nodes)
+        num_subgraphs=1500  #int(0.3 * aes_data.num_nodes)
     )
     aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
 
 
 model = run_training(
-        # data=aes_data,
-        data = combined_data,
+        data=aes_data,
+        # data = combined_data,
         train_loader=aes_loader,
-        in_dim= combined_data.num_features, # aes_data.num_features, # combined_data.num_features
+        in_dim= aes_data.num_features, # aes_data.num_features, # combined_data.num_features
         out_dim=2,   # binary classification
         id2name=id2label,
         model_name="gat",
