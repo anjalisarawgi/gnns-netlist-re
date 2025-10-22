@@ -388,7 +388,7 @@ def merge_data(data1, data2):
 
 aes_data, id2label = load_aisec_single_gml(
     # gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
-    gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
+    gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test2.gml",
     binary_label=True,   # sbox vs not_sbox
 )
 
@@ -469,8 +469,8 @@ if args.sampling_method == "graphsaint":
     aes_loader = GraphSAINTRandomWalkSampler(
         aes_data, 
         # combined_data,
-        batch_size=int(0.35 * aes_data.num_nodes),
-        walk_length=10,
+        batch_size=int(0.30 * aes_data.num_nodes),
+        walk_length=5,
         # num_steps=5,
         shuffle=True,
     )
@@ -502,7 +502,7 @@ model = run_training(
 
 des_data, _ = load_aisec_single_gml(
     # gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
+    gml_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test2.gml",
     binary_label=True, 
 )
 des_data.train_mask[:] = False
@@ -549,11 +549,11 @@ os.makedirs(output_dir, exist_ok=True)
 print("\n[DEBUG] Saving DES predictions to results/aes_to_des/aes_cipher_noise1.gml")
 save_predictions_to_gml(
     # original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
+    original_gml_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test2.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
     data=des_data,
     model=model,
     id2name={0: "not_sbox", 1: "sbox"},
-    output_gml_path=os.path.join(output_dir, "des_predictions.gml"),
+    output_gml_path=os.path.join(output_dir, "aes_cipher_top_gephi_test2.gml"),
 )  
 
 
