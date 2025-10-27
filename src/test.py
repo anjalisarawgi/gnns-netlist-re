@@ -204,7 +204,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print("Using standard cross entropy loss.")
         
 
-    epochs = 400
+    epochs = 500
     for epoch in range(1, epochs+1):
         loss = train(model, train_loader, optimizer, class_weights)
         train_acc = evaluate(model, data, data.train_mask)
@@ -292,7 +292,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         else:
             labels.append(int(attr.get("subcircuit_original", -1)))
 
-    features = normalize_features(np.array(features))
+    features = normalize_features(np.array(features, dtype=np.float32))
 
     
     if binary_label:
@@ -388,7 +388,7 @@ def merge_data(data1, data2):
 
 aes_data, id2label = load_aisec_single_gml(
     # gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi.gml",
-    gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test3.gml",
+    gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
     binary_label=True,   # sbox vs not_sbox
 )
 print("Number of features:", aes_data.num_features)
@@ -503,7 +503,7 @@ model = run_training(
 
 des_data, _ = load_aisec_single_gml(
     # gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    gml_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test3.gml",
+    gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test6.gml",
     binary_label=True, 
 )
 des_data.train_mask[:] = False
@@ -547,14 +547,14 @@ print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
 
 output_dir = "results/aes_to_des"
 os.makedirs(output_dir, exist_ok=True)
-print("\n[DEBUG] Saving DES predictions to results/aes_to_des/aes_cipher_top_gephi_test3.gml")
+print("\n[DEBUG] Saving DES predictions to results/aes_to_des/aes_cipher_top_gephi_test6.gml")
 save_predictions_to_gml(
     # original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-    original_gml_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test3.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
+    original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test6.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi
     data=des_data,
     model=model,
     id2name={0: "not_sbox", 1: "sbox"},
-    output_gml_path=os.path.join(output_dir, "aes_cipher_top_gephi_test3.gml"),
+    output_gml_path=os.path.join(output_dir, "aes_cipher_top_gephi_test6.gml"),
 )  
 
 
