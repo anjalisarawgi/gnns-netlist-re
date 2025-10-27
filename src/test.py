@@ -15,6 +15,7 @@ from torch_geometric.data import Data
 from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat
+from gnn.graphTransformer import GraphTransformer 
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -188,6 +189,8 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
     elif model_name == "gat":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+    elif model_name == "graphTransformer":
+        model = GraphTransformer(in_channels=in_dim, hidden_channels=256, out_channels = out_dim)
 
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
@@ -204,7 +207,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print("Using standard cross entropy loss.")
         
 
-    epochs = 500
+    epochs = 250
     for epoch in range(1, epochs+1):
         loss = train(model, train_loader, optimizer, class_weights)
         train_acc = evaluate(model, data, data.train_mask)
@@ -483,8 +486,8 @@ elif args.sampling_method == "khop":
     subgraph_list = ego_subgraphs_from_data(
         aes_data,
         # combined_data,
-        radius=3,
-        num_subgraphs=1000  #int(0.3 * aes_data.num_nodes)
+        radius=5,
+        num_subgraphs=100  #int(0.3 * aes_data.num_nodes)
     )
     aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
 
