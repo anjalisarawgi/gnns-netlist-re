@@ -31,10 +31,34 @@ parser.add_argument("--sampling_method", type=str, choices=["graphsaint", "khop"
 parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
 parser.add_argument("--train_gml", type = str, required=True, help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--test_gml", type = str, required=True, help="which graph (gml_path) do you want to test on?")
+parser.add_argument("--epochs", type = int, default=250)
+
+# graphsaint
+parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method")
+
+# khop
+parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
+parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
 
 args = parser.parse_args()
 
-wandb.init(project="gnn-subcircuit-detection", name="aes_to_des_test")
+
+# wandb setup 
+test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
+train_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.train_gml]
+train_name = "+".join(train_roots[:2]) + ("+test" if len(train_roots) > 2 else "")
+
+if args.sampling_method == "graphsaint":
+    sampling_suffix = f"graphsaint_walk{args.walk_length}"
+elif args.sampling_method == "khop":
+    sampling_suffix = f"khop_r{args.radius}_n{args.num_subgraphs}"
+else:
+    sampling_suffix = args.sampling_method
+
+run_name = f"{args.model}_{sampling_suffix}_{args.epochs}ep_{train_name}_for_{test_name}"
+
+
+wandb.init(project="gnn-subcircuit-detection", name=run_name)
 set_seed(42)
 
 
@@ -268,7 +292,7 @@ def classwise_accuracy(model, data, mask, id2name=None):
 # des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
 
 
-def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False):
+def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False, des_data = None):
     if model_name == "graphsage":
         model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
         print("[INFO] using graphsage model")
@@ -318,24 +342,21 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
         if epoch % 10 == 0 or epoch == 1:
             classwise_acc = classwise_accuracy(model, data, data.val_mask, id2name)
-            # f1_des, precision_des, recall_des = evaluate_binary(model, des_data, des_mask)
-            # print(f"[DES Test @ Epoch {epoch}] F1: {f1_des:.4f}, Precision: {precision_des:.4f}, Recall: {recall_des:.4f}")
-        #     wandb.log({
-        #         "epoch": epoch,
-        #         "val_classwise_accuracy": {
-        #             cls: acc for cls, acc in classwise_acc.items()
-        #         }
-        #     })
-        #     print("  Val Class-wise Accuracy:")
-        #     for cls, acc in classwise_acc.items():
-        #         print(f"    Class {cls}: {acc:.4f}")
         
-        # wandb.log(log_data)
+        if des_data is not None and epoch % 50 == 0:
+            des_f1, des_precision, des_recall = evaluate_binary(model, des_data, torch.ones_like(des_data.y, dtype=torch.bool))
+            print(f"\n[DES Eval - Epoch {epoch}] F1: {des_f1:.4f}, Precision: {des_precision:.4f}, Recall: {des_recall:.4f}")
+            log_data.update({
+                "des_f1": des_f1,
+                "des_precision": des_precision,
+                "des_recall": des_recall,
+            })
 
+        wandb.log(log_data)
 
+    ######### 
 
     test_acc = evaluate(model, data, data.test_mask)
-    # wandb.log({"final_test_accuracy": test_acc})
     print(f"Final test accuracy: {test_acc:.4f}")
 
     if out_dim == 2:  # binary classification
@@ -344,11 +365,17 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print(f"  F1 Score    : {f1:.4f}")
         print(f"  Precision   : {precision:.4f}")
         print(f"  Recall      : {recall:.4f}")
+
+        wandb.log({
+            "final_test_accuracy": test_acc,
+            "final_test_f1": f1,
+            "final_test_precision": precision,
+            "final_test_recall": recall,
+        })
     
     classwise_acc = classwise_accuracy(model, data, data.test_mask, id2name)
     print("  Test Class-wise Accuracy:")
     for cls, acc in classwise_acc.items():
-        # wandb.log({f"test_acc/{cls}": acc})
         print(f"    Class {cls}: {acc:.4f}")
         
     return model
@@ -378,28 +405,6 @@ def merge_data(data1, data2):
         test_mask=test_mask
     )
 
-# aes_data, id2label = load_aisec_single_gml(
-#     gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test6.gml",
-#     # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
-#     binary_label=True,   # sbox vs not_sbox
-# )
-# print("Number of features:", aes_data.num_features)
-# print("Feature matrix shape:", aes_data.x.shape)
-
-# second_data, _ = load_aisec_single_gml(
-#     gml_path="graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml",
-#     # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
-#     # gml_path="graphs/processed/mips_16_latest/osu035/mips_16_core_top_gephi.gml",
-#     binary_label=True,
-# )
-
-# third_data, _ = load_aisec_single_gml(
-#     gml_path= "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi.gml",
-#     binary_label=True,
-# )
-
-# combined_data_a = merge_data(aes_data, second_data)
-# combined_data = merge_data(combined_data_a, third_data) # for third
 
 ######################################
 # gml_paths = [
@@ -415,139 +420,7 @@ def merge_data(data1, data2):
 #     # "graphs/synthetic/subgraphs_khop/aes_encryption_latest_noise1/osu035/subgraph_10.gml",
 
 # ]
-
-# data_list = []
-# for i, path in enumerate(gml_paths):
-#     data, labels = load_aisec_single_gml(gml_path=path, binary_label=True)
-#     if i == 0:
-#         id2label = labels  # Save from first
-#     data_list.append(data)
-
-# from functools import reduce
-
-# combined_data = reduce(merge_data, data_list)
-# # aes_data = data_list[0]  # To keep masks for logging or sampling
-
 ########################################
-
-# print("\n[DEBUG] AES dataset:")
-# print("id2label:", id2label)
-# print("Total nodes:", aes_data.num_nodes)
-# print("SBOX nodes:", (aes_data.y == 1).sum().item())
-# print("Not-SBOX nodes:", (aes_data.y == 0).sum().item())
-
-# # Double-check training nodes come only from AES
-# print("\n[DEBUG] AES train/val/test split:")
-# print("  Train nodes:", aes_data.train_mask.sum().item())
-# print("  Val nodes:", aes_data.val_mask.sum().item())
-# print("  Test nodes:", aes_data.test_mask.sum().item())
-
-# # Sanity: make sure all masks add up to total AES nodes
-# print("  Total AES nodes:", aes_data.num_nodes)
-# print("  Sum of masks   :", (aes_data.train_mask.sum() +
-#                               aes_data.val_mask.sum() +
-#                               aes_data.test_mask.sum()).item())
-
-# aes_loader = GraphSAINTRandomWalkSampler(
-#     # aes_data,
-#     combined_data,
-#     batch_size=int(0.3 * aes_data.num_nodes),
-#     walk_length=5,
-#     # num_steps=20,  
-#     shuffle=True,
-# )
-
-# if args.sampling_method == "graphsaint":
-#     print("[INFO] Using GraphSAINT sampling...")
-#     aes_loader = GraphSAINTRandomWalkSampler(
-#         aes_data, 
-#         # combined_data,
-#         batch_size=int(0.30 * aes_data.num_nodes),
-#         walk_length=5,
-#         # num_steps=5,
-#         shuffle=True,
-#     )
-#     print("aes_loader lemgth - batch size:", len(aes_loader))
-
-
-# elif args.sampling_method == "khop":
-#     print(f"[INFO] Using k-hop sampling...")
-#     subgraph_list = ego_subgraphs_from_data(
-#         aes_data,
-#         # combined_data,
-#         radius=5,
-#         num_subgraphs=100  #int(0.3 * aes_data.num_nodes)
-#     )
-#     aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
-
-
-# model = run_training(
-#         data=aes_data,
-#         # data = combined_data,
-#         train_loader=aes_loader,
-#         in_dim= aes_data.num_features, # aes_data.num_features, # combined_data.num_features
-#         out_dim=2,   # binary classification
-#         id2name=id2label,
-#         model_name="gat",
-#         use_weighted_loss=True,
-# )
-
-
-# des_data, _ = load_aisec_single_gml(
-#     # gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-#     gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi_test6.gml",
-#     binary_label=True, 
-# )
-# des_data.train_mask[:] = False
-# des_data.val_mask[:] = False
-# des_data.test_mask[:] = False
-
-# print("\n[DEBUG] DES dataset:")
-# print("Total nodes:", des_data.num_nodes)
-# print("SBOX nodes:", (des_data.y == 1).sum().item())
-# print("Not-SBOX nodes:", (des_data.y == 0).sum().item())
-# print("\n[DEBUG] DES dataset check (should have *no* training here):")
-# print("  Train nodes:", des_data.train_mask.sum().item())
-# print("  Val nodes:", des_data.val_mask.sum().item())
-# print("  Test nodes:", des_data.test_mask.sum().item())
-# mask = torch.ones_like(des_data.y, dtype=torch.bool)
-
-# f1, precision, recall = evaluate_binary(model, des_data, mask)
-# print(f"\n=== Cross-graph test (AES→DES) ===")
-# print(f"F1 = {f1:.4f}, Precision = {precision:.4f}, Recall = {recall:.4f}")
-
-# model.eval()
-# out = model(des_data.x, des_data.edge_index)
-# pred = out.argmax(dim=1)
-
-# y_true = des_data.y.cpu().numpy()
-# y_pred = pred.cpu().numpy()
-
-# total_correct = (y_true == y_pred).sum()
-# total_acc = total_correct / len(y_true)
-
-# sbox_mask = (y_true == 1)
-# not_sbox_mask = (y_true == 0)
-
-# sbox_acc = (y_pred[sbox_mask] == y_true[sbox_mask]).sum() / sbox_mask.sum()
-# not_sbox_acc = (y_pred[not_sbox_mask] == y_true[not_sbox_mask]).sum() / not_sbox_mask.sum()
-
-# print("\n=== DES Accuracy Breakdown ===")
-# print(f"Total Accuracy   : {total_acc:.4f}")
-# print(f"SBOX Accuracy    : {sbox_acc:.4f}")
-# print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
-
-# output_dir = "results/aes_to_des"
-# os.makedirs(output_dir, exist_ok=True)
-# print("\n[DEBUG] Saving DES predictions to results/aes_to_des/aes_cipher_top_gephi_test6.gml")
-# save_predictions_to_gml(
-#     # original_gml_path="graphs/processed/des_latest/osu035/des_gephi.gml",
-#     original_gml_path = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi_test6.gml", #aes_key_expand_128_gephi #aes_cipher_top_gephi # aes_cipher_top_gephi_test6
-#     data=des_data,
-#     model=model,
-#     id2name={0: "not_sbox", 1: "sbox"},
-#     output_gml_path=os.path.join(output_dir, "aes_cipher_top_gephi_test6.gml"),
-# )  
 
 
 from functools import reduce
@@ -577,12 +450,22 @@ if __name__ == "__main__":
     print("  Val nodes  :", aes_data.val_mask.sum().item())
     print("  Test nodes :", aes_data.test_mask.sum().item())
 
+    des_data, _ = load_aisec_single_gml(
+        # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
+        gml_path=args.test_gml,
+        binary_label=True
+    )
+    des_data.train_mask[:] = False
+    des_data.val_mask[:] = False
+    des_data.test_mask[:] = False
+
+
     if args.sampling_method == "graphsaint":
         print("[INFO] Using GraphSAINT sampling...")
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
             batch_size=int(0.30 * aes_data.num_nodes),
-            walk_length=5,
+            walk_length=args.walk_length,
             shuffle=True,
         )
         print("aes_loader length:", len(aes_loader))
@@ -591,8 +474,8 @@ if __name__ == "__main__":
         print(f"[INFO] Using k-hop sampling...")
         subgraph_list = ego_subgraphs_from_data(
             aes_data,
-            radius=5,
-            num_subgraphs=100
+            radius=args.radius,
+            num_subgraphs=args.num_subgraphs
         )
         aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
 
@@ -604,16 +487,8 @@ if __name__ == "__main__":
         id2name=id2label,
         model_name=args.model, 
         use_weighted_loss=True,
+        des_data=des_data 
     )
-
-    des_data, _ = load_aisec_single_gml(
-        # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
-        gml_path=args.test_gml,
-        binary_label=True
-    )
-    des_data.train_mask[:] = False
-    des_data.val_mask[:] = False
-    des_data.test_mask[:] = False
 
     print("\n[DEBUG] DES dataset:")
     print("Total nodes:", des_data.num_nodes)
