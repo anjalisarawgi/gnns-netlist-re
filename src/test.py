@@ -28,7 +28,9 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
+parser.add_argument("--train_gml", type = str, required=True, help="which graph (gml_path) do you want to train on?", nargs="+")
+parser.add_argument("--test_gml", type = str, required=True, help="which graph (gml_path) do you want to test on?")
 
 args = parser.parse_args()
 
@@ -266,15 +268,19 @@ def classwise_accuracy(model, data, mask, id2name=None):
 # des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
 
 
-def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="graphsage", use_weighted_loss=False):
+def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False):
     if model_name == "graphsage":
         model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+        print("[INFO] using graphsage model")
     elif model_name == "gcn":
         model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using gcn model")
     elif model_name == "gat":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using gat model")
     elif model_name == "graphTransformer":
         model = GraphTransformer(in_channels=in_dim, hidden_channels=256, out_channels = out_dim)
+        print("[INFO] using graphTransformer model")
 
     
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
@@ -544,14 +550,32 @@ def merge_data(data1, data2):
 # )  
 
 
-
+from functools import reduce
 if __name__ == "__main__":
-    aes_data, id2label = load_aisec_single_gml(
-        gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test6.gml",
-        binary_label=True
-    )
+    # aes_data, id2label = load_aisec_single_gml(
+    #     # gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test6.gml",
+    #     gml_path=args.train_gml,
+    #     binary_label=True
+    # )
+
+    print("[INFO] loading the following training graphs:")
+    train_graphs = []
+    for i, gml_path in enumerate(args.train_gml):
+        print(f"[{i+1}] {gml_path}")
+        graph_data, label_map = load_aisec_single_gml(gml_path=gml_path, binary_label=True)
+        if i == 0:
+            id2label = label_map
+        train_graphs.append(graph_data)
+    aes_data = reduce(merge_data, train_graphs)
+    print("[INFO] training on:", args.train_gml)
     print("Number of features:", aes_data.num_features)
     print("Feature matrix shape:", aes_data.x.shape)
+    print("Number of SBOX nodes :", (aes_data.y == 1).sum().item())
+
+    print("[DEBUG] Combined data split:")
+    print("  Train nodes:", aes_data.train_mask.sum().item())
+    print("  Val nodes  :", aes_data.val_mask.sum().item())
+    print("  Test nodes :", aes_data.test_mask.sum().item())
 
     if args.sampling_method == "graphsaint":
         print("[INFO] Using GraphSAINT sampling...")
@@ -578,12 +602,13 @@ if __name__ == "__main__":
         in_dim=aes_data.num_features,
         out_dim=2,
         id2name=id2label,
-        model_name="gat",
+        model_name=args.model, 
         use_weighted_loss=True,
     )
 
     des_data, _ = load_aisec_single_gml(
-        gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
+        # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
+        gml_path=args.test_gml,
         binary_label=True
     )
     des_data.train_mask[:] = False
@@ -626,7 +651,8 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     print("\n[DEBUG] Saving DES predictions to results/aes_to_des/aes_cipher_top_gephi_test6.gml")
     save_predictions_to_gml(
-        original_gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
+        # original_gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
+        original_gml_path = args.test_gml,
         data=des_data,
         model=model,
         id2name={0: "not_sbox", 1: "sbox"},
