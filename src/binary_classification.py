@@ -151,7 +151,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     indices = list(range(num_nodes))
     random.shuffle(indices)
 
-    train_cutoff = int(0.6 * num_nodes)
+    train_cutoff = int(0.60 * num_nodes)
     val_cutoff = train_cutoff + int(0.2 * num_nodes)
 
     train_mask = torch.zeros(num_nodes, dtype=torch.bool)
@@ -527,7 +527,7 @@ if __name__ == "__main__":
 
     f1, precision, recall = evaluate_binary(model, des_data, mask)
     print(f"\n=== Cross-graph test (AES→DES) ===")
-    print(f"F1 = {f1:.4f}, Precision = {precision:.4f}, Recall = {recall:.4f}")
+    # print(f"F1 = {f1:.4f}, Precision = {precision:.4f}, Recall = {recall:.4f}")
 
     # model.eval()
     # out = model(des_data.x, des_data.edge_index)
