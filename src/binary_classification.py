@@ -21,8 +21,6 @@ import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
 from torch_geometric.utils import subgraph
 from torch_geometric.loader import DataLoader
-
-
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -59,6 +57,8 @@ run_name = f"{args.model}_{sampling_suffix}_{args.epochs}ep_{train_name}_for_{te
 
 
 wandb.init(project="gnn-subcircuit-detection", name=run_name)
+wandb.config.update(vars(args))
+
 set_seed(42)
 
 
@@ -255,6 +255,34 @@ def evaluate_binary(model, data, mask):
     recall = recall_score(y_true, y_pred, zero_division=0)
     return f1, precision, recall
 
+@torch.no_grad()
+def evaluate_on_dataset(model, data):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    probs = torch.softmax(out, dim=1)
+    pred = (probs[:, 1] > 0.7).long()
+
+    y_true = data.y.cpu().numpy()
+    y_pred = pred.cpu().numpy()
+
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+
+    total_acc = (y_true == y_pred).sum() / len(y_true)
+    sbox_mask = (y_true == 1)
+    not_sbox_mask = (y_true == 0)
+    sbox_acc = (y_pred[sbox_mask] == y_true[sbox_mask]).sum() / sbox_mask.sum()
+    not_sbox_acc = (y_pred[not_sbox_mask] == y_true[not_sbox_mask]).sum() / not_sbox_mask.sum()
+
+    return {
+        "f1": f1,
+        "precision": precision,
+        "recall": recall,
+        "total_acc": total_acc,
+        "sbox_acc": sbox_acc,
+        "not_sbox_acc": not_sbox_acc
+    }
 
 
 def classwise_accuracy(model, data, mask, id2name=None):
@@ -321,7 +349,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print("Using standard cross entropy loss.")
         
 
-    epochs = 250
+    epochs = args.epochs
     for epoch in range(1, epochs+1):
         loss = train(model, train_loader, optimizer, class_weights)
         train_acc = evaluate(model, data, data.train_mask)
@@ -501,35 +529,44 @@ if __name__ == "__main__":
     print(f"\n=== Cross-graph test (AES→DES) ===")
     print(f"F1 = {f1:.4f}, Precision = {precision:.4f}, Recall = {recall:.4f}")
 
-    model.eval()
-    out = model(des_data.x, des_data.edge_index)
-    pred = out.argmax(dim=1)
+    # model.eval()
+    # out = model(des_data.x, des_data.edge_index)
+    # pred = out.argmax(dim=1)
 
-    y_true = des_data.y.cpu().numpy()
-    y_pred = pred.cpu().numpy()
+    # y_true = des_data.y.cpu().numpy()
+    # y_pred = pred.cpu().numpy()
 
-    total_correct = (y_true == y_pred).sum()
-    total_acc = total_correct / len(y_true)
+    # total_correct = (y_true == y_pred).sum()
+    # total_acc = total_correct / len(y_true)
 
-    sbox_mask = (y_true == 1)
-    not_sbox_mask = (y_true == 0)
+    # sbox_mask = (y_true == 1)
+    # not_sbox_mask = (y_true == 0)
 
-    sbox_acc = (y_pred[sbox_mask] == y_true[sbox_mask]).sum() / sbox_mask.sum()
-    not_sbox_acc = (y_pred[not_sbox_mask] == y_true[not_sbox_mask]).sum() / not_sbox_mask.sum()
+    # sbox_acc = (y_pred[sbox_mask] == y_true[sbox_mask]).sum() / sbox_mask.sum()
+    # not_sbox_acc = (y_pred[not_sbox_mask] == y_true[not_sbox_mask]).sum() / not_sbox_mask.sum()
 
-    print("\n=== DES Accuracy Breakdown ===")
-    print(f"Total Accuracy   : {total_acc:.4f}")
-    print(f"SBOX Accuracy    : {sbox_acc:.4f}")
-    print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
+    # print("\n=== DES Accuracy Breakdown ===")
+    # print(f"Total Accuracy   : {total_acc:.4f}")
+    # print(f"SBOX Accuracy    : {sbox_acc:.4f}")
+    # print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
+
+
+    metrics = evaluate_on_dataset(model, des_data)
+    print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")
+    print(f"Total Accuracy   : {metrics['total_acc']:.4f}")
+    print(f"SBOX Accuracy    : {metrics['sbox_acc']:.4f}")
+    print(f"Not-SBOX Accuracy: {metrics['not_sbox_acc']:.4f}")
 
     output_dir = "results/aes_to_des"
     os.makedirs(output_dir, exist_ok=True)
-    print("\n[DEBUG] Saving DES predictions to results/aes_to_des/aes_cipher_top_gephi_test6.gml")
+    test_graph_name = os.path.splitext(os.path.basename(args.test_gml))[0]
+    output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
+    print("[DEBUG]  Saving predictions to:", output_path)
+
     save_predictions_to_gml(
-        # original_gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
         original_gml_path = args.test_gml,
         data=des_data,
         model=model,
         id2name={0: "not_sbox", 1: "sbox"},
-        output_gml_path=os.path.join(output_dir, "aes_cipher_top_gephi_test6.gml"),
+        output_gml_path=output_path
     )
