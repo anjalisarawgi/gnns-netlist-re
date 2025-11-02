@@ -151,8 +151,8 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     indices = list(range(num_nodes))
     random.shuffle(indices)
 
-    train_cutoff = int(0.60 * num_nodes)
-    val_cutoff = train_cutoff + int(0.2 * num_nodes)
+    train_cutoff = int(0.70 * num_nodes)
+    val_cutoff = train_cutoff + int(0.20 * num_nodes)
 
     train_mask = torch.zeros(num_nodes, dtype=torch.bool)
     val_mask = torch.zeros(num_nodes, dtype=torch.bool)
