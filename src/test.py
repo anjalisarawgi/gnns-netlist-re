@@ -3,9 +3,9 @@ from collections import Counter
 import os
 
 # === CONFIG ===
-graph_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6_comm.gml"
-target_subcircuit = "31"
-output_suffix = "_focus31_combined.gml"
+graph_path = "results/aes_to_des/aes_key_expand_128_gephi_test6_predictions_comm.gml"
+target_subcircuit = "5"
+output_suffix = "_focus5_combined.gml"
 
 # === LOAD GRAPH ===
 G = nx.read_gml(graph_path)

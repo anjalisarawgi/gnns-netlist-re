@@ -7,7 +7,7 @@ import pandas as pd
 import os
 
 # ---------- CONFIG ----------
-graph_path = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6_comm.gml"
+graph_path = "results/aes_to_des/aes_key_expand_128_gephi_test6_predictions_comm.gml"
 subcircuit_key = "subcircuit_original"   # true module id
 community_key = "community_id"           # unsupervised cluster id
 # --------------------------------
@@ -91,3 +91,35 @@ print(f"Saved detailed table to:\n{os.path.abspath(out_path)}")
 print("\nTop 10 communities by purity:")
 # print(df.head(10).to_string(index=False))
 print(df.to_string(index=False))
+
+
+# === GLOBAL ACCURACY: compare dominant community mapping vs true subcircuit ===
+
+# Step 1. Build mapping: community_id -> dominant subcircuit
+comm_to_true = {}
+for n in G.nodes():
+    cid = str(G.nodes[n]["community_id"])
+    sid = str(G.nodes[n].get("subcircuit_original", "unknown"))
+    comm_to_true.setdefault(cid, []).append(sid)
+
+comm_dominant = {}
+for cid, sids in comm_to_true.items():
+    dominant_sid = Counter(sids).most_common(1)[0][0]
+    comm_dominant[cid] = dominant_sid
+
+# Step 2. Compute how many nodes match their community's dominant true subcircuit
+correct = 0
+for n in G.nodes():
+    cid = str(G.nodes[n]["community_id"])
+    true_sid = str(G.nodes[n].get("subcircuit_original", "unknown"))
+    predicted_sid = comm_dominant.get(cid, "unknown")
+    if predicted_sid == true_sid:
+        correct += 1
+
+total = G.number_of_nodes()
+global_acc = correct / total if total > 0 else 0
+
+print(f"\n=== GLOBAL COMMUNITY ACCURACY ===")
+print(f"  Total nodes: {total}")
+print(f"  Correctly matched to dominant subcircuit: {correct}")
+print(f"  Global community accuracy: {global_acc:.3f}")

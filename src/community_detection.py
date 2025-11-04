@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import os
 
 # ---------- CONFIG ----------
-graph_path = "results/aes_to_des/aes_cipher_top_gephi_test6_predictions.gml"
+graph_path = "results/aes_to_des/aes_key_expand_128_gephi_test6_predictions.gml"
 save_graph = True       # whether to save annotated GML
 draw_graphs = False     # set True if you want visualization
-resolution = 1.0        # Louvain resolution parameter
+resolution = 1.7    # Louvain resolution parameter
 # ----------------------------
 
 # ---------- LOAD GRAPH ----------
@@ -119,3 +119,5 @@ if save_graph:
     nx.write_gml(G, out_path)
     print(f"Saved community-annotated graph to: {os.path.abspath(out_path)}")
 
+
+#####
