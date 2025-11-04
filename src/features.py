@@ -9,8 +9,8 @@ import csv
 from collections import defaultdict
 
 
-input_gml = "graphs/raw/aes_encryption_latest/osu035/aes_key_expand_128_gephi.gml" #aes_cipher_top_gephi aes_key_expand_128_gephi
-output_gml = "graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi_test8.gml"
+input_gml = "graphs/raw/aes_encryption_latest/nangate/aes_cipher_top_with_boundary.gml" #aes_cipher_top_gephi aes_key_expand_128_gephi
+output_gml = "graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_with_boundary_test9.gml"
 
 
 # input_gml = "graphs/synthetic/raw/aes_encryption_latest/osu035/2/aes_cipher_top_gephi_mixedError_2.gml"
@@ -39,55 +39,55 @@ def extract_gate_type(label):
 
 log_lines = []
 
-# # # top - aes ##
-# def assign_subcircuit(p):
-#     if p == "top+u0":
-#         return 4
-#     elif p.startswith("top+u0+u"):
-#         return 5
-#     elif "+us" in p and p.endswith("round2"):
-#         return 1
-#     elif "+us" in p and not p.endswith("round2"):
-#         return 3
-#     elif "inst" in p:
-#         return 2
-#     elif "@top" in p:
-#         return 0
-#     return -1
-
-
-# def assign_subcircuit_name(p):
-#     if p == "@top" or p=="top":
-#         return "top"
-#     elif p == "@top+u0" or p=="top+u0":
-#         return "key_expand"
-#     elif "inst" in p or "top+u0+" in p or "round2" in p or "top+us" in p :
-#         return "sbox"
-#     return -1
-
-
-################################
-
-# key expand - aes ##
+# # top - aes ##
 def assign_subcircuit(p):
-    if p == "@top" or  p=="top":
-        return 0
-    # elif p == "top+inst4":
-    #     return 2
-    elif "top+u" in p or "inst" in p :
+    if p == "top+u0":
+        return 4
+    elif p.startswith("top+u0+u"):
+        return 5
+    elif "+us" in p and p.endswith("round2"):
         return 1
+    elif "+us" in p and not p.endswith("round2"):
+        return 3
+    elif "inst" in p:
+        return 2
+    elif "@top" in p:
+        return 0
     return -1
-
 
 
 def assign_subcircuit_name(p):
     if p == "@top" or p=="top":
+        return "top"
+    elif p == "@top+u0" or p=="top+u0":
         return "key_expand"
-    # elif p == "top+inst4":
-    #     return "rcon"
-    elif "top+u" or "inst" in p :
+    elif "inst" in p or "top+u0+" in p or "round2" in p or "top+us" in p :
         return "sbox"
     return -1
+
+
+################################
+
+# # key expand - aes ##
+# def assign_subcircuit(p):
+#     if p == "@top" or  p=="top":
+#         return 0
+#     # elif p == "top+inst4":
+#     #     return 2
+#     elif "top+u" in p or "inst" in p :
+#         return 1
+#     return -1
+
+
+
+# def assign_subcircuit_name(p):
+#     if p == "@top" or p=="top":
+#         return "key_expand"
+#     # elif p == "top+inst4":
+#     #     return "rcon"
+#     elif "top+u" or "inst" in p :
+#         return "sbox"
+#     return -1
 
 ################################
 
@@ -182,10 +182,12 @@ for node in G.nodes():
     local_reach = len(neighbors_2hop)
 
 
+    # boundary 
+    boundary_flag = int(G.nodes[node].get("boundary", 0)) 
 
     gate_type_combined = [onehot[i] + neighbor_gate_onehot[i] for i in range(len(gate_types))] ### combine both 
     # G.nodes[node]['features'] = [indeg, outdeg, avg_neighbor_degree, local_reach] +  gate_type_combined #onehot + neighbor_gate_onehot
-    G.nodes[node]['features'] = [indeg, outdeg, avg_neighbor_degree] + gate_type_combined
+    G.nodes[node]['features'] = [indeg, outdeg, avg_neighbor_degree + boundary_flag] # + gate_type_combined
 
     # fan_io_ratio = indeg / (outdeg + 1e-5)  # avoid divide by zero
     

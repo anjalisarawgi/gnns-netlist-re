@@ -4,9 +4,9 @@ import networkx as nx
 import pandas as pd
 
 # === CONFIG ===
-adjlist_path = "adjlist/aes_cipher_top.txt"   # path to top-level adjlist
-partition_dir = "outputFiles/osu035/partition_graph/aes_cipher_top"  # directory of .pq partitions
-out_path = "aes_cipher_top_with_boundary.gml"
+adjlist_path = "adjlist/des_latest/osu035/des.txt"   # path to top-level adjlist
+partition_dir = "outputFiles/des_latest/osu035/partition_graph/des"  # directory of .pq partitions
+out_path = "des_with_boundary.gml"
 
 # === LOAD MAIN GRAPH ===
 print(f"Loading main design graph from {adjlist_path} ...")
