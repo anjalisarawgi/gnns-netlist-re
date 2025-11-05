@@ -4,9 +4,9 @@ import networkx as nx
 import pandas as pd
 
 
-adjlist_path = "adjlist/aes_cipher/osu035/aes_cipher_top.txt"   # path to top-level adjlist
-partition_dir = "outputFiles/aes_cipher/osu035/partition_graph/aes_cipher_top"  # directory of .pq partitions
-out_path = "boundary_graphs/aes-encryption_latest/osu035/aes_cipher_top.gml"
+adjlist_path = "adjlist/des_latest/osu035/des.txt"   # path to top-level adjlist
+partition_dir = "outputFiles/des_latest/osu035/partition_graph/des"  # directory of .pq partitions
+out_path = "boundary_graphs/des_latest/osu035/des.gml"
 
 print(f"Loading main design graph from {adjlist_path} ...")
 design = nx.read_adjlist(adjlist_path, create_using=nx.DiGraph())

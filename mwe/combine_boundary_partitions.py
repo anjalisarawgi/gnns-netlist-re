@@ -2,42 +2,49 @@ import networkx as nx
 import os
 
 # === Paths ===
-gml_with_partition = "test/test_partition.gml"
-gml_with_boundary = "test/test_boundary.gml"
-output_merged = "test/combined.gml"
+gml_with_partition = "../graphs/raw/des_latest/osu035/des_gephi.gml"
+gml_with_boundary = "boundary_graphs/des_latest/osu035/des.gml"
+output_merged = "boundary_partitions_graphs/des_latestt/osu035/des_com.gml"
 
 # --- Helper: clean labels like "'FOO'" -> "FOO"
-def clean_label(label: str):
+def clean_label(label):
     if isinstance(label, str):
         s = label.strip()
-        # strip exactly one leading/trailing single-quote if present
         if len(s) >= 2 and s[0] == "'" and s[-1] == "'":
-            s = s[1:-1]
+            return s[1:-1]
         return s
     return label
 
-# === Load graphs, KEY BY NODE ID ===
-# destringizer=int ensures node ids are ints even if read as strings
-G_boundary = nx.read_gml(gml_with_boundary, label="id", destringizer=int)
+# === Load keyed by node ID ===
+G_boundary  = nx.read_gml(gml_with_boundary,  label="id", destringizer=int)
 G_partition = nx.read_gml(gml_with_partition, label="id", destringizer=int)
 
-# Keep direction consistent
+# === Clean labels but keep original copies ===
+for G in (G_boundary, G_partition):
+    for _, data in G.nodes(data=True):
+        if "label" in data:
+            data["label_copy"] = data["label"]  # preserve original
+            data["label"] = clean_label(data["label"])  # clean for display/merge
+
+# === Create merged graph (preserve direction) ===
 directed = G_boundary.is_directed() or G_partition.is_directed()
 G_merged = nx.DiGraph() if directed else nx.Graph()
 
-# === Merge nodes by numeric id ===
+# === Merge nodes by ID ===
 all_ids = set(G_boundary.nodes()) | set(G_partition.nodes())
-
 for nid in all_ids:
     attrs = {}
-    if nid in G_boundary:
-        attrs.update(G_boundary.nodes[nid])     # boundary attrs
-    if nid in G_partition:
-        attrs.update(G_partition.nodes[nid])    # partition attrs
 
-    # normalize label if present
-    if "label" in attrs:
-        attrs["label"] = clean_label(attrs["label"])
+    # Start with boundary attrs (keeps boundary label)
+    if nid in G_boundary:
+        attrs.update(G_boundary.nodes[nid])
+
+    # Add partition attrs but don't override label
+    if nid in G_partition:
+        for k, v in G_partition.nodes[nid].items():
+            if k == "label":
+                continue
+            attrs[k] = v
 
     G_merged.add_node(nid, **attrs)
 

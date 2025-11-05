@@ -9,8 +9,8 @@ import csv
 from collections import defaultdict
 
 
-input_gml = "graphs/raw/des_latest/osu035/des_gephi.gml" #aes_cipher_top_gephi aes_key_expand_128_gephi
-output_gml = "graphs/processed/des_latest/osu035/des_gephi_with_boundary.gml"
+input_gml = "mwe/boundary_partitions_graphs/aes-encryption_latest/nangate/aes_cipher_top_gephi_com.gml" #aes_cipher_top_gephi aes_key_expand_128_gephi
+output_gml = "mwe/boundary_partitions_graphs/processed/aes-encryption_latest/nangate/aes_cipher_top_com.gml"
 
 
 # input_gml = "graphs/synthetic/raw/aes_encryption_latest/osu035/2/aes_cipher_top_gephi_mixedError_2.gml"
@@ -40,30 +40,30 @@ def extract_gate_type(label):
 log_lines = []
 
 # # top - aes ##
-# def assign_subcircuit(p):
-#     if p == "top+u0":
-#         return 4
-#     elif p.startswith("top+u0+u"):
-#         return 5
-#     elif "+us" in p and p.endswith("round2"):
-#         return 1
-#     elif "+us" in p and not p.endswith("round2"):
-#         return 3
-#     elif "inst" in p:
-#         return 2
-#     elif "@top" in p:
-#         return 0
-#     return -1
+def assign_subcircuit(p):
+    if p == "top+u0":
+        return 4
+    elif p.startswith("top+u0+u"):
+        return 5
+    elif "+us" in p and p.endswith("round2"):
+        return 1
+    elif "+us" in p and not p.endswith("round2"):
+        return 3
+    elif "inst" in p:
+        return 2
+    elif "@top" in p:
+        return 0
+    return -1
 
 
-# def assign_subcircuit_name(p):
-#     if p == "@top" or p=="top":
-#         return "top"
-#     elif p == "@top+u0" or p=="top+u0":
-#         return "key_expand"
-#     elif "inst" in p or "top+u0+" in p or "round2" in p or "top+us" in p :
-#         return "sbox"
-#     return -1
+def assign_subcircuit_name(p):
+    if p == "@top" or p=="top":
+        return "top"
+    elif p == "@top+u0" or p=="top+u0":
+        return "key_expand"
+    elif "inst" in p or "top+u0+" in p or "round2" in p or "top+us" in p :
+        return "sbox"
+    return -1
 
 
 ################################
@@ -91,33 +91,33 @@ log_lines = []
 
 ################################
 
-# des ##
-def assign_subcircuit(p):
-    if p =="@top":
-        return 0 
-    elif p=="top":
-        return 1
-    elif p=="@top+u0":
-        return 2
-    elif p=="top+u0":
-        return 3
-    elif p=="top+u1":
-        return 4
-    elif "top+u0+" in p:
-        return 5
-    return -1 
+# # des ##
+# def assign_subcircuit(p):
+#     if p =="@top":
+#         return 0 
+#     elif p=="top":
+#         return 1
+#     elif p=="@top+u0":
+#         return 2
+#     elif p=="top+u0":
+#         return 3
+#     elif p=="top+u1":
+#         return 4
+#     elif "top+u0+" in p:
+#         return 5
+#     return -1 
 
 
-def assign_subcircuit_name(p):
-    if p == "@des" or p=="des":
-        return "des"
-    elif p == "@top+u0" or p=="top+u0":
-        return "crp"
-    elif p=="top+u1":
-        return "key_selh"
-    elif "top+u0+" in p:
-        return "sbox"
-    return -1
+# def assign_subcircuit_name(p):
+#     if p == "@des" or p=="des":
+#         return "des"
+#     elif p == "@top+u0" or p=="top+u0":
+#         return "crp"
+#     elif p=="top+u1":
+#         return "key_selh"
+#     elif "top+u0+" in p:
+#         return "sbox"
+#     return -1
 
 clustering = nx.clustering(G.to_undirected())
 for node in G.nodes():
