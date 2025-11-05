@@ -31,6 +31,7 @@ parser.add_argument("--train_gml", type = str, required=True, help="which graph 
 parser.add_argument("--test_gml", type = str, required=True, help="which graph (gml_path) do you want to test on?")
 parser.add_argument("--epochs", type = int, default=250)
 
+parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
 # graphsaint
 parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method")
 
@@ -90,7 +91,7 @@ def ego_subgraphs_from_data(full_data, radius=2, num_subgraphs=10, seed=42):
 
     return subgraph_data_list
 
-def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None, remove_edges=False):
+def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None, remove_edges=False,label_mode = "subcircuit_name"):
     print("calling gnn from path:", gml_path)
     random.seed(42)
 
@@ -112,12 +113,29 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         else:
             features.append([])
 
+        # if binary_label:
+        #     label_name = attr.get("subcircuit_name", "unknown")
+        #     if label_name == "sbox":
+        #         labels.append(1)   # positive
+        #     else:
+        #         labels.append(0)   # negative
+        # elif label_type == "subcircuit":
+        #     labels.append(attr.get("subcircuit", -1))
+        # else:
+        #     labels.append(int(attr.get("subcircuit_original", -1)))
         if binary_label:
-            label_name = attr.get("subcircuit_name", "unknown")
-            if label_name == "sbox":
-                labels.append(1)   # positive
+            if label_mode == "boundary":
+                # use numeric boundary field
+                boundary_value = attr.get("boundary", 0)
+                try:
+                    label = int(boundary_value)
+                except (ValueError, TypeError):
+                    label = 0
+                labels.append(label)
             else:
-                labels.append(0)   # negative
+                # default: classify based on subcircuit_name == "sbox"
+                label_name = attr.get("subcircuit_name", "unknown")
+                labels.append(1 if label_name == "sbox" else 0)
         elif label_type == "subcircuit":
             labels.append(attr.get("subcircuit", -1))
         else:
@@ -127,7 +145,11 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
 
     
     if binary_label:
-        id2label = {0: "not_sbox", 1: "sbox"}
+        if label_mode == "boundary":
+            id2label = {0: "not_boundary", 1: "boundary"}
+        else:
+            id2label = {0: "not_sbox", 1: "sbox"}
+        # id2label = {0: "not_sbox", 1: "sbox"}
         labels = torch.tensor(labels, dtype=torch.long)
     elif label_type == "subcircuit":
         label_set = sorted(set(labels))
@@ -138,7 +160,17 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         labels = torch.tensor(labels, dtype=torch.long)
         id2label = {int(l): str(l) for l in sorted(set(labels.tolist()))}
 
-    print(f"Total labels: {len(labels)}")
+    features = normalize_features(np.array(features, dtype=np.float32))
+        
+    ### DEBUG >>> Label distribution
+    print("\n[DEBUG] Label summary for:", gml_path)
+    unique, counts = np.unique(labels.cpu().numpy(), return_counts=True)
+    for u, c in zip(unique, counts):
+        print(f"  Class {u} ({id2label.get(int(u), '?')}): {c} samples")
+    print(f"  → Total: {len(labels)} nodes")
+    print(f"  Labels tensor shape: {labels.shape}, dtype: {labels.dtype}\n")
+
+    print(f"Total labels: {len(labels)}")   
     print(f"Unique labels: {sorted(set(labels.tolist()))}")
     label_counts = Counter(labels.tolist())
     print("Label counts:", label_counts)
@@ -151,7 +183,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     indices = list(range(num_nodes))
     random.shuffle(indices)
 
-    train_cutoff = int(0.70 * num_nodes)
+    train_cutoff = int(0.60 * num_nodes)
     val_cutoff = train_cutoff + int(0.20 * num_nodes)
 
     train_mask = torch.zeros(num_nodes, dtype=torch.bool)
@@ -342,12 +374,19 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         train_labels = train_labels[train_labels != -1]
         classes = np.unique(train_labels)
         weights = compute_class_weight('balanced', classes=classes, y=train_labels)
+        print("Class weights:", weights)
         class_weights = torch.tensor(weights, dtype=torch.float, device=data.x.device)
         print("Using weighted cross entropy loss.")
     else:
         class_weights = None
         print("Using standard cross entropy loss.")
-        
+    
+    ### DEBUG >>> Class weights
+    print("\n[DEBUG] Class weighting info:")
+    for cls, w in zip(classes, weights):
+        label_name = id2name.get(int(cls), f"Class {cls}") if id2name else f"Class {cls}"
+        print(f"  {label_name}: weight = {w:.4f}")
+    print("  → Higher weight means rarer class\n")
 
     epochs = args.epochs
     for epoch in range(1, epochs+1):
@@ -463,7 +502,7 @@ if __name__ == "__main__":
     train_graphs = []
     for i, gml_path in enumerate(args.train_gml):
         print(f"[{i+1}] {gml_path}")
-        graph_data, label_map = load_aisec_single_gml(gml_path=gml_path, binary_label=True)
+        graph_data, label_map = load_aisec_single_gml(gml_path=gml_path, binary_label=True, label_mode = args.label_mode)
         if i == 0:
             id2label = label_map
         train_graphs.append(graph_data)
@@ -481,7 +520,8 @@ if __name__ == "__main__":
     des_data, _ = load_aisec_single_gml(
         # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
         gml_path=args.test_gml,
-        binary_label=True
+        binary_label=True,
+        label_mode = args.label_mode
     )
     des_data.train_mask[:] = False
     des_data.val_mask[:] = False
@@ -563,10 +603,16 @@ if __name__ == "__main__":
     output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
     print("[DEBUG]  Saving predictions to:", output_path)
 
+    if args.label_mode == "boundary":
+        output_labels = {0: "not_boundary", 1: "boundary"}
+    else:
+        output_labels = {0: "not_sbox", 1: "sbox"}
+
+
     save_predictions_to_gml(
         original_gml_path = args.test_gml,
         data=des_data,
         model=model,
-        id2name={0: "not_sbox", 1: "sbox"},
+        id2name=output_labels,
         output_gml_path=output_path
     )
