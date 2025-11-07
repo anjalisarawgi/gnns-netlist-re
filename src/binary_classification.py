@@ -91,6 +91,7 @@ def ego_subgraphs_from_data(full_data, radius=2, num_subgraphs=10, seed=42):
 
     return subgraph_data_list
 
+    
 def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None, remove_edges=False,label_mode = "subcircuit_name"):
     print("calling gnn from path:", gml_path)
     random.seed(42)
@@ -183,15 +184,15 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     indices = list(range(num_nodes))
     random.shuffle(indices)
 
-    train_cutoff = int(0.60 * num_nodes)
-    val_cutoff = train_cutoff + int(0.20 * num_nodes)
+    train_cutoff = int(0.90 * num_nodes)
+    val_cutoff = train_cutoff + int(0.05 * num_nodes)
 
     train_mask = torch.zeros(num_nodes, dtype=torch.bool)
     val_mask = torch.zeros(num_nodes, dtype=torch.bool)
     test_mask = torch.zeros(num_nodes, dtype=torch.bool)
 
     train_mask[indices[:train_cutoff]] = True
-    val_mask[indices[train_cutoff:val_cutoff]] = True
+    val_mask[indices[train_cutoff:val_cutoff]] = True 
     test_mask[indices[val_cutoff:]] = True
 
     # === Optionally remove cross-split edges ===
@@ -275,7 +276,7 @@ def evaluate_binary(model, data, mask):
     
     # pred = out.argmax(dim=1) # agressive 
     probs = torch.softmax(out, dim=1) # not so agressive (1) 
-    pred = (probs[:, 1] > 0.7).long() # not so agressive (2) 
+    pred = (probs[:, 1] > 0.5).long() # not so agressive (2) 
 
     valid_mask = mask & (data.y != -1)
 
@@ -616,3 +617,9 @@ if __name__ == "__main__":
         id2name=output_labels,
         output_gml_path=output_path
     )
+
+    # results = check_boundary_coverage(
+    #     gml_path=output_path,
+    #     model=model,
+    #     threshold=0.6
+    # )
