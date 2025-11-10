@@ -39,6 +39,9 @@ parser.add_argument("--walk_length", type=int, default=5, help="what is the walk
 parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
 parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
 
+# ml args 
+parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
+parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 args = parser.parse_args()
 
 
@@ -247,6 +250,9 @@ def train(model, loader, optimizer, class_weights=None):
             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
 
         loss.backward()
+        if args.set_gradient_clipping: 
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # print("[INFO] Using gradient clipping")
         optimizer.step()
 
         total_loss += loss.item()   # no multiplication
@@ -274,9 +280,9 @@ def evaluate_binary(model, data, mask):
     model.eval()
     out = model(data.x, data.edge_index)
     
-    # pred = out.argmax(dim=1) # agressive 
-    probs = torch.softmax(out, dim=1) # not so agressive (1) 
-    pred = (probs[:, 1] > 0.5).long() # not so agressive (2) 
+    pred = out.argmax(dim=1) # agressive 
+    # probs = torch.softmax(out, dim=1) # not so agressive (1) 
+    # pred = (probs[:, 1] > 0.7).long() # not so agressive (2) 
 
     valid_mask = mask & (data.y != -1)
 
@@ -292,8 +298,10 @@ def evaluate_binary(model, data, mask):
 def evaluate_on_dataset(model, data):
     model.eval()
     out = model(data.x, data.edge_index)
-    probs = torch.softmax(out, dim=1)
-    pred = (probs[:, 1] > 0.7).long()
+    
+    pred = out.argmax(dim=1) # agressive 
+    # probs = torch.softmax(out, dim=1)
+    # pred = (probs[:, 1] > 0.7).long()
 
     y_true = data.y.cpu().numpy()
     y_pred = pred.cpu().numpy()
@@ -367,8 +375,15 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         model = GraphTransformer(in_channels=in_dim, hidden_channels=256, out_channels = out_dim)
         print("[INFO] using graphTransformer model")
 
-    
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01 ) # weight_decay=5e-4
+    base_lr = 0.01 
+    optimizer = torch.optim.Adam(model.parameters(), lr=base_lr ) # weight_decay=5e-4
+
+    # warmup_epochs = 50 
+    # warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+    #     optimizer,
+    #     lr_lambda = lambda epoch: min((epoch+1)/ warmup_epochs, 1.0)
+    # )
+    # warmup_scheduler.step()
 
     if use_weighted_loss:
         train_labels = data.y[data.train_mask].cpu().numpy()
@@ -376,6 +391,10 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         classes = np.unique(train_labels)
         weights = compute_class_weight('balanced', classes=classes, y=train_labels)
         print("Class weights:", weights)
+        
+        if args.normalize_class_weights:
+            weights = weights / np.mean(weights)  
+            print("[INFO]Normalized Class Weights:", weights)
         class_weights = torch.tensor(weights, dtype=torch.float, device=data.x.device)
         print("Using weighted cross entropy loss.")
     else:
