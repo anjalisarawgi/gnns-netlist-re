@@ -22,6 +22,8 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from torch_geometric.utils import subgraph
 from torch_geometric.loader import DataLoader
 import argparse
+import time
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint", "khop"], default="graphsaint",
@@ -282,7 +284,7 @@ def evaluate_binary(model, data, mask):
     
     pred = out.argmax(dim=1) # agressive 
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
-    # pred = (probs[:, 1] > 0.7).long() # not so agressive (2) 
+    # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
 
     valid_mask = mask & (data.y != -1)
 
@@ -301,7 +303,7 @@ def evaluate_on_dataset(model, data):
     
     pred = out.argmax(dim=1) # agressive 
     # probs = torch.softmax(out, dim=1)
-    # pred = (probs[:, 1] > 0.7).long()
+    # pred = (probs[:, 1] > 0.9).long()
 
     y_true = data.y.cpu().numpy()
     y_pred = pred.cpu().numpy()
@@ -402,42 +404,41 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print("Using standard cross entropy loss.")
     
     ### DEBUG >>> Class weights
-    print("\n[DEBUG] Class weighting info:")
-    for cls, w in zip(classes, weights):
-        label_name = id2name.get(int(cls), f"Class {cls}") if id2name else f"Class {cls}"
-        print(f"  {label_name}: weight = {w:.4f}")
-    print("  → Higher weight means rarer class\n")
+    # print("\n[DEBUG] Class weighting info:")
+    # for cls, w in zip(classes, weights):
+    #     label_name = id2name.get(int(cls), f"Class {cls}") if id2name else f"Class {cls}"
+    #     print(f"  {label_name}: weight = {w:.4f}")
+    # print("  → Higher weight means rarer class\n")
 
     epochs = args.epochs
-    for epoch in range(1, epochs+1):
+    for epoch in range(1, epochs + 1):
+        epoch_start = time.perf_counter()
+
+        # measure just the training step
+        train_start = time.perf_counter()
         loss = train(model, train_loader, optimizer, class_weights)
+        train_time = time.perf_counter() - train_start
+
+        # evaluation
         train_acc = evaluate(model, data, data.train_mask)
         val_acc = evaluate(model, data, data.val_mask)
+
+        epoch_time = time.perf_counter() - epoch_start
 
         log_data = {
             "epoch": epoch,
             "loss": loss,
             "train_accuracy": train_acc,
-            "val_accuracy": val_acc
+            "val_accuracy": val_acc,
+            "train_time_sec": train_time,
+            "epoch_time_sec": epoch_time
         }
 
-        if out_dim == 2:
-            f1, precision, recall = evaluate_binary(model, data, data.val_mask)
-            print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}, F1: {f1:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}')
-        else:
-            print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}')
-
-        if epoch % 10 == 0 or epoch == 1:
-            classwise_acc = classwise_accuracy(model, data, data.val_mask, id2name)
-        
-        if des_data is not None and epoch % 50 == 0:
-            des_f1, des_precision, des_recall = evaluate_binary(model, des_data, torch.ones_like(des_data.y, dtype=torch.bool))
-            print(f"\n[DES Eval - Epoch {epoch}] F1: {des_f1:.4f}, Precision: {des_precision:.4f}, Recall: {des_recall:.4f}")
-            log_data.update({
-                "des_f1": des_f1,
-                "des_precision": des_precision,
-                "des_recall": des_recall,
-            })
+        print(
+            f"Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, "
+            f"Val acc: {val_acc:.4f}, "
+            f"Train time: {train_time:.2f}s, Total epoch: {epoch_time:.2f}s"
+        )
 
         wandb.log(log_data)
 
@@ -549,22 +550,28 @@ if __name__ == "__main__":
 
 
     if args.sampling_method == "graphsaint":
-        print("[INFO] Using GraphSAINT sampling...")
+        sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
             batch_size=int(0.30 * aes_data.num_nodes),
             walk_length=args.walk_length,
             shuffle=True,
         )
-        print("aes_loader length:", len(aes_loader))
+        sample_time = time.perf_counter() - sample_start
+        print(f"[TIME] GraphSAINT sampler setup took {sample_time:.2f} seconds.")
 
     elif args.sampling_method == "khop":
         print(f"[INFO] Using k-hop sampling...")
+        sample_start = time.perf_counter()
         subgraph_list = ego_subgraphs_from_data(
             aes_data,
             radius=args.radius,
             num_subgraphs=args.num_subgraphs
         )
+        sample_time = time.perf_counter() - sample_start
+        print(f"[TIME] k-hop sampling took {sample_time:.2f} seconds.")
+
+        # ✅ add this line to actually define aes_loader
         aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
 
     model = run_training(
