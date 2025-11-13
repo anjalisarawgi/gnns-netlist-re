@@ -57,31 +57,32 @@ for f in glob.glob(os.path.join(partition_dir, "*.pq")):
         else:
             boundary_dict[node] = 0
 
-# Optional: tag remaining unclassified nodes
-for node in design.nodes():
-    if node not in boundary_dict:
-        boundary_dict[node] = -1  # mark unclassified (e.g., top-level)
+# # Optional: tag remaining unclassified nodes
+# for node in design.nodes():
+#     if node not in boundary_dict:
+#         boundary_dict[node] = -1  # mark unclassified (e.g., top-level)
 
 nx.set_node_attributes(design, boundary_dict, "boundary")
 
-### green to green
-boundary_peer_only = {}
+# ### green to green
+# boundary_peer_only = {}
 
-for node, label in boundary_dict.items():
-    if label != 1:
-        continue
+# for node, label in boundary_dict.items():
+#     if label != 1:
+#         continue
 
-    neighbors = set(design.successors(node)).union(design.predecessors(node))
-    neighbor_labels = [boundary_dict.get(n, -1) for n in neighbors]
+#     neighbors = set(design.successors(node)).union(design.predecessors(node))
+#     neighbor_labels = [boundary_dict.get(n, -1) for n in neighbors]
 
-    if all(l == 1 for l in neighbor_labels):
-        boundary_peer_only[node] = 1
+#     if all(l == 1 for l in neighbor_labels):
+#         boundary_peer_only[node] = 1
 
-# Set "boundary_peer_only" attribute to 1 for tagged nodes, 0 for others
-peer_only_attr = {node: 1 if node in boundary_peer_only else 0 for node in design.nodes()}
-nx.set_node_attributes(design, peer_only_attr, "boundary_peer_only")
+# # Set "boundary_peer_only" attribute to 1 for tagged nodes, 0 for others
+# peer_only_attr = {node: 1 if node in boundary_peer_only else 0 for node in design.nodes()}
+# nx.set_node_attributes(design, peer_only_attr, "boundary_peer_only")
 
 ###
+
 
 nx.write_gml(design, out_path)
 
