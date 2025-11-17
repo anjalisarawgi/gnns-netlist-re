@@ -65,6 +65,64 @@ def find_boundaries(adjlist_path, partition_graph_dir, out_gml):
     print(f"Total boundary nodes: {sum(int(v) for v in boundary_dict.values())}")
 
 
+def merge_partition_and_boundary(
+    gml_partition: Path,
+    gml_boundary: Path,
+    output_path: Path
+):
+    import networkx as nx
+    import os
+
+    def clean_label(label):
+        if isinstance(label, str):
+            s = label.strip()
+            # strip outer quotes like "'foo'"
+            if len(s) >= 2 and s[0] == "'" and s[-1] == "'":
+                return s[1:-1]
+            return s
+        return label
+
+    print(f"[INFO] Loading partition GML: {gml_partition}")
+    print(f"[INFO] Loading boundary  GML: {gml_boundary}")
+
+    Gp = nx.read_gml(gml_partition, label="id")
+    Gb = nx.read_gml(gml_boundary,  label="id")
+
+    # Clean labels (but keep original)
+    for G in (Gp, Gb):
+        for _, data in G.nodes(data=True):
+            if "label" in data:
+                data["label_copy"] = data["label"]
+                data["label"] = clean_label(data["label"])
+
+    # Directed or not
+    directed = Gp.is_directed() or Gb.is_directed()
+    Gm = nx.DiGraph() if directed else nx.Graph()
+
+    # Merge nodes
+    all_nodes = set(Gp.nodes()) | set(Gb.nodes())
+    for nid in all_nodes:
+        merged_attrs = {}
+
+        if nid in Gb:
+            merged_attrs.update(Gb.nodes[nid])
+
+        if nid in Gp:
+            for k, v in Gp.nodes[nid].items():
+                if k == "label":     # do not override cleaned label
+                    continue
+                merged_attrs[k] = v
+
+        Gm.add_node(nid, **merged_attrs)
+
+    # Merge edges
+    Gm.add_edges_from(Gb.edges(data=True))
+    Gm.add_edges_from(Gp.edges(data=True))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    nx.write_gml(Gm, output_path)
+
+    print(f"[INFO] Combined GML written → {output_path}")
 
 def process_verilog(verilog_file):
     # example : 
@@ -131,13 +189,22 @@ def process_verilog(verilog_file):
 
     ])  
 
-    # step 4
-    # Step 4: Boundary extraction
+    # step 4: Boundary extraction
     adjlist_path = adj_out_dir / f"{module}.txt"
     partition_graph_dir = Path(f"outputFiles/{prefix}/{library}/partition_graph/{module}")
     out_gml = boundaries_dir / f"{module}_with_boundaries.gml"
 
     find_boundaries(adjlist_path, partition_graph_dir, out_gml)
+
+    # #  Step 5 – Merge partition GML + boundary GML
+    # partition_gml = partitions_dir / f"{module}.gml"
+    gml_candidates = list(partitions_dir.glob("*.gml"))
+    partition_gml = gml_candidates[0]
+    boundary_gml  = boundaries_dir / f"{module}_with_boundaries.gml"
+    combined_gml  = (graph_base / f"{module}_combined.gml")
+
+    print("[INFO] Step 5: Merge partition + boundary graphs")
+    merge_partition_and_boundary(partition_gml, boundary_gml, combined_gml)
 
 
 
