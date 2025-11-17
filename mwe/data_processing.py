@@ -2,6 +2,9 @@ import os
 import subprocess
 from pathlib import Path
 import sys
+import glob
+import networkx as nx
+import pandas as pd
 
 verliog_root = Path("tum-eisec-benchmarks-main/netlist")
 partition_root = Path("tum-eisec-benchmarks-main/partition")
@@ -16,6 +19,53 @@ def run(cmd):
     print(">>", " ".join(map(str,cmd)))
     subprocess.run(cmd, check=True)
 
+def find_boundaries(adjlist_path, partition_graph_dir, out_gml):
+    design = nx.read_adjlist(adjlist_path, create_using=nx.DiGraph())
+
+    boundary_dict = {}
+    print(f"Loaded {design.number_of_nodes()} nodes, {design.number_of_edges()} edges")
+
+    for f in glob.glob(os.path.join(partition_graph_dir, "*.pq")):
+        # skip the top file
+        if "@top" in f:
+            print(f"Skipping top-level partition: {os.path.basename(f)}")
+            continue
+        
+        # for each partition .pq file - this i think contains the edges of one partition 
+        print(f"Processing {os.path.basename(f)} ...")
+        subgraph_df = pd.read_parquet(f, engine="pyarrow")
+        print(subgraph_df.columns) ## has  a 'source' and a 'target'
+        # also these are possibly like edges from source node A to target node C (for example)
+
+        # now: this extracts all the nodes in the parition 
+        # combine nodes in source and target - take union - remove duplicates - - gives full sets of all nodes
+        subgraph_nodes = set(subgraph_df["source"]).union(set(subgraph_df["target"])) 
+        # now: to check if it is a boundary node
+        for node in subgraph_nodes: 
+            if node not in design:
+                continue  
+            
+            # important = checking thsi from the FULL DESIGN
+            parents = list(design.predecessors(node)) 
+            children = list(design.successors(node))
+
+            # boundary = 1 if it has atleast one input (coming from outside this parition)  /  (going outside this parition )
+            # it has a parent outide its partition?
+            # it has a child outside its partition?
+            if any(p not in subgraph_nodes for p in parents) or any(c not in subgraph_nodes for c in children):
+                boundary_dict[node] = 1
+            else:
+                boundary_dict[node] = 0
+
+    nx.set_node_attributes(design, boundary_dict, "boundary")
+    nx.write_gml(design, out_gml)
+
+
+    print(f"Saved boundary-annotated graph → {os.path.abspath(out_gml)}")
+    print(f"Total boundary nodes: {sum(int(v) for v in boundary_dict.values())}")
+
+
+
 def process_verilog(verilog_file):
     # example : 
     #  tum-eisec-benchmarks-main/netlist/des_latest/verilog/osu035/des.v
@@ -28,12 +78,19 @@ def process_verilog(verilog_file):
     # so now the directories
     adj_out_dir = adj_root / prefix / library / module 
     partition_in_dir = partition_root / prefix / library 
-    partition_out_dir = output_files_root / prefix / library 
-    graphs_out_dir = graph_root / prefix / library 
+    # graphs_out_dir = graph_root / prefix / library 
+    # graphs_out_dir.mkdir(parents = True, exist_ok=True)
+
+    # graphs our directory 
+    graph_base = graph_root / prefix / library 
+    partitions_dir = graph_base / "partitions"
+    boundaries_dir = graph_base / "boundary"
+    partitions_dir.mkdir(parents = True, exist_ok = True)
+    boundaries_dir.mkdir(parents = True, exist_ok = True)
 
     adj_out_dir.mkdir(parents = True, exist_ok=True)
     # partition_out_dir.mkdir(parents = True, exist_ok=True)
-    graphs_out_dir.mkdir(parents = True, exist_ok=True)
+    
 
     ######
     # processing the three steps now 
@@ -68,14 +125,21 @@ def process_verilog(verilog_file):
         "partition2gephi", 
         str(adj_out_dir/f"{module}.txt"), 
         "--do-not-zip", "-t", "gml", 
-        "-o", str(graphs_out_dir),  
+        "-o", str(partitions_dir),  
         "-p", f"outputFiles/{prefix}/{library}/partition_graph",
         "--cores", "1"
 
-    ])
+    ])  
+
+    # step 4
+    # Step 4: Boundary extraction
+    adjlist_path = adj_out_dir / f"{module}.txt"
+    partition_graph_dir = Path(f"outputFiles/{prefix}/{library}/partition_graph/{module}")
+    out_gml = boundaries_dir / f"{module}_with_boundaries.gml"
+
+    find_boundaries(adjlist_path, partition_graph_dir, out_gml)
 
 
 
-   
 if __name__ =="__main__":
     process_verilog(Path(sys.argv[1]))
