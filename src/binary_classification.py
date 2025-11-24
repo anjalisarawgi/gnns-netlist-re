@@ -442,6 +442,16 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
                 f"NOT_SBOX_ACC={des_metrics['not_sbox_acc']:.4f}"
             )
 
+            wandb.log({
+                "des/f1": des_metrics["f1"],
+                "des/precision": des_metrics["precision"],
+                "des/recall": des_metrics["recall"],
+                "des/accuracy_total": des_metrics["total_acc"],
+                "des/accuracy_sbox": des_metrics["sbox_acc"],
+                "des/accuracy_not_sbox": des_metrics["not_sbox_acc"],
+                "epoch": epoch
+            })
+
         epoch_time = time.perf_counter() - epoch_start
 
         log_data = {
@@ -657,6 +667,7 @@ if __name__ == "__main__":
     print(f"SBOX Accuracy    : {metrics['sbox_acc']:.4f}")
     print(f"Not-SBOX Accuracy: {metrics['not_sbox_acc']:.4f}")
 
+    
     output_dir = "results/aes_to_des"
     os.makedirs(output_dir, exist_ok=True)
     test_graph_name = os.path.splitext(os.path.basename(args.test_gml))[0]
