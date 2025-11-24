@@ -24,6 +24,12 @@ from torch_geometric.loader import DataLoader
 import argparse
 import time
 
+torch.set_num_threads(20)              # use 64 physical cores
+torch.set_num_interop_threads(2)      # interop threads
+os.environ["OMP_NUM_THREADS"] = "20"
+os.environ["MKL_NUM_THREADS"] = "20"
+os.environ["NUMEXPR_NUM_THREADS"] = "20"
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint", "khop"], default="graphsaint",
@@ -147,7 +153,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         else:
             labels.append(int(attr.get("subcircuit_original", -1)))
 
-    features = normalize_features(np.array(features, dtype=np.float32))
+    # features = normalize_features(np.array(features, dtype=np.float32))
 
     
     if binary_label:
@@ -372,6 +378,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print("[INFO] using gcn model")
     elif model_name == "gat":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        model = torch.compile(model)
         print("[INFO] using gat model")
     elif model_name == "graphTransformer":
         model = GraphTransformer(in_channels=in_dim, hidden_channels=256, out_channels = out_dim)
@@ -422,6 +429,18 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         # evaluation
         train_acc = evaluate(model, data, data.train_mask)
         val_acc = evaluate(model, data, data.val_mask)
+
+        # for test eval after 50 epochs
+        if epoch % 50 == 0:
+            des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
+            des_metrics = evaluate_on_dataset(model, des_data)
+            print(
+                f"[EPOCH {epoch}] DES → "
+                f"F1={des_metrics['f1']:.4f}, "
+                f"ACC={des_metrics['total_acc']:.4f}, "
+                f"SBOX_ACC={des_metrics['sbox_acc']:.4f}, "
+                f"NOT_SBOX_ACC={des_metrics['not_sbox_acc']:.4f}"
+            )
 
         epoch_time = time.perf_counter() - epoch_start
 
@@ -509,7 +528,26 @@ def merge_data(data1, data2):
 
 # ]
 ########################################
+def reset_global_split(data, train_ratio=0.90, val_ratio=0.05):
+    N = data.num_nodes
+    idx = torch.randperm(N)
 
+    train_end = int(train_ratio * N)
+    val_end = train_end + int(val_ratio * N)
+
+    train_mask = torch.zeros(N, dtype=torch.bool)
+    val_mask = torch.zeros(N, dtype=torch.bool)
+    test_mask = torch.zeros(N, dtype=torch.bool)
+
+    train_mask[idx[:train_end]] = True
+    val_mask[idx[train_end:val_end]] = True
+    test_mask[idx[val_end:]] = True
+
+    data.train_mask = train_mask
+    data.val_mask = val_mask
+    data.test_mask = test_mask
+
+    return data
 
 from functools import reduce
 if __name__ == "__main__":
@@ -528,6 +566,7 @@ if __name__ == "__main__":
             id2label = label_map
         train_graphs.append(graph_data)
     aes_data = reduce(merge_data, train_graphs)
+    aes_data = reset_global_split(aes_data)
     print("[INFO] training on:", args.train_gml)
     print("Number of features:", aes_data.num_features)
     print("Feature matrix shape:", aes_data.x.shape)
@@ -560,20 +599,34 @@ if __name__ == "__main__":
         sample_time = time.perf_counter() - sample_start
         print(f"[TIME] GraphSAINT sampler setup took {sample_time:.2f} seconds.")
 
+    # elif args.sampling_method == "khop":
+    #     print(f"[INFO] Using k-hop sampling...")
+    #     sample_start = time.perf_counter()
+    #     subgraph_list = ego_subgraphs_from_data(
+    #         aes_data,
+    #         radius=args.radius,
+    #         num_subgraphs=args.num_subgraphs
+    #     )
+    #     sample_time = time.perf_counter() - sample_start
+    #     print(f"[TIME] k-hop sampling took {sample_time:.2f} seconds.")
+
+    #     # ✅ add this line to actually define aes_loader
+    #     aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
     elif args.sampling_method == "khop":
-        print(f"[INFO] Using k-hop sampling...")
-        sample_start = time.perf_counter()
-        subgraph_list = ego_subgraphs_from_data(
+        print("[INFO] Using fast k-hop NeighborLoader...")
+
+        from torch_geometric.loader import NeighborLoader
+
+        aes_loader = NeighborLoader(
             aes_data,
-            radius=args.radius,
-            num_subgraphs=args.num_subgraphs
+            num_neighbors=[64] * args.radius,   # number of neighbors for each hop
+            # batch_size=1024,                    # increase batch size
+            batch_size=32768,    
+            shuffle=True,
+            num_workers=0,                     # parallel workers
+            persistent_workers=False, 
+            pin_memory=True   
         )
-        sample_time = time.perf_counter() - sample_start
-        print(f"[TIME] k-hop sampling took {sample_time:.2f} seconds.")
-
-        # ✅ add this line to actually define aes_loader
-        aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
-
     model = run_training(
         data=aes_data,
         train_loader=aes_loader,
