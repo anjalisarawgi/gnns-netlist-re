@@ -528,26 +528,7 @@ def merge_data(data1, data2):
 
 # ]
 ########################################
-def reset_global_split(data, train_ratio=0.90, val_ratio=0.05):
-    N = data.num_nodes
-    idx = torch.randperm(N)
 
-    train_end = int(train_ratio * N)
-    val_end = train_end + int(val_ratio * N)
-
-    train_mask = torch.zeros(N, dtype=torch.bool)
-    val_mask = torch.zeros(N, dtype=torch.bool)
-    test_mask = torch.zeros(N, dtype=torch.bool)
-
-    train_mask[idx[:train_end]] = True
-    val_mask[idx[train_end:val_end]] = True
-    test_mask[idx[val_end:]] = True
-
-    data.train_mask = train_mask
-    data.val_mask = val_mask
-    data.test_mask = test_mask
-
-    return data
 
 from functools import reduce
 if __name__ == "__main__":
@@ -566,7 +547,6 @@ if __name__ == "__main__":
             id2label = label_map
         train_graphs.append(graph_data)
     aes_data = reduce(merge_data, train_graphs)
-    aes_data = reset_global_split(aes_data)
     print("[INFO] training on:", args.train_gml)
     print("Number of features:", aes_data.num_features)
     print("Feature matrix shape:", aes_data.x.shape)
