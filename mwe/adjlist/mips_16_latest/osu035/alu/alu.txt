@@ -1,0 +1,20 @@
+#/Users/anjalisarawgi/anaconda3/envs/gnn_parsing/bin/verilog2graph tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/osu035/alu.v --output_format txt --do-not-zip -o adjlist/mips_16_latest/osu035/alu -l lib/osu035_stdcells.lib
+# GMT Mon Nov 17 16:30:12 2025
+# 
+OUTPUT_\r[0] 
+OUTPUT_\r[1] 
+OUTPUT_\r[2] 
+OUTPUT_\r[3] 
+OUTPUT_\r[4] 
+OUTPUT_\r[5] 
+OUTPUT_\r[6] 
+OUTPUT_\r[7] 
+OUTPUT_\r[8] 
+OUTPUT_\r[9] 
+OUTPUT_\r[10] 
+OUTPUT_\r[11] 
+OUTPUT_\r[12] 
+OUTPUT_\r[13] 
+OUTPUT_\r[14] 
+OUTPUT_\r[15] 
+INPUT_CONSTANT_0 OUTPUT_\r[1]  OUTPUT_\r[2]  OUTPUT_\r[3]  OUTPUT_\r[4]  OUTPUT_\r[5]  OUTPUT_\r[6]  OUTPUT_\r[7]  OUTPUT_\r[8]  OUTPUT_\r[9]  OUTPUT_\r[10]  OUTPUT_\r[11]  OUTPUT_\r[12]  OUTPUT_\r[13]  OUTPUT_\r[14]  OUTPUT_\r[15] 

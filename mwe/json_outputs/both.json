@@ -1,0 +1,482 @@
+{
+    "1000base-x_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/1000base-x_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/1000base-x_latest"
+    },
+    "10_100m_ethernet-fifo_convertor_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/10_100m_ethernet-fifo_convertor_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/10_100m_ethernet-fifo_convertor_latest"
+    },
+    "16x2_lcd_display_driver_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/16x2_lcd_display_driver_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/16x2_lcd_display_driver_latest"
+    },
+    "6809_6309_compatible_core_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/6809_6309_compatible_core_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/6809_6309_compatible_core_latest"
+    },
+    "8051_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/8051_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/8051_latest"
+    },
+    "8bit_vedic_multiplier_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/8bit_vedic_multiplier_latest"
+    },
+    "Aquarius_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/Aquarius_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/Aquarius_latest"
+    },
+    "RSA-Verilog-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/RSA-Verilog-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/RSA-Verilog-master"
+    },
+    "ae18_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ae18_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ae18_latest"
+    },
+    "aemb_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/aemb_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/aemb_latest"
+    },
+    "aes-128_pipelined_encryption_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/aes-128_pipelined_encryption_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/aes-128_pipelined_encryption_latest"
+    },
+    "aes-encryption_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/aes-encryption_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/aes-encryption_latest"
+    },
+    "aes-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/aes-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/aes-master"
+    },
+    "aes_cipher": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/aes_cipher",
+        "partition_path": "tum-eisec-benchmarks-main/partition/aes_cipher"
+    },
+    "aes_decrypt_fpga_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/aes_decrypt_fpga_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/aes_decrypt_fpga_latest"
+    },
+    "aic1106_avalon_ip_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/aic1106_avalon_ip_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/aic1106_avalon_ip_latest"
+    },
+    "apbi2c_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/apbi2c_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/apbi2c_latest"
+    },
+    "apbtoaes128_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/apbtoaes128_latest"
+    },
+    "asynchronous_master_spi": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/asynchronous_master_spi",
+        "partition_path": "tum-eisec-benchmarks-main/partition/asynchronous_master_spi"
+    },
+    "asynchronous_master_spi_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/asynchronous_master_spi_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/asynchronous_master_spi_latest"
+    },
+    "bch_configurable_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/bch_configurable_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/bch_configurable_latest"
+    },
+    "blue_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/blue_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/blue_latest"
+    },
+    "brainfuckcpu_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/brainfuckcpu_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/brainfuckcpu_latest"
+    },
+    "bubblesortmodule_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/bubblesortmodule_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/bubblesortmodule_latest"
+    },
+    "ca_prng_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ca_prng_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ca_prng_latest"
+    },
+    "cachecontroller_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/cachecontroller_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/cachecontroller_latest"
+    },
+    "cavlc_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/cavlc_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/cavlc_latest"
+    },
+    "cfi_ctrl_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/cfi_ctrl_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/cfi_ctrl_latest"
+    },
+    "chacha-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/chacha-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/chacha-master"
+    },
+    "cmac-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/cmac-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/cmac-master"
+    },
+    "configurable_crc_core_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/configurable_crc_core_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/configurable_crc_core_latest"
+    },
+    "cpu8080_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/cpu8080_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/cpu8080_latest"
+    },
+    "cr_div_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/cr_div_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/cr_div_latest"
+    },
+    "crcahb_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/crcahb_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/crcahb_latest"
+    },
+    "csa_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/csa_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/csa_latest"
+    },
+    "cxd9731_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/cxd9731_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/cxd9731_latest"
+    },
+    "des_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/des_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/des_latest"
+    },
+    "double_fpu_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/double_fpu_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/double_fpu_latest"
+    },
+    "dpll-isdn_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/dpll-isdn_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/dpll-isdn_latest"
+    },
+    "ecg_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ecg_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ecg_latest"
+    },
+    "edge_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/edge_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/edge_latest"
+    },
+    "ethernet_tri_mode_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ethernet_tri_mode_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ethernet_tri_mode_latest"
+    },
+    "ethmac_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ethmac_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ethmac_latest"
+    },
+    "fast_antilog_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/fast_antilog_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/fast_antilog_latest"
+    },
+    "fast_log_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/fast_log_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/fast_log_latest"
+    },
+    "fixed_point_arithmetic_parameterized_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/fixed_point_arithmetic_parameterized_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/fixed_point_arithmetic_parameterized_latest"
+    },
+    "fpga-median_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/fpga-median_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/fpga-median_latest"
+    },
+    "fpu": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/fpu",
+        "partition_path": "tum-eisec-benchmarks-main/partition/fpu"
+    },
+    "ft816float_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ft816float_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ft816float_latest"
+    },
+    "gcm-aes_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/gcm-aes_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/gcm-aes_latest"
+    },
+    "genesys_ddr2_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/genesys_ddr2_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/genesys_ddr2_latest"
+    },
+    "gost28147-89_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/gost28147-89_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/gost28147-89_latest"
+    },
+    "ha1588_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ha1588_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ha1588_latest"
+    },
+    "hamming_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/hamming_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/hamming_latest"
+    },
+    "hd63701_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/hd63701_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/hd63701_latest"
+    },
+    "hight_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/hight_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/hight_latest"
+    },
+    "i2c_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/i2c_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/i2c_latest"
+    },
+    "i2cgpio_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/i2cgpio_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/i2cgpio_latest"
+    },
+    "i8255_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/i8255_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/i8255_latest"
+    },
+    "mac_layer_switch_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/mac_layer_switch_latest"
+    },
+    "md5_core-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/md5_core-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/md5_core-master"
+    },
+    "mesi_isc": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/mesi_isc",
+        "partition_path": "tum-eisec-benchmarks-main/partition/mesi_isc"
+    },
+    "minirisc_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/minirisc_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/minirisc_latest"
+    },
+    "mips32r1_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/mips32r1_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/mips32r1_latest"
+    },
+    "mips_16_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/mips_16_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/mips_16_latest"
+    },
+    "mod3_calc_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/mod3_calc_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/mod3_calc_latest"
+    },
+    "natalius_8bit_risc_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/natalius_8bit_risc_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/natalius_8bit_risc_latest"
+    },
+    "nec_ir_decoder_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/nec_ir_decoder_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/nec_ir_decoder_latest"
+    },
+    "next186_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/next186_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/next186_latest"
+    },
+    "nextz80_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/nextz80_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/nextz80_latest"
+    },
+    "numbert_sort_device_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/numbert_sort_device_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/numbert_sort_device_latest"
+    },
+    "openmsp430_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/openmsp430_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/openmsp430_latest"
+    },
+    "orsoc_graphics_accelerator": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/orsoc_graphics_accelerator",
+        "partition_path": "tum-eisec-benchmarks-main/partition/orsoc_graphics_accelerator"
+    },
+    "p16c5x_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/p16c5x_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/p16c5x_latest"
+    },
+    "pairing_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/pairing_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/pairing_latest"
+    },
+    "pci_express_crc_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/pci_express_crc_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/pci_express_crc_latest"
+    },
+    "pepelatz_misc_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/pepelatz_misc_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/pepelatz_misc_latest"
+    },
+    "present_encryptor_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/present_encryptor_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/present_encryptor_latest"
+    },
+    "ps2_host_controller_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ps2_host_controller_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ps2_host_controller_latest"
+    },
+    "rc4-prbs_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/rc4-prbs_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/rc4-prbs_latest"
+    },
+    "rs_5_3_gf256_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/rs_5_3_gf256_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/rs_5_3_gf256_latest"
+    },
+    "rs_decoder_31_19_6_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/rs_decoder_31_19_6_latest"
+    },
+    "rs_encoder_decoder_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/rs_encoder_decoder_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/rs_encoder_decoder_latest"
+    },
+    "rsencoder_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/rsencoder_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/rsencoder_latest"
+    },
+    "rtf_sprite_controller_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/rtf_sprite_controller_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/rtf_sprite_controller_latest"
+    },
+    "rtfbitmapcontroller_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/rtfbitmapcontroller_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/rtfbitmapcontroller_latest"
+    },
+    "sdcard_mass_storage_controller_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/sdcard_mass_storage_controller_latest"
+    },
+    "serv": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/serv",
+        "partition_path": "tum-eisec-benchmarks-main/partition/serv"
+    },
+    "sha1-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/sha1-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/sha1-master"
+    },
+    "sha256-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/sha256-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/sha256-master"
+    },
+    "sha3_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/sha3_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/sha3_latest"
+    },
+    "sha_core_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/sha_core_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/sha_core_latest"
+    },
+    "signed_integer_divider_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/signed_integer_divider_latest"
+    },
+    "simon_core_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/simon_core_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/simon_core_latest"
+    },
+    "siphash-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/siphash-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/siphash-master"
+    },
+    "sockit_owm_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/sockit_owm_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/sockit_owm_latest"
+    },
+    "spi_verilog_master_slave_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/spi_verilog_master_slave_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/spi_verilog_master_slave_latest"
+    },
+    "spicxif_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/spicxif_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/spicxif_latest"
+    },
+    "spislave_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/spislave_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/spislave_latest"
+    },
+    "sport_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/sport_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/sport_latest"
+    },
+    "ssp_slv_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ssp_slv_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ssp_slv_latest"
+    },
+    "ssp_uart_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/ssp_uart_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/ssp_uart_latest"
+    },
+    "suslik_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/suslik_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/suslik_latest"
+    },
+    "tiny_aes_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/tiny_aes_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/tiny_aes_latest"
+    },
+    "tiny_tate_bilinear_pairing_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/tiny_tate_bilinear_pairing_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/tiny_tate_bilinear_pairing_latest"
+    },
+    "trigonometric_functions_in_double_fpu_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/trigonometric_functions_in_double_fpu_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/trigonometric_functions_in_double_fpu_latest"
+    },
+    "uart-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/uart-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/uart-master"
+    },
+    "uart2spi_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/uart2spi_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/uart2spi_latest"
+    },
+    "usb_device_core_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/usb_device_core_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/usb_device_core_latest"
+    },
+    "usbhostslave_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/usbhostslave_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/usbhostslave_latest"
+    },
+    "verilog-axi-librecores": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/verilog-axi-librecores",
+        "partition_path": "tum-eisec-benchmarks-main/partition/verilog-axi-librecores"
+    },
+    "verilog-trivium-master": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/verilog-trivium-master",
+        "partition_path": "tum-eisec-benchmarks-main/partition/verilog-trivium-master"
+    },
+    "verilog_fixed_point_math_library_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/verilog_fixed_point_math_library_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/verilog_fixed_point_math_library_latest"
+    },
+    "video_stream_scaler_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/video_stream_scaler_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/video_stream_scaler_latest"
+    },
+    "viterb_encoder_and_decoder": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/viterb_encoder_and_decoder",
+        "partition_path": "tum-eisec-benchmarks-main/partition/viterb_encoder_and_decoder"
+    },
+    "wb_flash_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/wb_flash_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/wb_flash_latest"
+    },
+    "wb_lpc_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/wb_lpc_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/wb_lpc_latest"
+    },
+    "xgate_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/xgate_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/xgate_latest"
+    },
+    "xspi_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/xspi_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/xspi_latest"
+    },
+    "xtea_latest": {
+        "netlist_path": "tum-eisec-benchmarks-main/netlist/xtea_latest",
+        "partition_path": "tum-eisec-benchmarks-main/partition/xtea_latest"
+    }
+}

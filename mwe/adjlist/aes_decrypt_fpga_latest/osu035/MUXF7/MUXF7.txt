@@ -1,0 +1,10 @@
+#/Users/anjalisarawgi/anaconda3/envs/gnn_parsing/bin/verilog2graph tum-eisec-benchmarks-main/netlist/aes_decrypt_fpga_latest/verilog/osu035/MUXF7.v --output_format txt --do-not-zip -o adjlist/aes_decrypt_fpga_latest/osu035/MUXF7 -l lib/osu035_stdcells.lib
+# GMT Tue Nov 18 14:03:02 2025
+# 
+INPUT_I0 INVX1_1
+INPUT_I1 NAND2X1_1
+INPUT_S NAND2X1_1 OAI21X1_1
+OUTPUT_O
+INVX1_1 OAI21X1_1
+NAND2X1_1 OAI21X1_1
+OAI21X1_1 OUTPUT_O
