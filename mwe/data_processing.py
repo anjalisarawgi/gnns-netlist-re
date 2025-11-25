@@ -196,15 +196,15 @@ def process_verilog(verilog_file):
 
     find_boundaries(adjlist_path, partition_graph_dir, out_gml)
 
-    # #  Step 5 – Merge partition GML + boundary GML
-    # partition_gml = partitions_dir / f"{module}.gml"
-    gml_candidates = list(partitions_dir.glob("*.gml"))
-    partition_gml = gml_candidates[0]
-    boundary_gml  = boundaries_dir / f"{module}_with_boundaries.gml"
-    combined_gml  = (graph_base / f"{module}_combined.gml")
+    # # #  Step 5 – Merge partition GML + boundary GML
+    # # partition_gml = partitions_dir / f"{module}.gml"
+    # gml_candidates = list(partitions_dir.glob("*.gml"))
+    # partition_gml = gml_candidates[0]
+    # boundary_gml  = boundaries_dir / f"{module}_with_boundaries.gml"
+    # combined_gml  = (graph_base / f"{module}_combined.gml")
 
-    print("[INFO] Step 5: Merge partition + boundary graphs")
-    merge_partition_and_boundary(partition_gml, boundary_gml, combined_gml)
+    # print("[INFO] Step 5: Merge partition + boundary graphs")
+    # merge_partition_and_boundary(partition_gml, boundary_gml, combined_gml)
 
 
 
