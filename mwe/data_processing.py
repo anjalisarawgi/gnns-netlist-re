@@ -5,6 +5,7 @@ import sys
 import glob
 import networkx as nx
 import pandas as pd
+from tqdm import tqdm
 
 verliog_root = Path("tum-eisec-benchmarks-main/netlist")
 partition_root = Path("tum-eisec-benchmarks-main/partition")
@@ -70,7 +71,8 @@ def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
     boundary_dict = {}
     partition_files = glob.glob(os.path.join(partition_dir, "*.pq"))
 
-    for f in partition_files:
+    # for f in partition_files:
+    for f in tqdm(partition_files, desc="[M1] Partitions", unit="file"):
         if "@top" in f:
             continue
 
@@ -79,14 +81,17 @@ def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
 
         # Build subgraph with only internal edges
         subgraph = nx.from_pandas_edgelist(df, source="source", target="target", create_using=nx.DiGraph())
+        nodes_list = list(subgraph.nodes())
+        # for node in subgraph.nodes():
+        for node in tqdm(nodes_list, desc=f"[M1] {os.path.basename(f)}", unit="node", leave=False):
+            # anc = nx.ancestors(subgraph, node)
+            # dec = nx.descendants(subgraph, node)
+            # is_boundary = int(len(anc) == 0 or len(dec) == 0)
 
-        for node in subgraph.nodes():
-            anc = nx.ancestors(subgraph, node)
-            dec = nx.descendants(subgraph, node)
-
-            # Boundary if no ancestors (entry) or no descendants (exit)
-            is_boundary = int(len(anc) == 0 or len(dec) == 0)
-
+            # if slow?
+            in_deg = subgraph.in_degree(node)
+            out_deg = subgraph.out_degree(node)
+            is_boundary = int(in_deg == 0 or out_deg == 0)
             boundary_dict[node] = is_boundary
 
     # for node in design.nodes():
