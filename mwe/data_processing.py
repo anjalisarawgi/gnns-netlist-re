@@ -13,9 +13,9 @@ partition_root = Path("tum-eisec-benchmarks-main/partition")
 adj_root = Path("adjlist")
 graph_root = Path("graphs/raw")
 output_files_root = Path("")
-LIB = "lib/osu035_stdcells.lib"
+# LIB = "lib/osu035_stdcells.lib"
 # LIB = "lib/NangateOpenCellLibrary_functional.lib"
-# LIB = "gscl45nm_2.lib"
+LIB = "gscl45nm_2.lib"
 
 
 def run(cmd):
@@ -84,14 +84,14 @@ def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
         nodes_list = list(subgraph.nodes())
         # for node in subgraph.nodes():
         for node in tqdm(nodes_list, desc=f"[M1] {os.path.basename(f)}", unit="node", leave=False):
-            # anc = nx.ancestors(subgraph, node)
-            # dec = nx.descendants(subgraph, node)
-            # is_boundary = int(len(anc) == 0 or len(dec) == 0)
+            anc = nx.ancestors(subgraph, node)
+            dec = nx.descendants(subgraph, node)
+            is_boundary = int(len(anc) == 0 or len(dec) == 0)
 
             # if slow?
-            in_deg = subgraph.in_degree(node)
-            out_deg = subgraph.out_degree(node)
-            is_boundary = int(in_deg == 0 or out_deg == 0)
+            # in_deg = subgraph.in_degree(node)
+            # out_deg = subgraph.out_degree(node)
+            # is_boundary = int(in_deg == 0 or out_deg == 0)
             boundary_dict[node] = is_boundary
 
     # for node in design.nodes():
