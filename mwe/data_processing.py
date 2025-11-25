@@ -19,16 +19,57 @@ def run(cmd):
     print(">>", " ".join(map(str,cmd)))
     subprocess.run(cmd, check=True)
 
-def find_boundaries(adjlist_path, partition_graph_dir, out_gml):
+
+def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
+    print(f"[INFO] M1: Loading design from {adjlist_path}")
+    design = nx.read_adjlist(adjlist_path, create_using=nx.DiGraph())
+    print(f"[INFO] M1: Design: {design.number_of_nodes()} nodes, {design.number_of_edges()} edges")
+
+    boundary_dict = {}
+    partition_files = glob.glob(os.path.join(partition_dir, "*.pq"))
+
+    for f in partition_files:
+        if "@top" in f:
+            continue
+
+        print(f"[INFO] M1: Processing {os.path.basename(f)} ...")
+        df = pd.read_parquet(f)
+        sub_nodes = set(df["source"]) | set(df["target"])
+
+        for node in sub_nodes:
+            if node not in design:
+                continue
+
+            parents = set(design.predecessors(node))
+            children = set(design.successors(node))
+
+            # Boundary if ANY connection goes outside partition
+            is_boundary = (
+                any(p not in sub_nodes for p in parents) or
+                any(c not in sub_nodes for c in children)
+            )
+
+            boundary_dict[node] = int(is_boundary)
+
+    # for node in design.nodes():
+    #     if node not in boundary_dict:
+    #         boundary_dict[node] = -1
+
+    nx.set_node_attributes(design, boundary_dict, "boundary")
+    nx.write_gml(design, out_gml)
+    print(f"[INFO] M1: Saved to {out_gml}")
+
+
+def find_boundaries_method2(adjlist_path, partition_graph_dir, out_gml):
     design = nx.read_adjlist(adjlist_path, create_using=nx.DiGraph())
 
     boundary_dict = {}
-    print(f"Loaded {design.number_of_nodes()} nodes, {design.number_of_edges()} edges")
+    print(f"[INFO] M2: Loaded {design.number_of_nodes()} nodes, {design.number_of_edges()} edges")
 
     for f in glob.glob(os.path.join(partition_graph_dir, "*.pq")):
         # skip the top file
         if "@top" in f:
-            print(f"Skipping top-level partition: {os.path.basename(f)}")
+            print(f"[INFO] M2: Skipping top-level partition: {os.path.basename(f)}")
             continue
         
         # for each partition .pq file - this i think contains the edges of one partition 
@@ -61,68 +102,68 @@ def find_boundaries(adjlist_path, partition_graph_dir, out_gml):
     nx.write_gml(design, out_gml)
 
 
-    print(f"Saved boundary-annotated graph → {os.path.abspath(out_gml)}")
-    print(f"Total boundary nodes: {sum(int(v) for v in boundary_dict.values())}")
+    print(f"[INFO] M2: Saved boundary-annotated graph → {os.path.abspath(out_gml)}")
+    print(f"[INFO] M2: Total boundary nodes: {sum(int(v) for v in boundary_dict.values())}")
 
 
-def merge_partition_and_boundary(
-    gml_partition: Path,
-    gml_boundary: Path,
-    output_path: Path
-):
+def merge_partition_and_boundary(gml_partition, gml_boundary, out_gml):
+    """
+    Merges partition GML with boundary GML.
+    Boundary attributes override partition attributes except for 'label'.
+    """
     import networkx as nx
     import os
 
     def clean_label(label):
         if isinstance(label, str):
             s = label.strip()
-            # strip outer quotes like "'foo'"
             if len(s) >= 2 and s[0] == "'" and s[-1] == "'":
                 return s[1:-1]
             return s
         return label
 
-    print(f"[INFO] Loading partition GML: {gml_partition}")
-    print(f"[INFO] Loading boundary  GML: {gml_boundary}")
+    print(f"[MERGE] Partition GML: {gml_partition}")
+    print(f"[MERGE] Boundary  GML: {gml_boundary}")
 
     Gp = nx.read_gml(gml_partition, label="id")
-    Gb = nx.read_gml(gml_boundary,  label="id")
+    Gb = nx.read_gml(gml_boundary, label="id")
 
-    # Clean labels (but keep original)
+    # Clean labels
     for G in (Gp, Gb):
         for _, data in G.nodes(data=True):
             if "label" in data:
                 data["label_copy"] = data["label"]
                 data["label"] = clean_label(data["label"])
 
-    # Directed or not
     directed = Gp.is_directed() or Gb.is_directed()
     Gm = nx.DiGraph() if directed else nx.Graph()
 
-    # Merge nodes
     all_nodes = set(Gp.nodes()) | set(Gb.nodes())
+
     for nid in all_nodes:
-        merged_attrs = {}
+        merged = {}
 
+        # Start with boundary attributes
         if nid in Gb:
-            merged_attrs.update(Gb.nodes[nid])
+            merged.update(Gb.nodes[nid])
 
+        # Add partition attributes (do not override cleaned label)
         if nid in Gp:
             for k, v in Gp.nodes[nid].items():
-                if k == "label":     # do not override cleaned label
+                if k == "label":
                     continue
-                merged_attrs[k] = v
+                merged[k] = v
 
-        Gm.add_node(nid, **merged_attrs)
+        Gm.add_node(nid, **merged)
 
-    # Merge edges
-    Gm.add_edges_from(Gb.edges(data=True))
+    # Combine edges
     Gm.add_edges_from(Gp.edges(data=True))
+    Gm.add_edges_from(Gb.edges(data=True))
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    nx.write_gml(Gm, output_path)
+    os.makedirs(os.path.dirname(out_gml), exist_ok=True)
+    nx.write_gml(Gm, out_gml)
 
-    print(f"[INFO] Combined GML written → {output_path}")
+    print(f"[MERGE] Saved merged graph → {out_gml}")
 
 def process_verilog(verilog_file):
     # example : 
@@ -142,9 +183,13 @@ def process_verilog(verilog_file):
     # graphs our directory 
     graph_base = graph_root / prefix / library 
     partitions_dir = graph_base / "partitions"
-    boundaries_dir = graph_base / "boundary"
     partitions_dir.mkdir(parents = True, exist_ok = True)
-    boundaries_dir.mkdir(parents = True, exist_ok = True)
+
+    # boundaries directory 
+    boundary1_dir = graph_base / "boundary_1"
+    boundary2_dir = graph_base / "boundary_2"
+    boundary1_dir.mkdir(parents=True, exist_ok=True)
+    boundary2_dir.mkdir(parents=True, exist_ok=True)
 
     adj_out_dir.mkdir(parents = True, exist_ok=True)
     # partition_out_dir.mkdir(parents = True, exist_ok=True)
@@ -192,19 +237,32 @@ def process_verilog(verilog_file):
     # step 4: Boundary extraction
     adjlist_path = adj_out_dir / f"{module}.txt"
     partition_graph_dir = Path(f"outputFiles/{prefix}/{library}/partition_graph/{module}")
-    out_gml = boundaries_dir / f"{module}_with_boundaries.gml"
 
-    find_boundaries(adjlist_path, partition_graph_dir, out_gml)
+    out_gml_1 = boundary1_dir / f"{module}_boundary_1.gml"
+    out_gml_2 = boundary2_dir / f"{module}_boundary_2.gml"
 
-    # # #  Step 5 – Merge partition GML + boundary GML
-    # # partition_gml = partitions_dir / f"{module}.gml"
-    # gml_candidates = list(partitions_dir.glob("*.gml"))
-    # partition_gml = gml_candidates[0]
-    # boundary_gml  = boundaries_dir / f"{module}_with_boundaries.gml"
-    # combined_gml  = (graph_base / f"{module}_combined.gml")
+    print("[INFO] Running Method 1...")
+    find_boundaries_method1(adjlist_path, partition_graph_dir, out_gml_1)
 
-    # print("[INFO] Step 5: Merge partition + boundary graphs")
-    # merge_partition_and_boundary(partition_gml, boundary_gml, combined_gml)
+    print("[INFO] Running Method 2...")
+    find_boundaries_method2(adjlist_path, partition_graph_dir, out_gml_2)
+
+    # Step 5: Merge partitions with boundary_1 and boundary_2
+
+    # Find the partition GML (partition2gephi created multiple files, pick the module's one)
+    partition_gml_candidates = list(partitions_dir.glob(f"{module}*_gephi.gml"))
+    if len(partition_gml_candidates) == 0:
+        raise FileNotFoundError(f"No partition GML found in {partitions_dir}")
+    partition_gml = partition_gml_candidates[0]
+
+    combined_m1 = graph_base / f"{module}_combined_m1.gml"
+    combined_m2 = graph_base / f"{module}_combined_m2.gml"
+
+    print("[INFO] Step 5: Merge partition + boundary_1")
+    merge_partition_and_boundary(partition_gml, out_gml_1, combined_m1)
+
+    print("[INFO] Step 6: Merge partition + boundary_2")
+    merge_partition_and_boundary(partition_gml, out_gml_2, combined_m2)
 
 
 
