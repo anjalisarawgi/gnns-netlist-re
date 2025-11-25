@@ -13,6 +13,8 @@ adj_root = Path("adjlist")
 graph_root = Path("graphs/raw")
 output_files_root = Path("")
 LIB = "lib/osu035_stdcells.lib"
+# LIB = "lib/NangateOpenCellLibrary_functional.lib"
+# LIB = "gscl45nm_2.lib"
 
 
 def run(cmd):
@@ -20,10 +22,50 @@ def run(cmd):
     subprocess.run(cmd, check=True)
 
 
+# def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
+#     print(f"[INFO] M1: Loading design from {adjlist_path}")
+#     design = nx.read_adjlist(adjlist_path, create_using=nx.DiGraph())
+#     print(f"[INFO] M1: Design: {design.number_of_nodes()} nodes, {design.number_of_edges()} edges")
+
+#     boundary_dict = {}
+#     partition_files = glob.glob(os.path.join(partition_dir, "*.pq"))
+
+#     for f in partition_files:
+#         if "@top" in f:
+#             continue
+
+#         print(f"[INFO] M1: Processing {os.path.basename(f)} ...")
+#         df = pd.read_parquet(f)
+#         sub_nodes = set(df["source"]) | set(df["target"])
+
+#         for node in sub_nodes:
+#             if node not in design:
+#                 continue
+
+#             parents = set(design.predecessors(node))
+#             children = set(design.successors(node))
+
+#             # Boundary if ANY connection goes outside partition
+#             is_boundary = (
+#                 any(p not in sub_nodes for p in parents) or
+#                 any(c not in sub_nodes for c in children)
+#             )
+
+#             boundary_dict[node] = int(is_boundary)
+
+#     # for node in design.nodes():
+#     #     if node not in boundary_dict:
+#     #         boundary_dict[node] = -1
+
+#     nx.set_node_attributes(design, boundary_dict, "boundary")
+#     nx.write_gml(design, out_gml)
+#     print(f"[INFO] M1: Saved to {out_gml}")
+
+
 def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
-    print(f"[INFO] M1: Loading design from {adjlist_path}")
+    print(f"[M1] Loading design from {adjlist_path}")
     design = nx.read_adjlist(adjlist_path, create_using=nx.DiGraph())
-    print(f"[INFO] M1: Design: {design.number_of_nodes()} nodes, {design.number_of_edges()} edges")
+    print(f"[M1] Design: {design.number_of_nodes()} nodes, {design.number_of_edges()} edges")
 
     boundary_dict = {}
     partition_files = glob.glob(os.path.join(partition_dir, "*.pq"))
@@ -32,24 +74,20 @@ def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
         if "@top" in f:
             continue
 
-        print(f"[INFO] M1: Processing {os.path.basename(f)} ...")
+        print(f"[M1] Processing {os.path.basename(f)} ...")
         df = pd.read_parquet(f)
-        sub_nodes = set(df["source"]) | set(df["target"])
 
-        for node in sub_nodes:
-            if node not in design:
-                continue
+        # Build subgraph with only internal edges
+        subgraph = nx.from_pandas_edgelist(df, source="source", target="target", create_using=nx.DiGraph())
 
-            parents = set(design.predecessors(node))
-            children = set(design.successors(node))
+        for node in subgraph.nodes():
+            anc = nx.ancestors(subgraph, node)
+            dec = nx.descendants(subgraph, node)
 
-            # Boundary if ANY connection goes outside partition
-            is_boundary = (
-                any(p not in sub_nodes for p in parents) or
-                any(c not in sub_nodes for c in children)
-            )
+            # Boundary if no ancestors (entry) or no descendants (exit)
+            is_boundary = int(len(anc) == 0 or len(dec) == 0)
 
-            boundary_dict[node] = int(is_boundary)
+            boundary_dict[node] = is_boundary
 
     # for node in design.nodes():
     #     if node not in boundary_dict:
@@ -57,8 +95,7 @@ def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
 
     nx.set_node_attributes(design, boundary_dict, "boundary")
     nx.write_gml(design, out_gml)
-    print(f"[INFO] M1: Saved to {out_gml}")
-
+    print(f"[M1] Saved to {out_gml}")
 
 def find_boundaries_method2(adjlist_path, partition_graph_dir, out_gml):
     design = nx.read_adjlist(adjlist_path, create_using=nx.DiGraph())
@@ -263,6 +300,17 @@ def process_verilog(verilog_file):
 
     print("[INFO] Step 6: Merge partition + boundary_2")
     merge_partition_and_boundary(partition_gml, out_gml_2, combined_m2)
+
+    # final debugging / stats
+    def print_gml_stats(name, gml_path):
+        G = nx.read_gml(gml_path, label="id")
+        print(f"{name}: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges  →  {gml_path}")
+
+    print_gml_stats("Partition GML", partition_gml)
+    print_gml_stats("Boundary Method 1", out_gml_1)
+    print_gml_stats("Boundary Method 2", out_gml_2)
+    print_gml_stats("Combined M1", combined_m1)
+    print_gml_stats("Combined M2", combined_m2)
 
 
 
