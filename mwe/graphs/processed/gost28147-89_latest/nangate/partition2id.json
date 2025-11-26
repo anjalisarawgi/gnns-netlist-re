@@ -1,0 +1,14 @@
+{
+  "@top": 0,
+  "UNKNOWN": 1,
+  "top": 2,
+  "top+rnd": 3,
+  "top+rnd+sbox1": 4,
+  "top+rnd+sbox2": 5,
+  "top+rnd+sbox3": 6,
+  "top+rnd+sbox4": 7,
+  "top+rnd+sbox5": 8,
+  "top+rnd+sbox6": 9,
+  "top+rnd+sbox7": 10,
+  "top+rnd+sbox8": 11
+}

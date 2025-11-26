@@ -1,10 +1,8 @@
 import torch
 import os
 from torch_geometric.loader import GraphSAINTRandomWalkSampler
-from main import (
-    set_seed,
-    save_predictions_to_gml
-)
+from main import save_predictions_to_gml
+from utils.set_seed import set_seed
 import wandb
 import random
 import networkx as nx
@@ -23,6 +21,7 @@ from torch_geometric.utils import subgraph
 from torch_geometric.loader import DataLoader
 import argparse
 import time
+import json
 
 torch.set_num_threads(20)              # use 64 physical cores
 torch.set_num_interop_threads(2)      # interop threads
@@ -494,7 +493,31 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     print("  Test Class-wise Accuracy:")
     for cls, acc in classwise_acc.items():
         print(f"    Class {cls}: {acc:.4f}")
-        
+    
+    # Save model
+    os.makedirs("models", exist_ok=True)
+    model_path = f"models/{wandb.run.name}.pt"
+    torch.save(model.state_dict(), model_path)
+    print("[INFO] Saved model to:", model_path)
+
+    # saving some meta data for logging
+    metadata = {
+        "model_file": model_path,
+        "run_name": wandb.run.name,
+        "num_training_graphs": len(args.train_gml),
+        "training_graphs": args.train_gml,
+        "test_graph": args.test_gml,
+        "model_type": args.model,
+        "sampling_method": args.sampling_method,
+        "epochs": args.epochs,
+        "label_mode": args.label_mode,
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    json_path = f"models/{wandb.run.name}.json"
+    with open(json_path, "w") as f:
+        json.dump(metadata, f, indent=4)
+
+    print("[INFO] Saved metadata to:", json_path)
     return model
 
 
@@ -611,10 +634,10 @@ if __name__ == "__main__":
             aes_data,
             num_neighbors=[64] * args.radius,   # number of neighbors for each hop
             # batch_size=1024,                    # increase batch size
-            batch_size=32768,    
+            batch_size=262144,    
             shuffle=True,
-            num_workers=0,                     # parallel workers
-            persistent_workers=False, 
+            num_workers=12,                     # parallel workers
+            persistent_workers=True, 
             pin_memory=True   
         )
     model = run_training(
