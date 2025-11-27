@@ -56,7 +56,7 @@ parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for Neig
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
 parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 
-# cofnig 
+# config
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
 
