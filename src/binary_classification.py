@@ -22,20 +22,23 @@ from torch_geometric.loader import DataLoader
 import argparse
 import time
 import json
+from torch_geometric.loader import NeighborLoader
+import yaml
 
-torch.set_num_threads(20)              # use 64 physical cores
-torch.set_num_interop_threads(2)      # interop threads
-os.environ["OMP_NUM_THREADS"] = "20"
-os.environ["MKL_NUM_THREADS"] = "20"
-os.environ["NUMEXPR_NUM_THREADS"] = "20"
-
+# could increase to 24 -- 
+torch.set_num_threads(20)        # for math mult (pytorch)    
+torch.set_num_interop_threads(2)     # pytorch - helper threads
+os.environ["OMP_NUM_THREADS"] = "20" # max 20 cores (pytorch)
+os.environ["MKL_NUM_THREADS"] = "20" # max 20 cores (intel math libr)
+os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
+# --- optimization - 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
 parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
-parser.add_argument("--train_gml", type = str, required=True, help="which graph (gml_path) do you want to train on?", nargs="+")
-parser.add_argument("--test_gml", type = str, required=True, help="which graph (gml_path) do you want to test on?")
+parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
+parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?")
 parser.add_argument("--epochs", type = int, default=250)
 
 parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
@@ -46,11 +49,27 @@ parser.add_argument("--walk_length", type=int, default=5, help="what is the walk
 parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
 parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
 
+# khop v2  - neighbourLoader ( + radius)
+parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
+parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
 parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
+
+# cofnig 
+parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
 
+
+# yaml 
+config_tag = None
+if args.config:
+    config_tag = os.path.splitext(os.path.basename(args.config))[0]
+    with open(args.config, "r") as f:
+        cfg = yaml.safe_load(f)
+
+    for key, value in cfg.items():
+        setattr(args, key, value)
 
 # wandb setup 
 test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
@@ -64,7 +83,7 @@ elif args.sampling_method == "khop":
 else:
     sampling_suffix = args.sampling_method
 
-run_name = f"{args.model}_{sampling_suffix}_{args.epochs}ep_{train_name}_for_{test_name}"
+run_name = f"{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_{train_name}_for_{test_name}"
 
 
 wandb.init(project="gnn-subcircuit-detection", name=run_name)
@@ -97,6 +116,7 @@ def ego_subgraphs_from_data(full_data, radius=2, num_subgraphs=10, seed=42):
             val_mask=full_data.val_mask[sub_nodes],
             test_mask=full_data.test_mask[sub_nodes],
         )
+        sub_data.global_node_id = sub_nodes
         subgraph_data_list.append(sub_data)
 
     return subgraph_data_list
@@ -495,8 +515,9 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print(f"    Class {cls}: {acc:.4f}")
     
     # Save model
-    os.makedirs("models", exist_ok=True)
-    model_path = f"models/{wandb.run.name}.pt"
+    run_dir =  os.path.join("models", wandb.run.name)
+    os.makedirs(run_dir, exist_ok=True)
+    model_path = f"{run_dir}/model.pt"
     torch.save(model.state_dict(), model_path)
     print("[INFO] Saved model to:", model_path)
 
@@ -513,7 +534,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         "label_mode": args.label_mode,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
-    json_path = f"models/{wandb.run.name}.json"
+    json_path = f"{run_dir}/metadata.json"
     with open(json_path, "w") as f:
         json.dump(metadata, f, indent=4)
 
@@ -584,6 +605,8 @@ if __name__ == "__main__":
     print("Number of features:", aes_data.num_features)
     print("Feature matrix shape:", aes_data.x.shape)
     print("Number of SBOX nodes :", (aes_data.y == 1).sum().item())
+    print("Number of not-SBOX nodes :", (aes_data.y == 0).sum().item())
+    print("Total training nodes:", aes_data.num_nodes)
 
     print("[DEBUG] Combined data split:")
     print("  Train nodes:", aes_data.train_mask.sum().item())
@@ -599,13 +622,14 @@ if __name__ == "__main__":
     des_data.train_mask[:] = False
     des_data.val_mask[:] = False
     des_data.test_mask[:] = False
+    print("Total test nodes:", des_data.num_nodes)
 
 
     if args.sampling_method == "graphsaint":
         sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
-            batch_size=int(0.30 * aes_data.num_nodes),
+            batch_size=10000, #int(0.30 * aes_data.num_nodes),
             walk_length=args.walk_length,
             shuffle=True,
         )
@@ -622,24 +646,68 @@ if __name__ == "__main__":
     #     )
     #     sample_time = time.perf_counter() - sample_start
     #     print(f"[TIME] k-hop sampling took {sample_time:.2f} seconds.")
+    #     aes_loader = DataLoader(subgraph_list, batch_size=32768, shuffle=True)
+        
 
-    #     # ✅ add this line to actually define aes_loader
-    #     aes_loader = DataLoader(subgraph_list, batch_size=4, shuffle=True)
+    #     covered = set()
+    #     for batch in aes_loader:
+    #             covered.update(g.global_node_id.tolist())
+
+    #     print("\n=== COVERAGE REPORT ===")
+    #     print("Total nodes in full graph:", aes_data.num_nodes)
+    #     print("Total unique nodes sampled:", len(covered))
+    #     print("Coverage ratio:", len(covered) / aes_data.num_nodes)
+    #     print("========================\n")
+
+    #     wandb.log({
+    #         "coverage/unique_nodes": len(covered),
+    #         "coverage/ratio": len(covered) / aes_data.num_nodes
+    #     })
+
+
     elif args.sampling_method == "khop":
-        print("[INFO] Using fast k-hop NeighborLoader...")
+        print("[INFO] Using NeighborLoader for k-hop neighborhood sampling...")
 
-        from torch_geometric.loader import NeighborLoader
+        # Create list of neighbors per hop = k hops
+        num_neighbors = [args.neighbors_per_hop] * args.radius
+        print(f"[INFO] num_neighbors per hop = {num_neighbors}")
+        print(f"[INFO] batch_size = {args.batch_size}")
 
         aes_loader = NeighborLoader(
             aes_data,
-            num_neighbors=[64] * args.radius,   # number of neighbors for each hop
-            # batch_size=1024,                    # increase batch size
-            batch_size=262144,    
-            shuffle=True,
-            num_workers=12,                     # parallel workers
-            persistent_workers=True, 
-            pin_memory=True   
+            num_neighbors=num_neighbors,   # k hops sampling
+            batch_size=args.batch_size,    # seed nodes per batch
+            shuffle=True,                  # ensures full node coverage each epoch
+            num_workers=12,                # use your CPUs efficiently
+            persistent_workers=True,
+            pin_memory=True
         )
+
+        # Coverage report (optional, but matches your old logging)
+        print("[INFO] Computing coverage report...")
+        coverage_loader = NeighborLoader(
+            aes_data,
+            num_neighbors=num_neighbors,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=4
+        )
+
+        covered = set()
+        for batch in coverage_loader:
+            covered.update(batch.n_id.tolist())
+
+        print("\n=== COVERAGE REPORT (NeighborLoader) ===")
+        print("Total nodes:", aes_data.num_nodes)
+        print("Unique nodes sampled:", len(covered))
+        print("Coverage ratio:", len(covered) / aes_data.num_nodes)
+        print("========================================\n")
+
+        wandb.log({
+            "coverage/unique_nodes": len(covered),
+            "coverage/ratio": len(covered) / aes_data.num_nodes
+        })
+
     model = run_training(
         data=aes_data,
         train_loader=aes_loader,

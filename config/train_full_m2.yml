@@ -1,0 +1,102 @@
+# Configuration for large multi-graph training
+
+sampling_method: "graphsaint"
+model: "gat"
+
+train_gml:
+  ### aes-encryption_latest
+  - "mwe/graphs/processed/aes-encryption_latest/osu035/aes_cipher_top_combined_m2.gml" 
+  - "mwe/graphs/processed/aes-encryption_latest/osu035/aes_key_expand_128_combined_m2.gml"
+  - "mwe/graphs/processed/aes-encryption_latest/nangate/aes_cipher_top_combined_m2.gml"
+  # - "mwe/graphs/processed/aes-encryption_latest/nangate/aes_key_expand_128_combined_m2.gml"
+  # - "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m2.gml"
+  - "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m2.gml"
+  
+  ### gcm-aes_latest
+  - "mwe/graphs/processed/gcm-aes_latest/osu035/aes_cipher_top_combined_m2.gml"
+  # - "mwe/graphs/processed/gcm-aes_latest/osu035/aes_key_expand_128_combined_m2.gml"
+  - "mwe/graphs/processed/gcm-aes_latest/osu035/gcm_aes_v0_combined_m2.gml"
+  - "mwe/graphs/processed/gcm-aes_latest/nangate/aes_cipher_top_combined_m2.gml"
+  - "mwe/graphs/processed/gcm-aes_latest/nangate/aes_key_expand_128_combined_m2.gml"
+  # - "mwe/graphs/processed/gcm-aes_latest/gscl45nm/aes_cipher_top_combined_m2.gml"
+  - "mwe/graphs/processed/gcm-aes_latest/gscl45nm/aes_key_expand_128_combined_m2.gml"
+  - "mwe/graphs/processed/gcm-aes_latest/gscl45nm/gcm_aes_v0_combined_m2.gml"
+
+  ### des_latest
+  - "mwe/graphs/processed/des_latest/osu035/crp_combined_m2.gml"
+  - "mwe/graphs/processed/des_latest/osu035/des_combined_m2.gml"
+  - "mwe/graphs/processed/des_latest/osu035/des3_combined_m2.gml"
+  - "mwe/graphs/processed/des_latest/nangate/crp_combined_m2.gml"
+  # - "mwe/graphs/processed/des_latest/nangate/des_combined_m2.gml"
+  - "mwe/graphs/processed/des_latest/nangate/des3_combined_m2.gml"
+  # - "mwe/graphs/processed/des_latest/gscl45nm/crp_combined_m2.gml"
+  - "mwe/graphs/processed/des_latest/gscl45nm/des_combined_m2.gml"
+  - "mwe/graphs/processed/des_latest/gscl45nm/des3_combined_m2.gml"
+
+  ### gost28147-89_latest
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_cfb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_cfb_decrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_cfb_encrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_ecb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_ecb_decrypt_combined_m2.gml"
+  # - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_ecb_encrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_mac_combined_m2.gml"
+  # - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_round_combined_m2.gml" ###
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_pipelined_ecb_decrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_pipelined_ecb_encrypt_combined_m2.gml" 
+  # - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_cfb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_cfb_decrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_cfb_encrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_ecb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_ecb_decrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_ecb_encrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_mac_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_round_combined_m2.gml"
+  # - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m2.gml" ###
+  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m2.gml" 
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_encrypt_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_mac_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_round_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_decrypt_combined_m2.gml"
+  # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_encrypt_combined_m2.gml" ###
+
+### hight_latest
+  - "mwe/graphs/processed/hight_latest/osu035/CRYPTO_PATH_combined_m2.gml"
+  - "mwe/graphs/processed/hight_latest/osu035/HIGHT_CORE_TOP_combined_m2.gml"
+  - "mwe/graphs/processed/hight_latest/osu035/KEY_SCHED_combined_m2.gml"
+  # - "mwe/graphs/processed/hight_latest/nangate/CRYPTO_PATH_combined_m2.gml"
+  - "mwe/graphs/processed/hight_latest/nangate/HIGHT_CORE_TOP_combined_m2.gml"
+  - "mwe/graphs/processed/hight_latest/nangate/KEY_SCHED_combined_m2.gml"
+  - "mwe/graphs/processed/hight_latest/gscl45nm/CRYPTO_PATH_combined_m2.gml"
+  - "mwe/graphs/processed/hight_latest/gscl45nm/HIGHT_CORE_TOP_combined_m2.gml"
+  # - "mwe/graphs/processed/hight_latest/gscl45nm/KEY_SCHED_combined_m2.gml"
+
+### sha3_latest
+  - "mwe/graphs/processed/sha3_latest/osu035/keccak_combined_m2.gml"
+  - "mwe/graphs/processed/sha3_latest/osu035/f_permutation_combined_m2.gml"
+  - "mwe/graphs/processed/sha3_latest/osu035/padder_combined_m1.gml"
+  # - "mwe/graphs/processed/sha3_latest/nangate/keccak_combined_m2.gml"
+  - "mwe/graphs/processed/sha3_latest/nangate/f_permutation_combined_m2.gml"
+  - "mwe/graphs/processed/sha3_latest/gscl45nm/keccak_combined_m2.gml"
+  - "mwe/graphs/processed/sha3_latest/gscl45nm/f_permutation_combined_m2.gml"
+  - "mwe/graphs/processed/sha3_latest/gscl45nm/padder_combined_m1.gml"
+
+### tiny_aes_latest
+  # - "mwe/graphs/processed/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
+
+
+test_gml: "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m2.gml" 
+
+epochs: 1000
+label_mode: "boundary"
+walk_length: 15
+# radius: 7
+# num_subgraphs: 8000
+
+set_gradient_clipping: true
+normalize_class_weights: true
