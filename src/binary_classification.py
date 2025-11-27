@@ -51,7 +51,7 @@ parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the 
 
 # khop v2  - neighbourLoader ( + radius)
 parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
-parser.add_argument("--neighbors_per_hsaop", type=int, default=128, help="for NeighborLoader")
+parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
 parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
