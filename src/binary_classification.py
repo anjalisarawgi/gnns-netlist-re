@@ -24,13 +24,15 @@ import time
 import json
 from torch_geometric.loader import NeighborLoader
 import yaml
+from torch_geometric.utils import k_hop_subgraph
+
 
 # could increase to 24 -- 
-torch.set_num_threads(20)        # for math mult (pytorch)    
+torch.set_num_threads(24)        # for math mult (pytorch)    
 torch.set_num_interop_threads(2)     # pytorch - helper threads
-os.environ["OMP_NUM_THREADS"] = "20" # max 20 cores (pytorch)
-os.environ["MKL_NUM_THREADS"] = "20" # max 20 cores (intel math libr)
-os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
+os.environ["OMP_NUM_THREADS"] = "24" # max 20 cores (pytorch)
+os.environ["MKL_NUM_THREADS"] = "24" # max 20 cores (intel math libr)
+os.environ["NUMEXPR_NUM_THREADS"] = "24"    # 20 threads max
 # --- optimization - 
 
 parser = argparse.ArgumentParser()
@@ -50,8 +52,8 @@ parser.add_argument("--radius", type=int, default=3, help="what is the radius yo
 parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
 
 # khop v2  - neighbourLoader ( + radius)
-parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
-parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
+# parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
+# parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
 parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
@@ -438,58 +440,111 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
     epochs = args.epochs
     for epoch in range(1, epochs + 1):
-        epoch_start = time.perf_counter()
+        train_acc = None
+        val_acc = None
 
-        # measure just the training step
-        train_start = time.perf_counter()
-        loss = train(model, train_loader, optimizer, class_weights)
-        train_time = time.perf_counter() - train_start
+        # Total epoch timer
+        t_epoch_start = time.perf_counter()
 
-        # evaluation
-        train_acc = evaluate(model, data, data.train_mask)
-        val_acc = evaluate(model, data, data.val_mask)
+        # -----------------------------
+        # Sampling
+        # -----------------------------
+        t_sampling_start = time.perf_counter()
+        batches = list(train_loader)
+        t_sampling_end = time.perf_counter()
+        sampling_time = t_sampling_end - t_sampling_start
 
-        # for test eval after 50 epochs
-        if epoch % 50 == 0:
-            des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
-            des_metrics = evaluate_on_dataset(model, des_data)
+        # -----------------------------
+        # Training
+        # -----------------------------
+        t_training_start = time.perf_counter()
+        loss = train(model, batches, optimizer, class_weights)
+        t_training_end = time.perf_counter()
+        training_time = t_training_end - t_training_start
+
+        # -----------------------------
+        # Periodic Evaluation
+        # -----------------------------
+        if epoch % 50 == 0 or epoch == epochs:
+            train_acc = evaluate(model, data, data.train_mask)
+            val_acc   = evaluate(model, data, data.val_mask)
+
+            test_acc_tmp = evaluate(model, data, data.test_mask)
+            f1_tmp, precision_tmp, recall_tmp = evaluate_binary(model, data, data.test_mask)
+
             print(
-                f"[EPOCH {epoch}] DES → "
-                f"F1={des_metrics['f1']:.4f}, "
-                f"ACC={des_metrics['total_acc']:.4f}, "
-                f"SBOX_ACC={des_metrics['sbox_acc']:.4f}, "
-                f"NOT_SBOX_ACC={des_metrics['not_sbox_acc']:.4f}"
+                f"[Periodic Eval] Epoch {epoch} | "
+                f"Train={train_acc:.4f} | Val={val_acc:.4f} | "
+                f"Test={test_acc_tmp:.4f} | "
+                f"F1={f1_tmp:.4f} | P={precision_tmp:.4f} | R={recall_tmp:.4f}"
             )
 
             wandb.log({
-                "des/f1": des_metrics["f1"],
-                "des/precision": des_metrics["precision"],
-                "des/recall": des_metrics["recall"],
-                "des/accuracy_total": des_metrics["total_acc"],
-                "des/accuracy_sbox": des_metrics["sbox_acc"],
-                "des/accuracy_not_sbox": des_metrics["not_sbox_acc"],
-                "epoch": epoch
+                "periodic_train_accuracy": train_acc,
+                "periodic_val_accuracy": val_acc,
+                "periodic_test_accuracy": test_acc_tmp,
+                "periodic_test_f1": f1_tmp,
+                "periodic_test_precision": precision_tmp,
+                "periodic_test_recall": recall_tmp,
+                "periodic_eval_epoch": epoch,
             })
 
-        epoch_time = time.perf_counter() - epoch_start
+            # ---------------------------------
+            # Cross-graph DES evaluation
+            # ---------------------------------
+            if des_data is not None:
+                des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
+                des_f1, des_precision, des_recall = evaluate_binary(model, des_data, des_mask)
 
-        log_data = {
+                wandb.log({
+                    "periodic_des_f1": des_f1,
+                    "periodic_des_precision": des_precision,
+                    "periodic_des_recall": des_recall,
+                    "periodic_des_epoch": epoch,
+                })
+
+                print(
+                    f"[DES Eval] Epoch {epoch} | "
+                    f"F1={des_f1:.4f} | P={des_precision:.4f} | R={des_recall:.4f}"
+                )
+                
+        # -----------------------------
+        # WandB logging
+        # -----------------------------
+        t_wandb_start = time.perf_counter()
+        wandb.log({
             "epoch": epoch,
             "loss": loss,
-            "train_accuracy": train_acc,
-            "val_accuracy": val_acc,
-            "train_time_sec": train_time,
-            "epoch_time_sec": epoch_time
-        }
+            "sampling_time_sec": sampling_time,
+            "train_time_sec": training_time,
+        })
+        t_wandb_end = time.perf_counter()
+        wandb_time = t_wandb_end - t_wandb_start
+
+        # -----------------------------
+        # Total and Misc Time
+        # -----------------------------
+        t_epoch_end = time.perf_counter()
+        epoch_total_time = t_epoch_end - t_epoch_start
+        misc_time = epoch_total_time - sampling_time - training_time - wandb_time
+
+        # -----------------------------
+        # PRINT EVERY EPOCH
+        # -----------------------------
+        train_acc_print = f"{train_acc:.4f}" if train_acc is not None else "----"
+        val_acc_print   = f"{val_acc:.4f}"   if val_acc is not None else "----"
 
         print(
-            f"Epoch: {epoch:03d}, Loss: {loss:.4f}, Train acc: {train_acc:.4f}, "
-            f"Val acc: {val_acc:.4f}, "
-            f"Train time: {train_time:.2f}s, Total epoch: {epoch_time:.2f}s"
-        )
-
-        wandb.log(log_data)
-
+            f"Epoch {epoch:03d} | "
+            f"Loss={loss:.4f} | "
+            f"Train Acc={train_acc_print} | "
+            f"Val Acc={val_acc_print} | "
+            f"sampling={sampling_time:.2f}s | "
+            f"training={training_time:.2f}s | "
+            f"wandb={wandb_time:.2f}s | "
+            f"misc={misc_time:.2f}s | "
+            f"total={epoch_total_time:.2f}s"
+        )       
     ######### 
 
     test_acc = evaluate(model, data, data.test_mask)
@@ -636,77 +691,27 @@ if __name__ == "__main__":
         sample_time = time.perf_counter() - sample_start
         print(f"[TIME] GraphSAINT sampler setup took {sample_time:.2f} seconds.")
 
-    # elif args.sampling_method == "khop":
-    #     print(f"[INFO] Using k-hop sampling...")
-    #     sample_start = time.perf_counter()
-    #     subgraph_list = ego_subgraphs_from_data(
-    #         aes_data,
-    #         radius=args.radius,
-    #         num_subgraphs=args.num_subgraphs
-    #     )
-    #     sample_time = time.perf_counter() - sample_start
-    #     print(f"[TIME] k-hop sampling took {sample_time:.2f} seconds.")
-    #     aes_loader = DataLoader(subgraph_list, batch_size=32768, shuffle=True)
-        
-
-    #     covered = set()
-    #     for batch in aes_loader:
-    #             covered.update(g.global_node_id.tolist())
-
-    #     print("\n=== COVERAGE REPORT ===")
-    #     print("Total nodes in full graph:", aes_data.num_nodes)
-    #     print("Total unique nodes sampled:", len(covered))
-    #     print("Coverage ratio:", len(covered) / aes_data.num_nodes)
-    #     print("========================\n")
-
-    #     wandb.log({
-    #         "coverage/unique_nodes": len(covered),
-    #         "coverage/ratio": len(covered) / aes_data.num_nodes
-    #     })
-
-
     elif args.sampling_method == "khop":
-        print("[INFO] Using NeighborLoader for k-hop neighborhood sampling...")
-
-        # Create list of neighbors per hop = k hops
-        num_neighbors = [args.neighbors_per_hop] * args.radius
-        print(f"[INFO] num_neighbors per hop = {num_neighbors}")
-        print(f"[INFO] batch_size = {args.batch_size}")
-
-        aes_loader = NeighborLoader(
+        print(f"[INFO] Using k-hop sampling...")
+        subgraph_list = ego_subgraphs_from_data(
             aes_data,
-            num_neighbors=num_neighbors,   # k hops sampling
-            batch_size=args.batch_size,    # seed nodes per batch
-            shuffle=True,                  # ensures full node coverage each epoch
-            num_workers=12,                # use your CPUs efficiently
-            persistent_workers=True,
-            pin_memory=True
+            radius=args.radius,
+            num_subgraphs=args.num_subgraphs
         )
-
-        # Coverage report (optional, but matches your old logging)
-        print("[INFO] Computing coverage report...")
-        coverage_loader = NeighborLoader(
-            aes_data,
-            num_neighbors=num_neighbors,
-            batch_size=args.batch_size,
-            shuffle=False,
-            num_workers=4
-        )
-
-        covered = set()
-        for batch in coverage_loader:
-            covered.update(batch.n_id.tolist())
-
-        print("\n=== COVERAGE REPORT (NeighborLoader) ===")
-        print("Total nodes:", aes_data.num_nodes)
-        print("Unique nodes sampled:", len(covered))
-        print("Coverage ratio:", len(covered) / aes_data.num_nodes)
-        print("========================================\n")
-
-        wandb.log({
-            "coverage/unique_nodes": len(covered),
-            "coverage/ratio": len(covered) / aes_data.num_nodes
-        })
+        aes_loader = DataLoader(subgraph_list, batch_size=32768, shuffle=True)
+        
+    # elif args.sampling_method == "neighSampler": # ???
+    #     print("[INFO] Using NeighborLoader for k-hop neighborhood sampling...")
+    #     num_neighbors = [args.neighbors_per_hop] * args.radius
+    #     aes_loader = NeighborLoader(
+    #         aes_data,
+    #         num_neighbors=num_neighbors,  
+    #         batch_size=args.batch_size,   
+    #         shuffle=True,                 
+    #         num_workers=8,                
+    #         persistent_workers=True,
+    #         pin_memory=True
+    #     )
 
     model = run_training(
         data=aes_data,

@@ -44,7 +44,7 @@ train_gml:
   # - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_round_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_pipelined_ecb_decrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/osu035/gost89_pipelined_ecb_encrypt_combined_m2.gml" 
-  # - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_cfb_combined_m2.gml"
+  # # - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_cfb_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_cfb_decrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_cfb_encrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_ecb_combined_m2.gml"
@@ -52,8 +52,8 @@ train_gml:
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_ecb_encrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_mac_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_round_combined_m2.gml"
-  # - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m2.gml"
-  - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m2.gml" 
+  # # - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m2.gml"
+  # - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m2.gml" 
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m2.gml"
@@ -62,8 +62,8 @@ train_gml:
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_encrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_mac_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_round_combined_m2.gml"
-  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_decrypt_combined_m2.gml"
-  # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_encrypt_combined_m2.gml" ###
+  # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_decrypt_combined_m2.gml"
+  # # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_encrypt_combined_m2.gml" ###
 
 ### gost28147-89_latest
   - "mwe/graphs/processed/hight_latest/osu035/CRYPTO_PATH_combined_m2.gml"
@@ -94,10 +94,10 @@ test_gml: "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_cipher_top_co
 
 epochs: 500
 label_mode: "boundary"
-radius: 3
-batch_size: 2048
-neighbors_per_hop: 16
-# num_subgraphs: 8000
+radius: 2
+# batch_size: 1
+# neighbors_per_hop: 64
+num_subgraphs: 10000
 
 set_gradient_clipping: true
 normalize_class_weights: true
