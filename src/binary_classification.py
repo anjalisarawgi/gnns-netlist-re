@@ -24,15 +24,14 @@ import time
 import json
 from torch_geometric.loader import NeighborLoader
 import yaml
-from torch_geometric.utils import k_hop_subgraph
-
+import csv
 
 # could increase to 24 -- 
-torch.set_num_threads(24)        # for math mult (pytorch)    
+torch.set_num_threads(20)        # for math mult (pytorch)    
 torch.set_num_interop_threads(2)     # pytorch - helper threads
-os.environ["OMP_NUM_THREADS"] = "24" # max 20 cores (pytorch)
-os.environ["MKL_NUM_THREADS"] = "24" # max 20 cores (intel math libr)
-os.environ["NUMEXPR_NUM_THREADS"] = "24"    # 20 threads max
+os.environ["OMP_NUM_THREADS"] = "20" # max 20 cores (pytorch)
+os.environ["MKL_NUM_THREADS"] = "20" # max 20 cores (intel math libr)
+os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
 # --- optimization - 
 
 parser = argparse.ArgumentParser()
@@ -51,19 +50,19 @@ parser.add_argument("--walk_length", type=int, default=5, help="what is the walk
 parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
 parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
 
-# khop v2  - neighbourLoader ( + radius)
+# # khop v2  - neighbourLoader ( + radius)
 # parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
 # parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
 parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 
-# config 
+# cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
 
 
-# yaml - file
+# yaml 
 config_tag = None
 if args.config:
     config_tag = os.path.splitext(os.path.basename(args.config))[0]
@@ -90,6 +89,16 @@ run_name = f"{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_{train_
 
 wandb.init(project="gnn-subcircuit-detection", name=run_name)
 wandb.config.update(vars(args))
+
+
+# setting label names 
+if args.label_mode == "subcircuit_name":
+    pos_label = "is_sbox"
+    neg_label = "is_not_sbox"
+elif args.label_mode == "boundary":
+    pos_label = "is_boundary"
+    neg_label = "is_not_boundary"
+
 
 set_seed(42)
 
@@ -340,18 +349,18 @@ def evaluate_on_dataset(model, data):
     recall = recall_score(y_true, y_pred, zero_division=0)
 
     total_acc = (y_true == y_pred).sum() / len(y_true)
-    sbox_mask = (y_true == 1)
-    not_sbox_mask = (y_true == 0)
-    sbox_acc = (y_pred[sbox_mask] == y_true[sbox_mask]).sum() / sbox_mask.sum()
-    not_sbox_acc = (y_pred[not_sbox_mask] == y_true[not_sbox_mask]).sum() / not_sbox_mask.sum()
+    positive_mask = (y_true == 1)
+    negative_mask = (y_true == 0)
+    positive_acc = (y_pred[positive_mask] == y_true[positive_mask]).sum() / positive_mask.sum()
+    negative_acc = (y_pred[negative_mask] == y_true[negative_mask]).sum() / negative_mask.sum()
 
     return {
         "f1": f1,
         "precision": precision,
         "recall": recall,
         "total_acc": total_acc,
-        "sbox_acc": sbox_acc,
-        "not_sbox_acc": not_sbox_acc
+        f"{pos_label}_acc": positive_acc,
+        f"{neg_label}_acc": negative_acc
     }
 
 
@@ -389,20 +398,8 @@ def classwise_accuracy(model, data, mask, id2name=None):
 # des_data.test_mask[:] = False
 # des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
 
-import sys
 
-class Tee:
-    def __init__(self, file, terminal):
-        self.file = file
-        self.terminal = terminal
-    def write(self, data):
-        self.file.write(data)
-        self.terminal.write(data)
-    def flush(self):
-        self.file.flush()
-        self.terminal.flush()
-
-def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False, des_data = None):
+def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False, testgml_data = None):
     if model_name == "graphsage":
         model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
         print("[INFO] using graphsage model")
@@ -449,128 +446,77 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     #     label_name = id2name.get(int(cls), f"Class {cls}") if id2name else f"Class {cls}"
     #     print(f"  {label_name}: weight = {w:.4f}")
     # print("  → Higher weight means rarer class\n")
-
+    last_train_acc = None
+    last_val_acc = None
     epochs = args.epochs
     for epoch in range(1, epochs + 1):
-        train_acc = None
-        val_acc = None
+        epoch_start = time.perf_counter()
 
-        # Total epoch timer
-        t_epoch_start = time.perf_counter()
+        # measure just the training step
+        train_start = time.perf_counter()
+        loss = train(model, train_loader, optimizer, class_weights)
+        train_time = time.perf_counter() - train_start
 
-        # -----------------------------
-        # Sampling
-        # -----------------------------
-        t_sampling_start = time.perf_counter()
-        batches = list(train_loader)
-        t_sampling_end = time.perf_counter()
-        sampling_time = t_sampling_end - t_sampling_start
-
-        # -----------------------------
-        # Training
-        # -----------------------------
-        t_training_start = time.perf_counter()
-        loss = train(model, batches, optimizer, class_weights)
-        t_training_end = time.perf_counter()
-        training_time = t_training_end - t_training_start
-
-        # -----------------------------
-        # Periodic Evaluation
-        # -----------------------------
-        if epoch % 50 == 0 or epoch == epochs:
+        # evaluation
+        if epoch % 50 == 0:
             train_acc = evaluate(model, data, data.train_mask)
-            val_acc   = evaluate(model, data, data.val_mask)
+            val_acc = evaluate(model, data, data.val_mask)
+        else:
+            train_acc = None
+            val_acc = None
 
-            test_acc_tmp = evaluate(model, data, data.test_mask)
-            f1_tmp, precision_tmp, recall_tmp = evaluate_binary(model, data, data.test_mask)
-
+        # for test eval after 50 epochs
+        if epoch % 50 == 0:
+            testgml_mask = torch.ones_like(testgml_data.y, dtype=torch.bool)
+            testgml_metrics = evaluate_on_dataset(model, testgml_data)
+            pos_acc_key = f"{pos_label}_acc"
+            neg_acc_key = f"{neg_label}_acc"
             print(
-                f"[Periodic Eval] Epoch {epoch} | "
-                f"Train={train_acc:.4f} | Val={val_acc:.4f} | "
-                # f"Test={test_acc_tmp:.4f} | "
-                f"F1={f1_tmp:.4f} | P={precision_tmp:.4f} | R={recall_tmp:.4f}"
+                f"[EPOCH {epoch}] testgml → "
+                f"F1={testgml_metrics['f1']:.4f}, "
+                f"ACC={testgml_metrics['total_acc']:.4f}, "
+                f"{pos_label}_ACC={testgml_metrics[pos_acc_key]:.4f}, "
+                f"{neg_label}_ACC={testgml_metrics[neg_acc_key]:.4f}"
             )
-
+                       
             wandb.log({
-                "train_accuracy": train_acc,
-                "val_accuracy": val_acc,
-                # "test_accuracy": test_acc_tmp,
-                "test_f1": f1_tmp,
-                "test_precision": precision_tmp,
-                "test_recall": recall_tmp,
-                "eval_epoch": epoch,
+                "testgml/f1": testgml_metrics["f1"],
+                "testgml/precision": testgml_metrics["precision"],
+                "testgml/recall": testgml_metrics["recall"],
+                "testgml/accuracy_total": testgml_metrics["total_acc"],
+                f"testgml/accuracy_{pos_label}": testgml_metrics[pos_acc_key],
+                f"testgml/accuracy_{neg_label}": testgml_metrics[neg_acc_key],
+                "epoch": epoch
             })
 
-            # ---------------------------------
-            # Cross-graph DES evaluation
-            # ---------------------------------
-            if des_data is not None:
-                # des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
-                # des_f1, des_precision, des_recall = evaluate_binary(model, des_data, des_mask)
-                metrics_des = evaluate_on_dataset(model,des_data)
+        epoch_time = time.perf_counter() - epoch_start
 
-                # wandb.log({
-                #     "des/f1": des_f1,
-                #     "des/precision": des_precision,
-                #     "des/recall": des_recall,
-                #     "des/epoch": epoch,
-                # })
+        log_data = {
+            "epoch": epoch,
+            "loss": loss,
+            "train_time_sec": train_time,
+            "epoch_time_sec": epoch_time
+        }
+        if train_acc is not None:
+            log_data["train_accuracy"] = train_acc
+            log_data["val_accuracy"] = val_acc
 
-                # print(
-                #     f"[DES Eval] Epoch {epoch} | "
-                #     f"F1={des_f1:.4f} | P={des_precision:.4f} | R={des_recall:.4f}"
-                # )
-                wandb.log({
-                    "des/epoch": epoch,
-                    "des/f1": metrics_des["f1"],
-                    "des/precision": metrics_des["precision"],
-                    "des/recall": metrics_des["recall"],
-                    "des/acc_total": metrics_des["total_acc"],
-                    "des/acc_not_sbox": metrics_des["not_sbox_acc"],
-                    "des/acc_sbox": metrics_des["sbox_acc"],
-                })
+        if train_acc is not None:
+            last_train_acc = train_acc
+            last_val_acc = val_acc
+            print(
+                f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
+                f"Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}, "
+                f"Train time: {train_time:.2f}s, Total epoch time: {epoch_time:.2f}s"
+            )
+        else:
+            print(
+                f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
+                f"Train time: {train_time:.2f}s, Total epoch: {epoch_time:.2f}s"
+            )
 
-                print(
-                    f"[DES Eval] Epoch {epoch} | "
-                    f"F1={metrics_des['f1']:.4f} | "
-                    f"P={metrics_des['precision']:.4f} | "
-                    f"R={metrics_des['recall']:.4f} | "
-                    f"Acc_total={metrics_des['total_acc']:.4f} | "
-                    f"Acc_not_sbox={metrics_des['not_sbox_acc']:.4f} | "
-                    f"Acc_sbox={metrics_des['sbox_acc']:.4f} " 
-                )
-                
-        # -----------------------------
-        # WandB logging
-        # -----------------------------
-        t_wandb_start = time.perf_counter()
-        t_wandb_end = time.perf_counter()
-        wandb_time = t_wandb_end - t_wandb_start
+        wandb.log(log_data)
 
-        # -----------------------------
-        # Total and Misc Time
-        # -----------------------------
-        t_epoch_end = time.perf_counter()
-        epoch_total_time = t_epoch_end - t_epoch_start
-        misc_time = epoch_total_time - sampling_time - training_time - wandb_time
-
-        # -----------------------------
-        # PRINT EVERY EPOCH
-        # -----------------------------
-        train_acc_print = f"{train_acc:.4f}" if train_acc is not None else "----"
-        val_acc_print   = f"{val_acc:.4f}"   if val_acc is not None else "----"
-
-        print(
-            f"Epoch {epoch:03d} | "
-            f"Loss={loss:.4f} | "
-            f"Train Acc={train_acc_print} | "
-            f"Val Acc={val_acc_print} | "
-            f"sampling={sampling_time:.2f}s | "
-            f"training={training_time:.2f}s | "
-            f"wandb={wandb_time:.2f}s | "
-            f"misc={misc_time:.2f}s | "
-            f"total={epoch_total_time:.2f}s"
-        )       
     ######### 
 
     test_acc = evaluate(model, data, data.test_mask)
@@ -620,6 +566,42 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         json.dump(metadata, f, indent=4)
 
     print("[INFO] Saved metadata to:", json_path)
+
+
+
+
+    # saving to csv
+    results_csv_path = os.path.join(run_dir, "final_results.csv")
+    final_train_acc = last_train_acc
+    final_val_acc = last_val_acc
+    
+    
+    final_metrics = evaluate_on_dataset(model, testgml_data)
+    testgml_f1 = final_metrics["f1"]
+    testgml_precision = final_metrics["precision"]
+    testgml_recall = final_metrics["recall"]
+    testgml_acc = final_metrics["total_acc"]
+    testgml_pos_acc = final_metrics[f"{pos_label}_acc"]
+    testgml_neg_acc = final_metrics[f"{neg_label}_acc"]
+
+    with open(results_csv_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["dataset", "metric", "value"])
+
+        # AES final metrics
+        writer.writerow(["aes_train", "final_train_accuracy", final_train_acc])
+        writer.writerow(["aes_train", "final_val_accuracy", final_val_acc])
+
+        # testgml final metrics
+        writer.writerow(["testgml", "accuracy", testgml_acc])
+        writer.writerow(["testgml", "f1", testgml_f1])
+        writer.writerow(["testgml", "precision", testgml_precision])
+        writer.writerow(["testgml", "recall", testgml_recall])
+        writer.writerow(["testgml", f"{pos_label}_acc", testgml_pos_acc])
+        writer.writerow(["testgml", f"{neg_label}_acc", testgml_neg_acc])
+
+    print("[INFO] Saved final results CSV to:", results_csv_path)
+
     return model
 
 
@@ -685,8 +667,8 @@ if __name__ == "__main__":
     print("[INFO] training on:", args.train_gml)
     print("Number of features:", aes_data.num_features)
     print("Feature matrix shape:", aes_data.x.shape)
-    print("Number of SBOX nodes :", (aes_data.y == 1).sum().item())
-    print("Number of not-SBOX nodes :", (aes_data.y == 0).sum().item())
+    print(f"Number of {pos_label} nodes :", (aes_data.y == 1).sum().item())
+    print(f"Number of {neg_label} nodes :", (aes_data.y == 0).sum().item())
     print("Total training nodes:", aes_data.num_nodes)
 
     print("[DEBUG] Combined data split:")
@@ -694,16 +676,16 @@ if __name__ == "__main__":
     print("  Val nodes  :", aes_data.val_mask.sum().item())
     print("  Test nodes :", aes_data.test_mask.sum().item())
 
-    des_data, _ = load_aisec_single_gml(
+    testgml_data, _ = load_aisec_single_gml(
         # gml_path="graphs/processed/aes_encryption_latest/nangate/aes_cipher_top_gephi_test6.gml",
         gml_path=args.test_gml,
         binary_label=True,
         label_mode = args.label_mode
     )
-    des_data.train_mask[:] = False
-    des_data.val_mask[:] = False
-    des_data.test_mask[:] = False
-    print("Total test nodes:", des_data.num_nodes)
+    testgml_data.train_mask[:] = False
+    testgml_data.val_mask[:] = False
+    testgml_data.test_mask[:] = False
+    print("Total test nodes:", testgml_data.num_nodes)
 
 
     if args.sampling_method == "graphsaint":
@@ -714,37 +696,30 @@ if __name__ == "__main__":
             walk_length=args.walk_length,
             shuffle=True,
         )
-        sample_time = time.perf_counter() - sample_start
-        print(f"[TIME] GraphSAINT sampler setup took {sample_time:.2f} seconds.")
-
     elif args.sampling_method == "khop":
         print(f"[INFO] Using k-hop sampling...")
+        sample_start = time.perf_counter()
         subgraph_list = ego_subgraphs_from_data(
             aes_data,
             radius=args.radius,
             num_subgraphs=args.num_subgraphs
         )
         aes_loader = DataLoader(subgraph_list, batch_size=32768, shuffle=True)
-        
-    # elif args.sampling_method == "neighSampler": # ???
-    #     print("[INFO] Using NeighborLoader for k-hop neighborhood sampling...")
+
+
+    # elif args.sampling_method == "neighSampler":
     #     num_neighbors = [args.neighbors_per_hop] * args.radius
     #     aes_loader = NeighborLoader(
     #         aes_data,
-    #         num_neighbors=num_neighbors,  
-    #         batch_size=args.batch_size,   
-    #         shuffle=True,                 
-    #         num_workers=8,                
+    #         num_neighbors=num_neighbors,   
+    #         batch_size=args.batch_size,    
+    #         shuffle=True,                  
+    #         num_workers=12,                
     #         persistent_workers=True,
     #         pin_memory=True
     #     )
-    # logging 
-    log_dir = os.path.join("logs", wandb.run.name)
-    os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, "training.log")
-    log_file = open(log_path, "w")
-    sys.stdout = Tee(log_file, sys.__stdout__)
-        
+
+
     model = run_training(
         data=aes_data,
         train_loader=aes_loader,
@@ -753,50 +728,26 @@ if __name__ == "__main__":
         id2name=id2label,
         model_name=args.model, 
         use_weighted_loss=True,
-        des_data=des_data 
+        testgml_data=testgml_data 
     )
 
-    print("\n[DEBUG] DES dataset:")
-    print("Total nodes:", des_data.num_nodes)
-    print("SBOX nodes:", (des_data.y == 1).sum().item())
-    print("Not-SBOX nodes:", (des_data.y == 0).sum().item())
+    print("\n[DEBUG] testgml dataset:")
+    print("Total nodes:", testgml_data.num_nodes)
+    print(f"{pos_label} nodes:", (testgml_data.y == 1).sum().item())
+    print(f"{neg_label} nodes:", (testgml_data.y == 0).sum().item())
 
-    mask = torch.ones_like(des_data.y, dtype=torch.bool)
+    mask = torch.ones_like(testgml_data.y, dtype=torch.bool)
 
-    f1, precision, recall = evaluate_binary(model, des_data, mask)
-    print(f"\n=== Cross-graph test (AES→DES) ===")
-    # print(f"F1 = {f1:.4f}, Precision = {precision:.4f}, Recall = {recall:.4f}")
-
-    # model.eval()
-    # out = model(des_data.x, des_data.edge_index)
-    # pred = out.argmax(dim=1)
-
-    # y_true = des_data.y.cpu().numpy()
-    # y_pred = pred.cpu().numpy()
-
-    # total_correct = (y_true == y_pred).sum()
-    # total_acc = total_correct / len(y_true)
-
-    # sbox_mask = (y_true == 1)
-    # not_sbox_mask = (y_true == 0)
-
-    # sbox_acc = (y_pred[sbox_mask] == y_true[sbox_mask]).sum() / sbox_mask.sum()
-    # not_sbox_acc = (y_pred[not_sbox_mask] == y_true[not_sbox_mask]).sum() / not_sbox_mask.sum()
-
-    # print("\n=== DES Accuracy Breakdown ===")
-    # print(f"Total Accuracy   : {total_acc:.4f}")
-    # print(f"SBOX Accuracy    : {sbox_acc:.4f}")
-    # print(f"Not-SBOX Accuracy: {not_sbox_acc:.4f}")
-
-
-    metrics = evaluate_on_dataset(model, des_data)
+    f1, precision, recall = evaluate_binary(model, testgml_data, mask)
+    print(f"\n=== Cross-graph test (AES→testgml) ===")
+    metrics = evaluate_on_dataset(model, testgml_data)
     print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")
     print(f"Total Accuracy   : {metrics['total_acc']:.4f}")
-    print(f"SBOX Accuracy    : {metrics['sbox_acc']:.4f}")
-    print(f"Not-SBOX Accuracy: {metrics['not_sbox_acc']:.4f}")
+    print(f"{pos_label} Accuracy    : {metrics[f'{pos_label}_acc']:.4f}")
+    print(f"{neg_label} Accuracy: {metrics[f'{neg_label}_acc']:.4f}")
 
     
-    output_dir = "results/aes_to_des"
+    output_dir = "results/aes_to_testml"
     os.makedirs(output_dir, exist_ok=True)
     test_graph_name = os.path.splitext(os.path.basename(args.test_gml))[0]
     output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
@@ -810,14 +761,9 @@ if __name__ == "__main__":
 
     save_predictions_to_gml(
         original_gml_path = args.test_gml,
-        data=des_data,
+        data=testgml_data,
         model=model,
         id2name=output_labels,
         output_gml_path=output_path
     )
 
-    # results = check_boundary_coverage(
-    #     gml_path=output_path,
-    #     model=model,
-    #     threshold=0.6
-    # )
