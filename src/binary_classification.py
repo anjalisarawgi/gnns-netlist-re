@@ -389,6 +389,18 @@ def classwise_accuracy(model, data, mask, id2name=None):
 # des_data.test_mask[:] = False
 # des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
 
+import sys
+
+class Tee:
+    def __init__(self, file, terminal):
+        self.file = file
+        self.terminal = terminal
+    def write(self, data):
+        self.file.write(data)
+        self.terminal.write(data)
+    def flush(self):
+        self.file.flush()
+        self.terminal.flush()
 
 def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False, des_data = None):
     if model_name == "graphsage":
@@ -475,49 +487,63 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
             print(
                 f"[Periodic Eval] Epoch {epoch} | "
                 f"Train={train_acc:.4f} | Val={val_acc:.4f} | "
-                f"Test={test_acc_tmp:.4f} | "
+                # f"Test={test_acc_tmp:.4f} | "
                 f"F1={f1_tmp:.4f} | P={precision_tmp:.4f} | R={recall_tmp:.4f}"
             )
 
             wandb.log({
-                "periodic_train_accuracy": train_acc,
-                "periodic_val_accuracy": val_acc,
-                "periodic_test_accuracy": test_acc_tmp,
-                "periodic_test_f1": f1_tmp,
-                "periodic_test_precision": precision_tmp,
-                "periodic_test_recall": recall_tmp,
-                "periodic_eval_epoch": epoch,
+                "train_accuracy": train_acc,
+                "val_accuracy": val_acc,
+                # "test_accuracy": test_acc_tmp,
+                "test_f1": f1_tmp,
+                "test_precision": precision_tmp,
+                "test_recall": recall_tmp,
+                "eval_epoch": epoch,
             })
 
             # ---------------------------------
             # Cross-graph DES evaluation
             # ---------------------------------
             if des_data is not None:
-                des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
-                des_f1, des_precision, des_recall = evaluate_binary(model, des_data, des_mask)
+                # des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
+                # des_f1, des_precision, des_recall = evaluate_binary(model, des_data, des_mask)
+                metrics_des = evaluate_on_dataset(model,des_data)
 
+                # wandb.log({
+                #     "des/f1": des_f1,
+                #     "des/precision": des_precision,
+                #     "des/recall": des_recall,
+                #     "des/epoch": epoch,
+                # })
+
+                # print(
+                #     f"[DES Eval] Epoch {epoch} | "
+                #     f"F1={des_f1:.4f} | P={des_precision:.4f} | R={des_recall:.4f}"
+                # )
                 wandb.log({
-                    "periodic_des_f1": des_f1,
-                    "periodic_des_precision": des_precision,
-                    "periodic_des_recall": des_recall,
-                    "periodic_des_epoch": epoch,
+                    "des/epoch": epoch,
+                    "des/f1": metrics_des["f1"],
+                    "des/precision": metrics_des["precision"],
+                    "des/recall": metrics_des["recall"],
+                    "des/acc_total": metrics_des["total_acc"],
+                    "des/acc_not_sbox": metrics_des["not_sbox_acc"],
+                    "des/acc_sbox": metrics_des["sbox_acc"],
                 })
 
                 print(
                     f"[DES Eval] Epoch {epoch} | "
-                    f"F1={des_f1:.4f} | P={des_precision:.4f} | R={des_recall:.4f}"
+                    f"F1={metrics_des['f1']:.4f} | "
+                    f"P={metrics_des['precision']:.4f} | "
+                    f"R={metrics_des['recall']:.4f} | "
+                    f"Acc_total={metrics_des['total_acc']:.4f} | "
+                    f"Acc_not_sbox={metrics_des['not_sbox_acc']:.4f} | "
+                    f"Acc_sbox={metrics_des['sbox_acc']:.4f} " 
                 )
                 
         # -----------------------------
         # WandB logging
         # -----------------------------
         t_wandb_start = time.perf_counter()
-        wandb.log({
-            "epoch": epoch,
-            "loss": loss,
-            "sampling_time_sec": sampling_time,
-            "train_time_sec": training_time,
-        })
         t_wandb_end = time.perf_counter()
         wandb_time = t_wandb_end - t_wandb_start
 
@@ -558,10 +584,10 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         print(f"  Recall      : {recall:.4f}")
 
         wandb.log({
-            "final_test_accuracy": test_acc,
-            "final_test_f1": f1,
-            "final_test_precision": precision,
-            "final_test_recall": recall,
+            "final/test_accuracy": test_acc,
+            "final/test_f1": f1,
+            "final/test_precision": precision,
+            "final/test_recall": recall,
         })
     
     classwise_acc = classwise_accuracy(model, data, data.test_mask, id2name)
@@ -712,7 +738,13 @@ if __name__ == "__main__":
     #         persistent_workers=True,
     #         pin_memory=True
     #     )
-
+    # logging 
+    log_dir = os.path.join("logs", wandb.run.name)
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, "training.log")
+    log_file = open(log_path, "w")
+    sys.stdout = Tee(log_file, sys.__stdout__)
+        
     model = run_training(
         data=aes_data,
         train_loader=aes_loader,

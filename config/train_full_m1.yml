@@ -94,7 +94,7 @@ test_gml: "mwe/graphs/processed/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
 
 epochs: 1000
 label_mode: "boundary"
-walk_length: 100
+walk_length: 50
 # radius: 7f
 # num_subgraphs: 8000
 
