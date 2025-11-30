@@ -467,13 +467,15 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
         # for test eval after 50 epochs
         if epoch % 50 == 0:
-            testgml_mask = torch.ones_like(testgml_data.y, dtype=torch.bool)
+            # testgml_mask = torch.ones_like(testgml_data.y, dtype=torch.bool)
             testgml_metrics = evaluate_on_dataset(model, testgml_data)
             pos_acc_key = f"{pos_label}_acc"
             neg_acc_key = f"{neg_label}_acc"
             print(
                 f"[EPOCH {epoch}] testgml → "
                 f"F1={testgml_metrics['f1']:.4f}, "
+                f"precision = {testgml_metrics['precision']:.4f}, "
+                f"recall = {testgml_metrics['recall']:.4f}, "
                 f"ACC={testgml_metrics['total_acc']:.4f}, "
                 f"{pos_label}_ACC={testgml_metrics[pos_acc_key]:.4f}, "
                 f"{neg_label}_ACC={testgml_metrics[neg_acc_key]:.4f}"
@@ -736,9 +738,9 @@ if __name__ == "__main__":
     print(f"{pos_label} nodes:", (testgml_data.y == 1).sum().item())
     print(f"{neg_label} nodes:", (testgml_data.y == 0).sum().item())
 
-    mask = torch.ones_like(testgml_data.y, dtype=torch.bool)
+    # mask = torch.ones_like(testgml_data.y, dtype=torch.bool)
+    # f1, precision, recall = evaluate_binary(model, testgml_data, mask)
 
-    f1, precision, recall = evaluate_binary(model, testgml_data, mask)
     print(f"\n=== Cross-graph test (AES→testgml) ===")
     metrics = evaluate_on_dataset(model, testgml_data)
     print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")

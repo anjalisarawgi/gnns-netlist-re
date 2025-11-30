@@ -94,7 +94,7 @@ test_gml: "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_cipher_top_co
 
 epochs: 1000
 label_mode: "boundary"
-walk_length: 25
+walk_length: 20
 # radius: 7
 # num_subgraphs: 8000
 
