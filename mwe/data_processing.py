@@ -15,8 +15,12 @@ graph_root = Path("graphs/raw")
 output_files_root = Path("")
 # LIB = "lib/osu035_stdcells.lib"
 # LIB = "lib/NangateOpenCellLibrary_functional.lib"
-LIB = "gscl45nm_2.lib"
-
+# LIB = "gscl45nm_2.lib"
+LIB_MAP = {
+    "osu035": "lib/osu035_stdcells.lib",
+    "nangate": "lib/NangateOpenCellLibrary_functional.lib",
+    "gscl45nm": "lib/gscl45nm_2.lib"
+}
 
 def run(cmd):
     print(">>", " ".join(map(str,cmd)))
@@ -84,14 +88,15 @@ def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
         nodes_list = list(subgraph.nodes())
         # for node in subgraph.nodes():
         for node in tqdm(nodes_list, desc=f"[M1] {os.path.basename(f)}", unit="node", leave=False):
-            anc = nx.ancestors(subgraph, node)
-            dec = nx.descendants(subgraph, node)
-            is_boundary = int(len(anc) == 0 or len(dec) == 0)
+            # anc = nx.ancestors(subgraph, node)
+            # dec = nx.descendants(subgraph, node)
+            # is_boundary = int(len(anc) == 0 or len(dec) == 0)
+            # boundary_dict[node] = is_boundary
 
-            # if slow?
-            # in_deg = subgraph.in_degree(node)
-            # out_deg = subgraph.out_degree(node)
-            # is_boundary = int(in_deg == 0 or out_deg == 0)
+            # # # # if slow?
+            in_deg = subgraph.in_degree(node)
+            out_deg = subgraph.out_degree(node)
+            is_boundary = int(in_deg == 0 or out_deg == 0)
             boundary_dict[node] = is_boundary
 
     # for node in design.nodes():
@@ -207,6 +212,7 @@ def merge_partition_and_boundary(gml_partition, gml_boundary, out_gml):
 
     print(f"[MERGE] Saved merged graph → {out_gml}")
 
+
 def process_verilog(verilog_file):
     # example : 
     #  tum-eisec-benchmarks-main/netlist/des_latest/verilog/osu035/des.v
@@ -236,6 +242,9 @@ def process_verilog(verilog_file):
     adj_out_dir.mkdir(parents = True, exist_ok=True)
     # partition_out_dir.mkdir(parents = True, exist_ok=True)
     
+    # LIB 
+    LIB = LIB_MAP[library]
+    print(f"[INFO] Using library: {LIB}")
 
     ######
     # processing the three steps now 

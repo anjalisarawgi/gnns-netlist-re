@@ -1,0 +1,629 @@
+{
+    "verilog_files": [
+      // "tum-eisec-benchmarks-main/netlist/10_100m_ethernet-fifo_convertor_latest/verilog/gscl45nm/EthernetModule.v",
+      // "tum-eisec-benchmarks-main/netlist/10_100m_ethernet-fifo_convertor_latest/verilog/gscl45nm/TxModule.v",
+
+      // "tum-eisec-benchmarks-main/netlist/16x2_lcd_display_driver_latest/verilog/osu035/lcd_fgpa.v",
+      // "tum-eisec-benchmarks-main/netlist/16x2_lcd_display_driver_latest/verilog/gscl45nm/lcd_fgpa.v", 
+      
+      // "tum-eisec-benchmarks-main/netlist/6809_6309_compatible_core_latest/verilog/osu035/regblock.v", 
+      // "tum-eisec-benchmarks-main/netlist/6809_6309_compatible_core_latest/verilog/gscl45nm/regblock.v", 
+
+      // "tum-eisec-benchmarks-main/netlist/8051_latest/verilog/osu035/oc8051_sfr.v", 
+      // "tum-eisec-benchmarks-main/netlist/8051_latest/verilog/nangate/oc8051_sfr.v", 
+      // "tum-eisec-benchmarks-main/netlist/8051_latest/verilog/gscl45nm/oc8051_sfr.v",
+
+    
+      // //
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/full_adder.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/ripple_adder_4bit.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/ripple_adder_6bit.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/ripple_adder_8bit.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/ripple_adder_12bit.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/vedic2x2.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/vedic4x4.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/osu035/vedic8x8.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/full_adder.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/ripple_adder_4bit.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/ripple_adder_6bit.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/ripple_adder_8bit.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/ripple_adder_12bit.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/vedic2x2.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/vedic4x4.v",      
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/nangate/vedic8x8.v",      
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/full_adder.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/ripple_adder_4bit.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/ripple_adder_6bit.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/ripple_adder_8bit.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/ripple_adder_12bit.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/vedic2x2.v", 
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/vedic4x4.v",
+      // "tum-eisec-benchmarks-main/netlist/8bit_vedic_multiplier_latest/verilog/gscl45nm/vedic8x8.v",
+
+      // Aquarius_latest
+      // "tum-eisec-benchmarks-main/netlist/Aquarius_latest/verilog/osu035/cpu.v",
+      // "tum-eisec-benchmarks-main/netlist/Aquarius_latest/verilog/osu035/datapath.v",
+
+
+      // // aemb_latest
+      // "tum-eisec-benchmarks-main/netlist/aemb_latest/verilog/osu035/aeMB2_edk62.v",
+      // "tum-eisec-benchmarks-main/netlist/aemb_latest/verilog/osu035/aeMB2_edk63.v",
+      // "tum-eisec-benchmarks-main/netlist/aemb_latest/verilog/osu035/aeMB2_exec.v",
+      // "tum-eisec-benchmarks-main/netlist/aemb_latest/verilog/osu035/aeMB2_gprf.v",
+
+
+      // // aes-master
+      // "tum-eisec-benchmarks-main/netlist/aes-master/verilog/osu035/aes_core.v",
+      // "tum-eisec-benchmarks-main/netlist/aes-master/verilog/osu035/aes_decipher_block.v",
+      // "tum-eisec-benchmarks-main/netlist/aes-master/verilog/gscl45nm/aes_core.v",
+      // "tum-eisec-benchmarks-main/netlist/aes-master/verilog/gscl45nm/aes_decipher_block.v",
+
+      // // apbtoaes128_latest
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/osu035/aes_core.v",
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/osu035/aes_ip.v",
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/osu035/datapath.v",
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/nangate/aes_core.v",
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/nangate/aes_ip.v",
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/gscl45nm/aes_core.v",
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/gscl45nm/aes_ip.v",
+      // "tum-eisec-benchmarks-main/netlist/apbtoaes128_latest/verilog/gscl45nm/datapath.v",
+
+      // // blue_latest
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/osu035/aregister.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/osu035/FrontPanel.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/osu035/uart.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/nangate/aregister.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/nangate/FrontPanel.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/nangate/uart.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/gscl45nm/aregister.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/gscl45nm/FrontPanel.v",
+      // "tum-eisec-benchmarks-main/netlist/blue_latest/verilog/gscl45nm/uart.v",
+
+      // // bubblesortmodule_latest
+      // "tum-eisec-benchmarks-main/netlist/bubblesortmodule_latest/verilog/osu035/stageen.v",
+      // "tum-eisec-benchmarks-main/netlist/bubblesortmodule_latest/verilog/nangate/stageen.v",
+      // "tum-eisec-benchmarks-main/netlist/bubblesortmodule_latest/verilog/gscl45nm/stageen.v",
+
+
+
+      // // cavlc_latest
+      // "tum-eisec-benchmarks-main/netlist/cavlc_latest/verilog/osu035/cavlc_top.v",
+      // "tum-eisec-benchmarks-main/netlist/cavlc_latest/verilog/nangate/cavlc_top.v",
+      // "tum-eisec-benchmarks-main/netlist/cavlc_latest/verilog/gscl45nm/cavlc_top.v",
+
+      // // chacha-master
+      // "tum-eisec-benchmarks-main/netlist/chacha-master/verilog/osu035/chacha_core.v",
+      // "tum-eisec-benchmarks-main/netlist/chacha-master/verilog/osu035/chacha.v",
+      // "tum-eisec-benchmarks-main/netlist/chacha-master/verilog/nangate/chacha_core.v",
+      // "tum-eisec-benchmarks-main/netlist/chacha-master/verilog/nangate/chacha.v",
+
+      // // cmac-master
+      // "tum-eisec-benchmarks-main/netlist/cmac-master/verilog/osu035/cmac.v",
+      // "tum-eisec-benchmarks-main/netlist/cmac-master/verilog/nangate/cmac.v",
+      // "tum-eisec-benchmarks-main/netlist/cmac-master/verilog/gscl45nm/cmac.v",
+
+      // // cpu8080_latest
+      // "tum-eisec-benchmarks-main/netlist/cpu8080_latest/verilog/osu035/cpu8080.v",
+      // "tum-eisec-benchmarks-main/netlist/cpu8080_latest/verilog/osu035/M8080.v",
+      // "tum-eisec-benchmarks-main/netlist/cpu8080_latest/verilog/osu035/SM8080.v",
+      // "tum-eisec-benchmarks-main/netlist/cpu8080_latest/verilog/gscl45nm/cpu8080.v",
+      // "tum-eisec-benchmarks-main/netlist/cpu8080_latest/verilog/gscl45nm/M8080.v",
+      // "tum-eisec-benchmarks-main/netlist/cpu8080_latest/verilog/gscl45nm/SM8080.v",
+
+      // // csa_latest
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/block_decypher.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/csa_fgpa.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/decrypt.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/group_decrypt.v", 
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/key_cnt.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/ledseg_cnt.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/sboxes.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/single_block_decypher.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/stream_8bytes.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/stream_byte.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/stream_cypher.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/osu035/stream_iteration.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/gscl45nm/block_decypher.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/gscl45nm/csa_fgpa.v",
+      // "tum-eisec-benchmarks-main/netlist/csa_latest/verilog/gscl45nm/decrypt.v",
+
+      // cxd9731_latest
+      // "tum-eisec-benchmarks-main/netlist/cxd9731_latest/verilog/osu035/CRC_CAL.v",
+      // "tum-eisec-benchmarks-main/netlist/cxd9731_latest/verilog/nangate/CRC_CAL.v",
+      // "tum-eisec-benchmarks-main/netlist/cxd9731_latest/verilog/gscl45nm/CRC_CAL.v",
+
+
+    ///////
+    // double_fpu_latest
+    "tum-eisec-benchmarks-main/netlist/double_fpu_latest/verilog/osu035/fpu.v",
+    "tum-eisec-benchmarks-main/netlist/double_fpu_latest/verilog/nangate/fpu.v",
+    "tum-eisec-benchmarks-main/netlist/double_fpu_latest/verilog/gscl45nm/fpu.v",
+
+    // dpll-isdn_latest
+    "tum-eisec-benchmarks-main/netlist/dpll-isdn_latest/verilog/osu035/dpll.v",
+    "tum-eisec-benchmarks-main/netlist/dpll-isdn_latest/verilog/osu035/variableresetrandomwalkfilter.v",
+    "tum-eisec-benchmarks-main/netlist/dpll-isdn_latest/verilog/nangate/dpll.v",
+    "tum-eisec-benchmarks-main/netlist/dpll-isdn_latest/verilog/nangate/variableresetrandomwalkfilter.v",
+    "tum-eisec-benchmarks-main/netlist/dpll-isdn_latest/verilog/gscl45nm/dpll.v",
+    "tum-eisec-benchmarks-main/netlist/dpll-isdn_latest/verilog/gscl45nm/variableresetrandomwalkfilter.v",
+
+    // edge_latest
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/alu.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/controller.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/Edge_core.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/ex_mem_pipereg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/id_ex_pipereg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/if_id_pipreg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/mem_wb_pipreg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/osu035/shift_unit.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/alu.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/controller.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/Edge_core.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/ex_mem_pipereg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/id_ex_pipereg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/if_id_pipreg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/mem_wb_pipreg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/nangate/shift_unit.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/alu.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/controller.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/Edge_core.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/ex_mem_pipereg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/id_ex_pipereg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/if_id_pipreg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/mem_wb_pipreg.v",
+    "tum-eisec-benchmarks-main/netlist/edge_latest/verilog/gscl45nm/shift_unit.v",
+
+    // ethernet_tri_mode_latest
+    "tum-eisec-benchmarks-main/netlist/ethernet_tri_mode_latest/verilog/osu035/eth_mlim.v",
+    "tum-eisec-benchmarks-main/netlist/ethernet_tri_mode_latest/verilog/osu035/Reg_int.v",
+    "tum-eisec-benchmarks-main/netlist/ethernet_tri_mode_latest/verilog/nangate/eth_mlim.v",
+    "tum-eisec-benchmarks-main/netlist/ethernet_tri_mode_latest/verilog/nangate/Reg_int.v",    
+    "tum-eisec-benchmarks-main/netlist/ethernet_tri_mode_latest/verilog/gscl45nm/eth_mlim.v",
+    "tum-eisec-benchmarks-main/netlist/ethernet_tri_mode_latest/verilog/gscl45nm/Reg_int.v",
+    
+     // ethma_latest
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/eth_maccontrol.v",
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/eth_registers.v",
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/rxethmac.v",  
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/eth_top.v",
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/eth_txethmac.v",
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/eth_wishbone.v",  
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/osu035/ethmac.v",  
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/gscl45nm/eth_maccontrol.v",
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/gscl45nm/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/gscl45nm/eth_registers.v", 
+     "tum-eisec-benchmarks-main/netlist/ethma_latest/verilog/gscl45nm/gscl45nm.v",  
+     
+    // fixed_point_arithmetic_parameterized_latest
+    "tum-eisec-benchmarks-main/netlist/fixed_point_arithmetic_parameterized_latest/verilog/osu035/qmult.v",
+    "tum-eisec-benchmarks-main/netlist/fixed_point_arithmetic_parameterized_latest/verilog/osu035/top.v",
+    "tum-eisec-benchmarks-main/netlist/fixed_point_arithmetic_parameterized_latest/verilog/nangate/qmult.v",
+    "tum-eisec-benchmarks-main/netlist/fixed_point_arithmetic_parameterized_latest/verilog/nangate/top.v",    
+    "tum-eisec-benchmarks-main/netlist/fixed_point_arithmetic_parameterized_latest/verilog/gscl45nm/qmult.v",
+    "tum-eisec-benchmarks-main/netlist/fixed_point_arithmetic_parameterized_latest/verilog/gscl45nm/top.v",
+    
+
+    // fgpa-medium_latest
+    "tum-eisec-benchmarks-main/netlist/fgpa-medium_latest/verilog/osu035/common_network.v",
+  
+
+    // ft816float_latest
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlo8.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlo16.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlo32.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlo48.v",    
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlo64.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlz16.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlz24.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlz32.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlz32Reg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlz48.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlz64.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/cntlz64Reg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fp_cmp_unit.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpAddsub.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpAddsubnr.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpCompare.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpMul.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpMulnr.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpNormalize.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpRoundReg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpSqrt.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/fpSqrtnr.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/osu035/IntToFloat.v",
+
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlo8.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlo16.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlo32.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlo48.v",    
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlo64.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlz16.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlz24.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlz32.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlz32Reg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlz48.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlz64.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/cntlz64Reg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/fp_cmp_unit.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/fpAddsub.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/fpAddsubnr.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/fpCompare.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/nangate/fpMulnr.v",
+
+    
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlo8.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlo16.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlo32.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlo48.v",    
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlo64.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlz16.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlz24.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlz32.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlz32Reg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlz48.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlz64.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/cntlz64Reg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fp_cmp_unit.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpAddsub.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpAddsubnr.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpCompare.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpMul.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpMulnr.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpNormalize.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpRoundReg.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpSqrt.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/fpSqrtnr.v",
+    "tum-eisec-benchmarks-main/netlist/ft816float_latest/verilog/gscl45nm/IntToFloat.v",
+
+    ///////
+    // i2c_latest
+    "tum-eisec-benchmarks-main/netlist/i2c_latest/verilog/osu035/i2c_master_byte_cntrl.v",
+    "tum-eisec-benchmarks-main/netlist/i2c_latest/verilog/osu035/i2c_master_top.v",
+    "tum-eisec-benchmarks-main/netlist/i2c_latest/verilog/gscl45nm/i2c_master_byte_cntrl.v",
+    "tum-eisec-benchmarks-main/netlist/i2c_latest/verilog/gscl45nm/i2c_master_top.v",
+
+     // i8255_latest
+     "tum-eisec-benchmarks-main/netlist/i8255_latest/verilog/osu035/i8255.v",
+     "tum-eisec-benchmarks-main/netlist/i8255_latest/verilog/nangate/i8255.v",
+     "tum-eisec-benchmarks-main/netlist/i8255_latest/verilog/gscl45nm/i8255.v",
+
+     // mac_layer_switch_latest
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/osu035/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/osu035/eth_registers.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/osu035/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/osu035/eth_txethmac.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/osu035/eth_wishbone.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/nangate/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/nangate/eth_registers.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/nangate/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/gscl45nm/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/gscl45nm/eth_registers.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/gscl45nm/eth_mlim.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/gscl45nm/eth_txethmac.v",
+     "tum-eisec-benchmarks-main/netlist/mac_layer_switch_latest/verilog/gscl45nm/eth_wishbone.v",
+
+
+      // md5_core-master
+      "tum-eisec-benchmarks-main/netlist/md5_core-master/verilog/osu035/fifo.v",
+      "tum-eisec-benchmarks-main/netlist/md5_core-master/verilog/osu035/md5_ctl.v",
+      "tum-eisec-benchmarks-main/netlist/md5_core-master/verilog/osu035/md5_fsm.v",
+      "tum-eisec-benchmarks-main/netlist/md5_core-master/verilog/nangate/fifo.v",
+      "tum-eisec-benchmarks-main/netlist/md5_core-master/verilog/gscl45nm/fifo.v",
+      "tum-eisec-benchmarks-main/netlist/md5_core-master/verilog/gscl45nm/md5_ctl.v",
+      "tum-eisec-benchmarks-main/netlist/md5_core-master/verilog/gscl45nm/md5_fsm.v",
+
+      // mesi_isc
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/osu035/fifo.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/osu035/md5_ctl.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/osu035/md5_fsm.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/nangate/fifo.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/nangate/md5_ctl.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/nangate/md5_fsm.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/gscl45nm/fifo.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/gscl45nm/md5_ctl.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/gscl45nm/md5_fsm.v",
+
+      // minirisc_latest
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/osu035/alu.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/osu035/mrisc.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/nangate/alu.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/nangate/mrisc.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/gscl45nm/alu.v",
+      "tum-eisec-benchmarks-main/netlist/mesi_isc/verilog/gscl45nm/mrisc.v",
+
+      // mips_16_latest
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/osu035/IF_stage.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/osu035/MEM_stage.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/osu035/mips_16_core_top.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/nangate/IF_stage.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/nangate/MEM_stage.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/nangate/mips_16_core_top.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/gscl45nm/IF_stage.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/gscl45nm/MEM_stage.v",
+      "tum-eisec-benchmarks-main/netlist/mips_16_latest/verilog/gscl45nm/mips_16_core_top.v",
+
+      // mips32r1_latest
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/ALU.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/FIFO_Clear.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/FIFO_NoFull_Count.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/I2C_Controller.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/I2C_Phy.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/LCD.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/Processor.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/Switches.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/uart_bootloader.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/osu035/uart_min.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/ALU.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/FIFO_Clear.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/FIFO_NoFull_Count.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/I2C_Controller.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/I2C_Phy.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/LCD.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/Processor.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/Switches.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/uart_bootloader.v",
+      "tum-eisec-benchmarks-main/netlist/mips32r1_latest/verilog/gscl45nm/uart_min.v",
+
+      // mod3_calc_latest
+      "tum-eisec-benchmarks-main/netlist/mod3_calc_latest/verilog/osu035/mod3.v",
+      "tum-eisec-benchmarks-main/netlist/mod3_calc_latest/verilog/nangate/mod3.v",
+      "tum-eisec-benchmarks-main/netlist/mod3_calc_latest/verilog/gscl45nm/mod3.v",
+
+
+      // natalius_8bit_risc_latest
+      "tum-eisec-benchmarks-main/netlist/natalius_8bit_risc_latest/verilog/osu035/datapath.v",
+      "tum-eisec-benchmarks-main/netlist/natalius_8bit_risc_latest/verilog/nangate/datapath.v",
+      "tum-eisec-benchmarks-main/netlist/natalius_8bit_risc_latest/verilog/gscl45nm/datapath.v",
+
+    // nextz80_latest
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/osu035/ALU.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/osu035/N8080_ALU8.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/osu035/N8080_Reg.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/osu035/Next8080.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/osu035/NextZ80.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/osu035/Z80Reg.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/nangate/ALU.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/nangate/N8080_ALU8.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/nangate/N8080_Reg.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/nangate/Next8080.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/gscl45nm/ALU.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/gscl45nm/N8080_ALU8.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/gscl45nm/N8080_Reg.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/gscl45nm/Next8080.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/gscl45nm/NextZ80.v",
+    "tum-eisec-benchmarks-main/netlist/nextz80_latest/verilog/gscl45nm/Z80Reg.v",
+
+
+    // numbert_sort_device_latest
+    "tum-eisec-benchmarks-main/netlist/numbert_sort_device_latest/verilog/osu035/SEG7_LUT_4.v",
+    "tum-eisec-benchmarks-main/netlist/numbert_sort_device_latest/verilog/nangate/SEG7_LUT_4.v",
+    "tum-eisec-benchmarks-main/netlist/numbert_sort_device_latest/verilog/gscl45nm/SEG7_LUT_4.v",
+
+
+    // openmsp430_latest
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/altera_reset_controller.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/ogfx_backend.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/ogfx_gpu_dma.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/ogfx_gpu.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/ogfx_reg_vram_if.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/ogfx_reg.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/omsp_dbg_i2c.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/omsp_dbg.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/omsp_de0_nano_soc_led_key_sw.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/omsp_execution_unit.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/omsp_gpio.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/omsp_timerA.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/omsp_uart.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/openGFX430.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/osu035/openMPS430.v",
+
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/nangate/altera_reset_controller.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/nangate/ogfx_backend.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/nangate/ogfx_gpu_dma.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/nangate/ogfx_gpu.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/nangate/ogfx_reg_vram_if.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/nangate/ogfx_reg.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/nangate/omsp_dbg_i2c.v",
+
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/altera_reset_controller.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/ogfx_backend.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/ogfx_gpu_dma.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/ogfx_gpu.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/ogfx_reg_vram_if.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/ogfx_reg.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/omsp_dbg_i2c.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/omsp_dbg.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/omsp_de0_nano_soc_led_key_sw.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/omsp_execution_unit.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/omsp_gpio.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/omsp_timerA.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/omsp_uart.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/openGFX430.v",
+    "tum-eisec-benchmarks-main/netlist/openmsp430_latest/verilog/gscl45nm/openMPS430.v",
+
+    // orsoc_graphics_accelerator
+    "tum-eisec-benchmarks-main/netlist/orsoc_graphics_accelerator/verilog/osu035/gfx_blender.v",
+    "tum-eisec-benchmarks-main/netlist/orsoc_graphics_accelerator/verilog/osu035/gfx_clip.v",
+    "tum-eisec-benchmarks-main/netlist/orsoc_graphics_accelerator/verilog/osu035/gfx_fragment_processor.v",
+    "tum-eisec-benchmarks-main/netlist/orsoc_graphics_accelerator/verilog/osu035/gfx_interp.v",
+    "tum-eisec-benchmarks-main/netlist/orsoc_graphics_accelerator/verilog/osu035/gfx_renderer.v",
+    
+     // pairing_latest
+     "tum-eisec-benchmarks-main/netlist/pairing_latest/verilog/osu035/f3m_cubic.v",
+     "tum-eisec-benchmarks-main/netlist/pairing_latest/verilog/osu035/f3m_mux6.v",
+
+     // present_encryptor_latest
+     "tum-eisec-benchmarks-main/netlist/present_encryptor_latest/verilog/osu035/key_update.v",
+     "tum-eisec-benchmarks-main/netlist/present_encryptor_latest/verilog/nangate/key_update.v",
+     "tum-eisec-benchmarks-main/netlist/present_encryptor_latest/verilog/gscl45nm/key_update.v",
+
+    // ps2_host_controller_latest
+     "tum-eisec-benchmarks-main/netlist/ps2_host_controller_latest/verilog/osu035/ps2_host.v",
+     "tum-eisec-benchmarks-main/netlist/ps2_host_controller_latest/verilog/nangate/ps2_host.v",
+     "tum-eisec-benchmarks-main/netlist/ps2_host_controller_latest/verilog/gscl45nm/ps2_host.v",
+
+
+     // rs_5_3_gf256_latest
+     "tum-eisec-benchmarks-main/netlist/rs_5_3_gf256_latest/verilog/osu035/RS_5_3_GF256.v",
+     "tum-eisec-benchmarks-main/netlist/rs_5_3_gf256_latest/verilog/osu035/SYN2ERR.v",
+     "tum-eisec-benchmarks-main/netlist/rs_5_3_gf256_latest/verilog/nangate/RS_5_3_GF256.v",
+     "tum-eisec-benchmarks-main/netlist/rs_5_3_gf256_latest/verilog/nangate/SYN2ERR.v",
+     "tum-eisec-benchmarks-main/netlist/rs_5_3_gf256_latest/verilog/gscl45nm/RS_5_3_GF256.v",
+     "tum-eisec-benchmarks-main/netlist/rs_5_3_gf256_latest/verilog/gscl45nm/SYN2ERR.v",
+
+     // rs_decoder_31_19_6_latest
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/CSEEblock.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/degree1_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/degree2_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/degree3_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/degree4_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/degree5_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/degree6_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/osu035/fifo_register.v",
+
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/CSEEblock.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/degree1_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/degree2_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/degree3_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/degree4_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/degree5_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/degree6_cell.v",
+    "tum-eisec-benchmarks-main/netlist/rs_decoder_31_19_6_latest/verilog/gscl45nm/fifo_register.v",
+
+     
+    // rs_encoder_decoder_latest 
+    "tum-eisec-benchmarks-main/netlist/rs_encoder_decoder_latest/verilog/osu035/RS8Encoder8t.v",
+    "tum-eisec-benchmarks-main/netlist/rs_encoder_decoder_latest/verilog/gscl45nm/RS8Encoder8t.v",
+
+    // rsencoder_latest
+    "tum-eisec-benchmarks-main/netlist/rsencoder_latest/verilog/osu035/rs_encode.v",
+    "tum-eisec-benchmarks-main/netlist/rsencoder_latest/verilog/nangate/rs_encode.v",
+    "tum-eisec-benchmarks-main/netlist/rsencoder_latest/verilog/gscl45nm/rs_encode.v",
+
+    // sdcard_mass_storage_controller_latest
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/osu035/sd_cmd_phy.v",
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/osu035/sd_cmd_serial_host.v",
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/osu035/sd_fifo_rx_filler.v",
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/osu035/sd_fifo_tx_filler.v",
+
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/gscl45nm/sd_cmd_phy.v",
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/gscl45nm/sd_cmd_serial_host.v",
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/gscl45nm/sd_fifo_rx_filler.v",
+    "tum-eisec-benchmarks-main/netlist/sdcard_mass_storage_controller_latest/verilog/gscl45nm/sd_fifo_tx_filler.v",
+
+
+    // serv
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/osu035/serv_rf_top.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/osu035/serv_synth_wrapper.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/osu035/serv_top.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/nangate/serv_rf_top.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/nangate/serv_synth_wrapper.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/nangate/serv_top.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/gscl45nm/serv_rf_top.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/gscl45nm/serv_synth_wrapper.v",
+    "tum-eisec-benchmarks-main/netlist/serv/verilog/gscl45nm/serv_top.v",
+
+
+    // sha1-master
+    "tum-eisec-benchmarks-main/netlist/sha1-master/verilog/osu035/sha1.v",
+    "tum-eisec-benchmarks-main/netlist/sha1-master/verilog/osu035/sha1_core.v",
+    "tum-eisec-benchmarks-main/netlist/sha1-master/verilog/nangate/sha1.v",
+    "tum-eisec-benchmarks-main/netlist/sha1-master/verilog/nangate/sha1_core.v",
+    "tum-eisec-benchmarks-main/netlist/sha1-master/verilog/gscl45nm/sha1.v",
+    "tum-eisec-benchmarks-main/netlist/sha1-master/verilog/gscl45nm/sha1_core.v",
+
+    // sha256-master
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/osu035/sha256.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/osu035/sha256_core.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/osu035/sha256_stream.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/nangate/sha256.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/nangate/sha256_core.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/nangate/sha256_stream.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/gscl45nm/sha256.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/gscl45nm/sha256_core.v",
+    "tum-eisec-benchmarks-main/netlist/sha256-master/verilog/gscl45nm/sha256_stream.v",
+
+    // signed_integer_divider_latest
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/osu035/adder_32bit.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/osu035/divider_dshift.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/osu035/shift_3b.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/osu035/shift_7b.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/osu035/shift_15b.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/osu035/shifter.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/nangate/adder_32bit.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/gscl45nm/adder_32bit.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/gscl45nm/divider_dshift.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/gscl45nm/shift_3b.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/gscl45nm/shift_7b.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/gscl45nm/shift_15b.v",
+    "tum-eisec-benchmarks-main/netlist/signed_integer_divider_latest/verilog/gscl45nm/shifter.v",
+
+    // simon_core_latest
+    "tum-eisec-benchmarks-main/netlist/simon_core_latest/verilog/osu035/top_module.v",
+    "tum-eisec-benchmarks-main/netlist/simon_core_latest/verilog/nangate/top_module.v",
+    "tum-eisec-benchmarks-main/netlist/simon_core_latest/verilog/gscl45nm/top_module.v",
+
+    // ssp_uart_latest
+    "tum-eisec-benchmarks-main/netlist/ssp_uart_latest/verilog/osu035/UART_INT.v",
+    "tum-eisec-benchmarks-main/netlist/ssp_uart_latest/verilog/gscl45nm/UART_INT.v",
+
+    // suslik_latest
+    "tum-eisec-benchmarks-main/netlist/suslik_latest/verilog/osu035/brpred.v",
+    "tum-eisec-benchmarks-main/netlist/suslik_latest/verilog/osu035/regfileint0.v",
+
+    // tiny_tate_bilinear_pairing_latest
+    "tum-eisec-benchmarks-main/netlist/tiny_tate_bilinear_pairing_latest/verilog/osu035/mod_p.v",
+    "tum-eisec-benchmarks-main/netlist/tiny_tate_bilinear_pairing_latest/verilog/osu035/mod_p.v",
+
+
+    // trigonometric_functions_in_double_fpu_latest
+    "tum-eisec-benchmarks-main/netlist/trigonometric_functions_in_double_fpu_latest/verilog/osu035/top.v",
+    "tum-eisec-benchmarks-main/netlist/trigonometric_functions_in_double_fpu_latest/verilog/nangate/top.v",
+    "tum-eisec-benchmarks-main/netlist/trigonometric_functions_in_double_fpu_latest/verilog/gscl45nm/top.v",
+
+    // uart2spi_latest
+    "tum-eisec-benchmarks-main/netlist/uart2spi_latest/verilog/osu035/uart_core.v",
+    "tum-eisec-benchmarks-main/netlist/uart2spi_latest/verilog/nangate/uart_core.v",
+    "tum-eisec-benchmarks-main/netlist/uart2spi_latest/verilog/gscl45nm/uart_core.v",
+
+    // usb_device_core_latest
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/osu035/usbf_device_core.v",
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/osu035/usbf_device.v",
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/osu035/usbf_sie_rx.v",
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/osu035/usbf_sie_tx.v",
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/gscl45nm/usbf_device_core.v",
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/gscl45nm/usbf_device.v",
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/gscl45nm/usbf_sie_rx.v",
+    "tum-eisec-benchmarks-main/netlist/usb_device_core_latest/verilog/gscl45nm/usbf_sie_tx.v",
+
+    // usbhostslave_latest
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/fifoRTL.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/hostSlaveMux.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/RxFifo.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/TxFifo.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbHost.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbHostControl.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbHostCyc2Wrap_usb1t11.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbHostCyc2Wrap.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbHostSlave.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbHostSlaveAvalonWrap.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbHostSlaveCyc2Wrap.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbSerialInterfaceEngine.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbSlaveControl.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbSlaveCyc2Wrap_usb1t11.v",
+    "tum-eisec-benchmarks-main/netlist/usbhostslave_latest/verilog/osu035/usbSlaveCyc2Wrap_usb1t11.v",
+
+    // verilog-axi-librecores
+    "tum-eisec-benchmarks-main/netlist/verilog-axi-librecores/verilog/osu035/arbiter.v",
+    "tum-eisec-benchmarks-main/netlist/verilog-axi-librecores/verilog/osu035/axi_fifo.v",
+    "tum-eisec-benchmarks-main/netlist/verilog-axi-librecores/verilog/osu035/axi_register.v",
+    "tum-eisec-benchmarks-main/netlist/verilog-axi-librecores/verilog/osu035/axil_register.v",
+    "tum-eisec-benchmarks-main/netlist/verilog-axi-librecores/verilog/osu035/priority_encoder.v",
+
+    // xgate_latest
+    "tum-eisec-benchmarks-main/netlist/xgate_latest/verilog/osu035/xgate_jtag.v",
+    "tum-eisec-benchmarks-main/netlist/xgate_latest/verilog/nangate/xgate_jtag.v",
+    "tum-eisec-benchmarks-main/netlist/xgate_latest/verilog/gscl45nm/xgate_jtag.v"
+    ]
+  }

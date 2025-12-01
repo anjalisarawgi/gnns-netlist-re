@@ -19,8 +19,8 @@ from collections import defaultdict
 
 import os
 
-RAW_DIR = "mwe/graphs/raw/tiny_aes_latest/osu035"
-OUT_DIR = "mwe/graphs/processed/tiny_aes_latest/osu035"
+RAW_DIR = "mwe/graphs/raw/gost28147-89_latest/gscl45nm"
+OUT_DIR = "mwe/graphs/processed/gost28147-89_latest/nangscl45nmgate"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 gml_files = [f for f in os.listdir(RAW_DIR) if f.endswith(".gml")]
