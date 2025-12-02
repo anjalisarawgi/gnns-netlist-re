@@ -470,13 +470,21 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         loss, epoch_nodes = train(model, train_loader, optimizer, class_weights)
         train_time = time.perf_counter() - train_start
 
-        # coverage tracking 
+        ## coverage tracking 
+        epoch_coverage = len(epoch_nodes)
+        cumulative_coverage = len(ever_covered_nodes)
+        epoch_coverage_ratio = epoch_coverage / data.num_nodes
+        cumulative_coverage_ratio = cumulative_coverage / data.num_nodes
+
         covered_nodes_per_epoch.append(len(epoch_nodes))
         covered_node_ids_per_epoch.append(len(epoch_nodes))
 
         for n in epoch_nodes:
             ever_covered_nodes.add(n)
             appeared_counter[n] = appeared_counter.get(n, 0) + 1
+
+        ###
+        
         # evaluation
         if epoch % 50 == 0:
             train_acc = evaluate(model, data, data.train_mask)
@@ -523,18 +531,21 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
             log_data["train_accuracy"] = train_acc
             log_data["val_accuracy"] = val_acc
 
+
         if train_acc is not None:
             last_train_acc = train_acc
             last_val_acc = val_acc
             print(
                 f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
                 f"Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}, "
-                f"Train time: {train_time:.2f}s, Total epoch time: {epoch_time:.2f}s"
+                f"Train time: {train_time:.2f}s, Total epoch time: {epoch_time:.2f}s,"
+                f"epoch_coverage_ratio: {epoch_coverage_ratio:.2f}, cumulative_coverage_ratio: {cumulative_coverage_ratio:.2f} "
             )
         else:
             print(
                 f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
-                f"Train time: {train_time:.2f}s, Total epoch: {epoch_time:.2f}s"
+                f"Train time: {train_time:.2f}s, Total epoch: {epoch_time:.2f}s,"
+                f"epoch_coverage_ratio: {epoch_coverage_ratio:.2f}, cumulative_coverage_ratio: {cumulative_coverage_ratio:.2f} "
             )
 
         wandb.log(log_data)
@@ -631,6 +642,27 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     print("total_nodes:", total_nodes)
     print("covered:", covered)
     print("ratio:", ratio)
+
+
+    # === Sampling frequency analysis ===
+    num_nodes = data.num_nodes
+    freqs = np.array([appeared_counter.get(i, 0) for i in range(num_nodes)])
+
+    print("\n=== SAMPLING FREQUENCY SUMMARY ===")
+    print("Min appearances:", freqs.min())
+    print("Max appearances:", freqs.max())
+    print("Mean appearances:", freqs.mean())
+    print("Median appearances:", np.median(freqs))
+    print("Std deviation:", freqs.std())
+
+    never_sampled = np.sum(freqs == 0)
+    print("Nodes never sampled:", never_sampled, "/", num_nodes)
+
+    # Simple histogram to see imbalance patterns
+    hist, bin_edges = np.histogram(freqs, bins=8)
+    print("\nHistogram of sampling counts:")
+    for count, left, right in zip(hist, bin_edges[:-1], bin_edges[1:]):
+        print(f"{int(left)}–{int(right)}: {count} nodes")
         
     return model
 
@@ -722,7 +754,7 @@ if __name__ == "__main__":
         sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
-            batch_size=3000, #int(0.01 * aes_data.num_nodes),
+            batch_size= int(0.01 * aes_data.num_nodes),
             walk_length=args.walk_length,
             shuffle=True,
             sample_coverage = 50, 
