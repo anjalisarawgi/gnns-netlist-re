@@ -54,10 +54,10 @@ train_gml:
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_round_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m2.gml" 
-  # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m2.gml"
   # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m2.gml"
-  # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m2.gml"
+  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m2.gml"
   # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_encrypt_combined_m2.gml"
   # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_mac_combined_m2.gml"
@@ -92,7 +92,7 @@ train_gml:
 
 test_gml: "mwe/graphs/processed/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
 
-epochs: 1000
+epochs: 2000
 label_mode: "boundary"
 walk_length: 100
 # radius: 7

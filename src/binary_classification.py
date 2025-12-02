@@ -1,6 +1,6 @@
 import torch
 import os
-from torch_geometric.loader import GraphSAINTRandomWalkSampler
+from torch_geometric.loader import GraphSAINTSampler, GraphSAINTRandomWalkSampler, GraphSAINTNodeSampler,GraphSAINTEdgeSampler
 from main import save_predictions_to_gml
 from utils.set_seed import set_seed
 import wandb
@@ -34,7 +34,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
 # --- optimization - 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--sampling_method", type=str, choices=["graphsaint", "khop"], default="graphsaint",
+parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge" "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
 parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
@@ -43,7 +43,9 @@ parser.add_argument("--epochs", type = int, default=250)
 
 parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
 # graphsaint
-parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method")
+parser.add_argument("--sample_coverage", type=int, default=50, help="how many times a node can be seen (sampled as a subgraph/node) for each epoch?") # for others
+parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method") # for random walk sampling only
+parser.add_argument("--num_steps", type=int, default=5, help="how many iterations per epoch do you want?") 
 
 # khop
 parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
@@ -86,7 +88,7 @@ else:
 run_name = f"{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_{train_name}_for_{test_name}"
 
 
-wandb.init(project="gnn-subcircuit-detection", name=run_name)
+wandb.init(project="gnn-boundary-detection", name=run_name)
 wandb.config.update(vars(args))
 
 
@@ -791,15 +793,40 @@ if __name__ == "__main__":
     print("Total test nodes:", testgml_data.num_nodes)
 
     aes_data.global_id = torch.arange(aes_data.num_nodes)
-    if args.sampling_method == "graphsaint":
+    if args.sampling_method == "graphsaint_rw":
         sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
             batch_size= int(0.01 * aes_data.num_nodes),
             walk_length=args.walk_length,
-            shuffle=True,
-            sample_coverage = 50, 
+            # shuffle=True,
+            sample_coverage = args.sample_coverage,
         )
+
+    elif args.sampling_method == "graphsaint_node":
+        aes_loader =  GraphSAINTNodeSampler(
+            aes_data, 
+            batch_size =  int(0.01 * aes_data.num_nodes),
+            num_steps = args.num_steps, 
+            sample_coverage = args.sample_coverage,
+        )
+    
+    elif args.sampling_method == "graphsaint_edge":
+        aes_loader =  GraphSAINTEdgeSampler(
+            aes_data, 
+            batch_size =  int(0.01 * aes_data.num_nodes),
+            num_steps = args.num_steps, 
+            sample_coverage = args.sample_coverage,
+        )
+    
+    elif args.sampling_method == "graphsaint":
+        aes_loader =  GraphSAINTEdgeSampler(
+            aes_data, 
+            batch_size =  int(0.01 * aes_data.num_nodes), # kinda builds a subgraph ???!!!
+            num_steps = args.num_steps,  # and then we can set this for how many of these subgraphs do we want per epochs
+            sample_coverage = args.sample_coverage,
+        )
+
     elif args.sampling_method == "khop":
         print(f"[INFO] Using k-hop sampling...")
         sample_start = time.perf_counter()
