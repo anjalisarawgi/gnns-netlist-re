@@ -1,0 +1,75 @@
+SAMPLING DIAGNOSTICS FOR GRAPHSAINT / RANDOM-WALK GNN TRAINING
+(Complete List for AES Subcircuit Detection Project)
+
+This document summarizes the key statistical measures and diagnostics that can be used to analyze GraphSAINT and k-hop sampling in large graph neural network training. These measures help quantify sampling diversity, bias, effectiveness, and learning dynamics.
+
+1. Importance Sampling Diagnostics
+----------------------------------
+1.1 Effective Sample Size (ESS)
+- Measures how many uniform, independent samples your biased sampler is equivalent to.
+- ESS = (sum(w_i))^2 / sum(w_i^2)
+- High ESS: sampler covers graph well.
+- Low ESS: sampler repeats the same regions.
+
+1.2 Gini Coefficient
+- Measures inequality of sampling distribution.
+- 0: uniform sampling, 1: extreme bias.
+
+1.3 Sampling Entropy
+- H = -Σ p_i log p_i
+- Measures diversity of sampling.
+
+1.4 Skewness & Kurtosis
+- Describe shape and tail-heaviness of sampling distribution.
+
+2. Graph Structural Correlation Metrics
+---------------------------------------
+2.1 Sampling frequency vs Degree correlation
+2.2 Sampling frequency vs PageRank correlation
+2.3 Sampling frequency vs k-core number
+- Reveal structural causes of oversampling.
+
+3. Per-Class / Per-Subcircuit Sampling Metrics
+-----------------------------------------------
+3.1 Mean sampling frequency per class
+3.2 Class-conditioned sampling histograms
+3.3 Per-subcircuit sampling rates
+
+4. Temporal Sampling Dynamics
+------------------------------
+4.1 Coverage curve (cumulative nodes seen)
+4.2 Coverage derivative (new nodes seen per epoch)
+4.3 Epoch-to-epoch sampling overlap
+4.4 ESS per epoch
+4.5 Unique nodes sampled per epoch
+
+5. Model Learning Diagnostics
+------------------------------
+5.1 Gradient norm per epoch
+5.2 Loss variance across batches
+5.3 Class-wise loss curves
+
+6. Neighborhood / Spatial Diagnostics
+--------------------------------------
+6.1 Average pairwise node distance per epoch
+6.2 Subcircuit coverage rates
+
+7. GraphSAINT-Specific Diagnostics
+-----------------------------------
+7.1 Sampling probability estimates
+7.2 Normalization factor stability
+
+8. Recommended Subset for Thesis
+---------------------------------
+- ESS
+- Gini coefficient
+- Sampling entropy
+- Degree correlation
+- PageRank correlation
+- Class-wise sampling frequencies
+- Coverage derivative
+- Epoch overlap
+
+Notes:
+- All sampling diagnostics apply ONLY to the training graph.
+- Evaluation metrics (accuracy, precision, recall, F1) apply to test graph.

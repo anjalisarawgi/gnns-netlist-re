@@ -6,7 +6,6 @@ from utils.set_seed import set_seed
 import wandb
 import random
 import networkx as nx
-from preprocessing import normalize_features
 import numpy as np
 from collections import defaultdict, Counter
 from torch_geometric.data import Data
@@ -101,6 +100,19 @@ elif args.label_mode == "boundary":
 
 
 set_seed(42)
+
+def normalize_features(features):
+    scaler = StandardScaler()
+    features = scaler.fit_transform(features)
+    return torch.tensor(features, dtype=torch.float)
+
+def compute_effective_sample_size(freqs):
+    freqs = np.asarray(freqs, dtype=np.float64)
+    total = freqs.sum()
+    if total == 0:
+        return 0
+    ess = (total * total) / np.sum(freqs * freqs)
+    return ess
 
 
 def ego_subgraphs_from_data(full_data, radius=2, num_subgraphs=10, seed=42):
@@ -484,7 +496,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
             appeared_counter[n] = appeared_counter.get(n, 0) + 1
 
         ###
-        
+
         # evaluation
         if epoch % 50 == 0:
             train_acc = evaluate(model, data, data.train_mask)
@@ -632,7 +644,28 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         writer.writerow(["testgml", "recall", testgml_recall])
         writer.writerow(["testgml", f"{pos_label}_acc", testgml_pos_acc])
         writer.writerow(["testgml", f"{neg_label}_acc", testgml_neg_acc])
+        
+        # === Save coverage statistics ===
+        writer.writerow(["coverage", "total_nodes", total_nodes])
+        writer.writerow(["coverage", "covered_nodes", covered])
+        writer.writerow(["coverage", "cumulative_coverage_ratio", ratio])
 
+        # Sampling frequency stats
+        writer.writerow(["sampling", "min_appearances", freqs.min()])
+        writer.writerow(["sampling", "max_appearances", freqs.max()])
+        writer.writerow(["sampling", "mean_appearances", freqs.mean()])
+        writer.writerow(["sampling", "median_appearances", np.median(freqs)])
+        writer.writerow(["sampling", "std_appearances", freqs.std()])
+        writer.writerow(["sampling", "nodes_never_sampled", int(never_sampled)])
+
+        # Optional: histogram bins
+        for count, left, right in zip(hist, bin_edges[:-1], bin_edges[1:]):
+            writer.writerow([
+                "sampling_histogram",
+                f"{int(left)}-{int(right)}",
+                int(count)
+            ])
+        
     print("[INFO] Saved final results CSV to:", results_csv_path)
 
 
@@ -647,6 +680,14 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     # === Sampling frequency analysis ===
     num_nodes = data.num_nodes
     freqs = np.array([appeared_counter.get(i, 0) for i in range(num_nodes)])
+
+    # ---- Effective Sample Size (ESS) ----
+    ess = compute_effective_sample_size(freqs)
+    ess_ratio = ess / num_nodes
+
+    print("\n=== EFFECTIVE SAMPLE SIZE (ESS) ===")
+    print(f"ESS: {ess:.2f}")
+    print(f"ESS Ratio: {ess_ratio:.4f}  (ESS / total_nodes)")
 
     print("\n=== SAMPLING FREQUENCY SUMMARY ===")
     print("Min appearances:", freqs.min())
