@@ -269,11 +269,24 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
 
 
 def train(model, loader, optimizer, class_weights=None):
+    
     model.train()
     total_loss = 0
-    batch_count = 0  # new counter
+    batch_count = 0  
+
+    epoch_nodes = set()  # for coverage
 
     for batch in loader:
+        if hasattr(batch, "global_id"):
+            epoch_nodes.update(batch.global_id.cpu().tolist())
+        # print(batch._store)
+        # print(dir(batch._store))
+        # exit()
+                
+        # print("batch size:", batch.global_id.numel())
+        # break
+
+
         optimizer.zero_grad()
         out = model(batch.x, batch.edge_index)
 
@@ -298,7 +311,7 @@ def train(model, loader, optimizer, class_weights=None):
 
     # return average loss per batch (easy to read)
     avg_loss = total_loss / batch_count if batch_count > 0 else 0
-    return avg_loss
+    return avg_loss, epoch_nodes
 
 
 @torch.no_grad()
@@ -454,9 +467,16 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
         # measure just the training step
         train_start = time.perf_counter()
-        loss = train(model, train_loader, optimizer, class_weights)
+        loss, epoch_nodes = train(model, train_loader, optimizer, class_weights)
         train_time = time.perf_counter() - train_start
 
+        # coverage tracking 
+        covered_nodes_per_epoch.append(len(epoch_nodes))
+        covered_node_ids_per_epoch.append(len(epoch_nodes))
+
+        for n in epoch_nodes:
+            ever_covered_nodes.add(n)
+            appeared_counter[n] = appeared_counter.get(n, 0) + 1
         # evaluation
         if epoch % 50 == 0:
             train_acc = evaluate(model, data, data.train_mask)
@@ -604,6 +624,14 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
     print("[INFO] Saved final results CSV to:", results_csv_path)
 
+
+    total_nodes = aes_data.num_nodes
+    covered = len(ever_covered_nodes)
+    ratio = covered / total_nodes
+    print("total_nodes:", total_nodes)
+    print("covered:", covered)
+    print("ratio:", ratio)
+        
     return model
 
 
@@ -689,14 +717,15 @@ if __name__ == "__main__":
     testgml_data.test_mask[:] = False
     print("Total test nodes:", testgml_data.num_nodes)
 
-
+    aes_data.global_id = torch.arange(aes_data.num_nodes)
     if args.sampling_method == "graphsaint":
         sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
-            batch_size=10000, #int(0.30 * aes_data.num_nodes),
+            batch_size=3000, #int(0.01 * aes_data.num_nodes),
             walk_length=args.walk_length,
             shuffle=True,
+            sample_coverage = 50, 
         )
     elif args.sampling_method == "khop":
         print(f"[INFO] Using k-hop sampling...")
@@ -721,6 +750,13 @@ if __name__ == "__main__":
     #         pin_memory=True
     #     )
 
+    # trying to find coverage ratio
+    covered_nodes_per_epoch = []
+    covered_node_ids_per_epoch = []
+    ever_covered_nodes = set()
+    appeared_counter = {}
+
+    
 
     model = run_training(
         data=aes_data,
