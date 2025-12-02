@@ -487,16 +487,19 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
         ## coverage tracking 
         epoch_coverage = len(epoch_nodes)
-        cumulative_coverage = len(ever_covered_nodes)
-        epoch_coverage_ratio = epoch_coverage / data.num_nodes
-        cumulative_coverage_ratio = cumulative_coverage / data.num_nodes
-
         covered_nodes_per_epoch.append(len(epoch_nodes))
         covered_node_ids_per_epoch.append(len(epoch_nodes))
 
         for n in epoch_nodes:
             ever_covered_nodes.add(n)
             appeared_counter[n] = appeared_counter.get(n, 0) + 1
+
+        cumulative_coverage = len(ever_covered_nodes)
+        epoch_coverage_ratio = epoch_coverage / data.num_nodes
+        cumulative_coverage_ratio = cumulative_coverage / data.num_nodes
+
+
+
 
         ###
 
