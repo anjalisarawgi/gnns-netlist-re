@@ -23,6 +23,7 @@ import time
 import json
 from torch_geometric.loader import NeighborLoader
 import yaml
+from sklearn.preprocessing import StandardScaler
 import csv
 
 # could increase to 24 -- 
@@ -615,7 +616,31 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     print("[INFO] Saved metadata to:", json_path)
 
 
+    total_nodes = aes_data.num_nodes
+    covered = len(ever_covered_nodes)
+    ratio = covered / total_nodes
+    print("total_nodes:", total_nodes)
+    print("covered:", covered)
+    print("ratio:", ratio)
 
+
+    # === Sampling frequency analysis ===
+    num_nodes = data.num_nodes
+    freqs = np.array([appeared_counter.get(i, 0) for i in range(num_nodes)])
+
+    # ---- Effective Sample Size (ESS) ----
+    ess = compute_effective_sample_size(freqs)
+    ess_ratio = ess / num_nodes
+
+    never_sampled = np.sum(freqs == 0)
+
+    # Simple histogram to see imbalance patterns
+    hist, bin_edges = np.histogram(freqs, bins=8)
+    print("\nHistogram of sampling counts:")
+    for count, left, right in zip(hist, bin_edges[:-1], bin_edges[1:]):
+        print(f"{int(left)}–{int(right)}: {count} nodes")
+    
+    #####
 
     # saving to csv
     results_csv_path = os.path.join(run_dir, "final_results.csv")
@@ -671,21 +696,6 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     print("[INFO] Saved final results CSV to:", results_csv_path)
 
 
-    total_nodes = aes_data.num_nodes
-    covered = len(ever_covered_nodes)
-    ratio = covered / total_nodes
-    print("total_nodes:", total_nodes)
-    print("covered:", covered)
-    print("ratio:", ratio)
-
-
-    # === Sampling frequency analysis ===
-    num_nodes = data.num_nodes
-    freqs = np.array([appeared_counter.get(i, 0) for i in range(num_nodes)])
-
-    # ---- Effective Sample Size (ESS) ----
-    ess = compute_effective_sample_size(freqs)
-    ess_ratio = ess / num_nodes
 
     print("\n=== EFFECTIVE SAMPLE SIZE (ESS) ===")
     print(f"ESS: {ess:.2f}")
@@ -698,15 +708,9 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     print("Median appearances:", np.median(freqs))
     print("Std deviation:", freqs.std())
 
-    never_sampled = np.sum(freqs == 0)
     print("Nodes never sampled:", never_sampled, "/", num_nodes)
 
-    # Simple histogram to see imbalance patterns
-    hist, bin_edges = np.histogram(freqs, bins=8)
-    print("\nHistogram of sampling counts:")
-    for count, left, right in zip(hist, bin_edges[:-1], bin_edges[1:]):
-        print(f"{int(left)}–{int(right)}: {count} nodes")
-        
+
     return model
 
 
