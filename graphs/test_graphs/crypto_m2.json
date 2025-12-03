@@ -1,0 +1,29 @@
+{
+    "test_graphs": [
+        "mwe/graphs/processed/aes-encryption_latest/nangate/aes_key_expand_128_combined_m2.gml",
+        "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m2.gml",
+        "mwe/graphs/processed/gcm-aes_latest/osu035/aes_key_expand_128_combined_m2.gml",
+        "mwe/graphs/processed/gcm-aes_latest/gscl45nm/aes_cipher_top_combined_m2.gml",
+        "mwe/graphs/processed/des_latest/nangate/des_combined_m2.gml",
+        "mwe/graphs/processed/des_latest/gscl45nm/crp_combined_m2.gml",
+        "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m2.gml",
+        "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m2.gml",
+        "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m2.gml",
+        "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_mac_combined_m2.gml",
+        "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_round_combined_m2.gml",
+        "mwe/graphs/processed/hight_latest/nangate/CRYPTO_PATH_combined_m2.gml",
+        "mwe/graphs/processed/hight_latest/gscl45nm/KEY_SCHED_combined_m2.gml",
+        "mwe/graphs/processed/sha3_latest/nangate/keccak_combined_m2.gml",
+        "mwe/graphs/processed/tiny_aes_latest/osu035/aes_128_combined_m2.gml",
+        "graphs/processed_v2/aes-master/gscl45nm/aes_core_combined_m2.gml",
+        "graphs/processed_v2/aes-master/gscl45nm/aes_decipher_block_combined_m2.gml",
+        "graphs/processed_v2/aes-master/osu035/aes_core_combined_m2.gml",
+        "graphs/processed_v2/aes-master/osu035/aes_decipher_block_combined_m2.gml",
+        "graphs/processed_v2/trigonometric_functions_in_double_fpu_latest/nangate/top_combined_m2.gml", 
+        "graphs/processed_v2/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m2.gml", 
+        "graphs/processed_v2/trigonometric_functions_in_double_fpu_latest/osu035/top_combined_m2.gml", 
+        "graphs/processed_v2/rsencoder_latest/nangate/rs_encode_combined_m2.gml",
+        "graphs/processed_v2/rsencoder_latest/gscl45nm/rs_encode_combined_m2.gml",
+        "graphs/processed_v2/rsencoder_latest/osu035/rs_encode_combined_m2.gml"
+    ]
+}

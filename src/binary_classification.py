@@ -47,6 +47,7 @@ parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "bou
 parser.add_argument("--sample_coverage", type=int, default=50, help="how many times a node can be seen (sampled as a subgraph/node) for each epoch?") # for others
 parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method") # for random walk sampling only
 parser.add_argument("--num_steps", type=int, default=5, help="how many iterations per epoch do you want?") 
+parser.add_argument("--perc_batchsize", type=float, default = 0.01, help="this is for the size of the batch size")
 
 # khop
 parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
@@ -79,14 +80,15 @@ test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
 train_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.train_gml]
 train_name = "+".join(train_roots[:2]) + ("+test" if len(train_roots) > 2 else "")
 
-if args.sampling_method == "graphsaint":
+if args.sampling_method == "graphsaint_rw":
     sampling_suffix = f"graphsaint_walk{args.walk_length}"
 elif args.sampling_method == "khop":
     sampling_suffix = f"khop_r{args.radius}_n{args.num_subgraphs}"
 else:
     sampling_suffix = args.sampling_method
 
-run_name = f"{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_{train_name}_for_{test_name}"
+
+run_name = f"{args.perc_batchsize}perc_{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_for_{test_name}"
 
 
 wandb.init(project="gnn-boundary-detection", name=run_name)
@@ -557,13 +559,13 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
             print(
                 f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
                 f"Train acc: {train_acc:.4f}, Val acc: {val_acc:.4f}, "
-                f"Train time: {train_time:.2f}s, Total epoch time: {epoch_time:.2f}s,"
+                f"Train time: {train_time:.2f}s, Total epoch time: {epoch_time:.2f}s, "
                 f"epoch_coverage_ratio: {epoch_coverage_ratio:.2f}, cumulative_coverage_ratio: {cumulative_coverage_ratio:.2f} "
             )
         else:
             print(
                 f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
-                f"Train time: {train_time:.2f}s, Total epoch: {epoch_time:.2f}s,"
+                f"Train time: {train_time:.2f}s, Total epoch: {epoch_time:.2f}s, "
                 f"epoch_coverage_ratio: {epoch_coverage_ratio:.2f}, cumulative_coverage_ratio: {cumulative_coverage_ratio:.2f} "
             )
 
@@ -805,7 +807,7 @@ if __name__ == "__main__":
         sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
-            batch_size= int(0.10 * aes_data.num_nodes),
+            batch_size= int(args.perc_batchsize * aes_data.num_nodes),
             walk_length=args.walk_length,
             # shuffle=True,
             sample_coverage = args.sample_coverage,
@@ -814,7 +816,7 @@ if __name__ == "__main__":
     elif args.sampling_method == "graphsaint_node":
         aes_loader =  GraphSAINTNodeSampler(
             aes_data, 
-            batch_size =  int(0.01 * aes_data.num_nodes),
+            batch_size =  int(args.perc_batchsize  * aes_data.num_nodes),
             num_steps = args.num_steps, 
             sample_coverage = args.sample_coverage,
         )
@@ -822,7 +824,7 @@ if __name__ == "__main__":
     elif args.sampling_method == "graphsaint_edge":
         aes_loader =  GraphSAINTEdgeSampler(
             aes_data, 
-            batch_size =  int(0.01 * aes_data.num_nodes),
+            batch_size =  int(args.perc_batchsize  * aes_data.num_nodes),
             num_steps = args.num_steps, 
             sample_coverage = args.sample_coverage,
         )
@@ -830,7 +832,7 @@ if __name__ == "__main__":
     elif args.sampling_method == "graphsaint":
         aes_loader =  GraphSAINTEdgeSampler(
             aes_data, 
-            batch_size =  int(0.01 * aes_data.num_nodes), # kinda builds a subgraph ???!!!
+            batch_size =  int(args.perc_batchsize * aes_data.num_nodes), # kinda builds a subgraph ???!!!
             num_steps = args.num_steps,  # and then we can set this for how many of these subgraphs do we want per epochs
             sample_coverage = args.sample_coverage,
         )

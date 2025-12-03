@@ -54,7 +54,7 @@ train_gml:
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_round_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m2.gml" 
-  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m2.gml"
+  # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m2.gml"
   # - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m2.gml"
@@ -94,7 +94,8 @@ test_gml: "mwe/graphs/processed/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
 
 epochs: 1000
 label_mode: "boundary"
-walk_length: 100
+walk_length: 6
+perc_batchsize: 0.01
 # num_steps: 1
 # radius: 7
 # num_subgraphs: 8000

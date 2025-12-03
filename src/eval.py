@@ -76,7 +76,7 @@ def load_aisec_single_gml(gml_path, binary_label=True, label_mode="subcircuit_na
     else:
         id2label = {0: "not_sbox", 1: "sbox"}
 
-    return data, id2label
+    return data, id2label, len(nodes), len(edges)
 
 
 
@@ -155,35 +155,91 @@ def save_predictions_to_gml(original_gml_path, id2name, preds, out_path):
     print(f"[INFO] Saved prediction GML → {out_path}")
 
 
+import argparse
+import json
+import torch
+import os
 
-# ---------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------
+# ... your existing imports and functions above ...
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model_path", required=True)
-    parser.add_argument("--model_type", required=True,
-                        choices=["graphsage", "gcn", "gat", "graphTransformer"])
+    parser.add_argument(
+        "--model_type",
+        default="gat",
+        choices=["graphsage", "gcn", "gat", "graphTransformer"]
+    )
 
-    parser.add_argument("--test_gml", nargs="+", required=True)
-    parser.add_argument("--label_mode", default="subcircuit_name",
-                        choices=["subcircuit_name", "boundary"])
+    # Not needed anymore if using JSON, but keep it optional
+    parser.add_argument("--test_gml", nargs="+", default=None)
+
+    parser.add_argument(
+        "--test_files",
+        type=str,
+        default=None,
+        help="Path to JSON file containing { 'test_graphs': [...] }"
+    )
+
+    parser.add_argument(
+        "--label_mode",
+        default="boundary",
+        choices=["subcircuit_name", "boundary"]
+    )
 
     args = parser.parse_args()
 
-    for gml_path in args.test_gml:
+    # ------------------------------------------------------------
+    # Prepare results directory
+    # ------------------------------------------------------------
+
+    # Use the model_path EXACTLY as the folder name
+    model_name = args.model_path
+
+    results_dir = os.path.join("results", model_name)
+    os.makedirs(results_dir, exist_ok=True)
+
+    csv_path = os.path.join(results_dir, "eval_results.csv")
+
+    if not os.path.exists(csv_path):
+        with open(csv_path, "w") as f:
+            f.write("graph,num_nodes,num_edges,f1,precision,recall,total_acc,class1_acc,class0_acc\n")
+
+    # ------------------------------------------------------------
+    # Load test graphs either from JSON or from command line
+    # ------------------------------------------------------------
+    test_graphs = []
+
+    if args.test_files:
+        with open(args.test_files, "r") as f:
+            config = json.load(f)
+        if "test_graphs" not in config:
+            raise ValueError("JSON missing required key: test_graphs")
+        test_graphs = config["test_graphs"]
+
+    if args.test_gml:
+        test_graphs.extend(args.test_gml)
+
+    if len(test_graphs) == 0:
+        raise ValueError("No test graphs provided via --test_files or --test_gml.")
+
+    # ------------------------------------------------------------
+    # Evaluate each GML graph
+    # ------------------------------------------------------------
+    for gml_path in test_graphs:
         print(f"\n=== Evaluating {gml_path} ===")
 
-        # Load graph
-        data, id2label = load_aisec_single_gml(
-            gml_path, binary_label=True, label_mode=args.label_mode
+        data, id2label, num_nodes, num_edges = load_aisec_single_gml(
+            gml_path,
+            binary_label=True,
+            label_mode=args.label_mode
         )
 
         in_dim = data.num_features
         out_dim = 2
 
-        # Load trained model
         model = load_model(
             model_type=args.model_type,
             in_dim=in_dim,
@@ -191,13 +247,30 @@ if __name__ == "__main__":
             model_path=args.model_path
         )
 
-        # Evaluate
         metrics = evaluate(model, data)
         print(metrics)
 
-        # Save GML
+        # ------------------------------------------------------------
+        # Append metrics to global CSV
+        # ------------------------------------------------------------
+        with open(csv_path, "a") as f:
+            f.write(
+                f"{gml_path},"
+                f"{num_nodes},"
+                f"{num_edges},"
+                f"{metrics['f1']},"
+                f"{metrics['precision']},"
+                f"{metrics['recall']},"
+                f"{metrics['total_acc']},"
+                f"{metrics['class1_acc']},"
+                f"{metrics['class0_acc']}\n"
+            )
+
+        # ------------------------------------------------------------
+        # Save prediction GML into results/<model_name>/
+        # ------------------------------------------------------------
         base = os.path.splitext(os.path.basename(gml_path))[0]
-        out_file = f"{base}_predictions.gml"
+        out_file = os.path.join(results_dir, f"{base}_predictions.gml")
 
         save_predictions_to_gml(
             original_gml_path=gml_path,
@@ -205,3 +278,13 @@ if __name__ == "__main__":
             preds=metrics["y_pred"],
             out_path=out_file
         )
+
+        # base = os.path.splitext(os.path.basename(gml_path))[0]
+        # out_file = f"{base}_predictions.gml"
+
+        # save_predictions_to_gml(
+        #     original_gml_path=gml_path,
+        #     id2name=id2label,
+        #     preds=metrics["y_pred"],
+        #     out_path=out_file
+        # )
