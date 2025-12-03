@@ -490,10 +490,11 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         covered_nodes_per_epoch.append(len(epoch_nodes))
         covered_node_ids_per_epoch.append(len(epoch_nodes))
 
+
         for n in epoch_nodes:
             ever_covered_nodes.add(n)
             appeared_counter[n] = appeared_counter.get(n, 0) + 1
-
+            
         cumulative_coverage = len(ever_covered_nodes)
         epoch_coverage_ratio = epoch_coverage / data.num_nodes
         cumulative_coverage_ratio = cumulative_coverage / data.num_nodes
@@ -804,7 +805,7 @@ if __name__ == "__main__":
         sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
-            batch_size= int(0.01 * aes_data.num_nodes),
+            batch_size= int(0.10 * aes_data.num_nodes),
             walk_length=args.walk_length,
             # shuffle=True,
             sample_coverage = args.sample_coverage,
