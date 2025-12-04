@@ -35,7 +35,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
 # --- optimization - 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge" "khop"], default="graphsaint",
+parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
 parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
@@ -106,6 +106,12 @@ elif args.label_mode == "boundary":
 
 set_seed(42)
 
+def is_fully_connected(full_data):
+    G = nx.Graph()
+    G.add_edges_from(full_data.edge_index.t().tolist())
+    G.add_nodes_from(range(full_data.num_nodes))  # to include isolated nodes
+    return nx.is_connected(G)
+
 def normalize_features(features):
     scaler = StandardScaler()
     features = scaler.fit_transform(features)
@@ -125,6 +131,7 @@ def ego_subgraphs_from_data(full_data, radius=2, num_subgraphs=10, seed=42):
     G = nx.Graph()
     edge_list = full_data.edge_index.t().tolist()
     G.add_edges_from(edge_list)
+    G.add_nodes_from(range(full_data.num_nodes)) 
 
     subgraph_data_list = []
 
@@ -296,6 +303,8 @@ def train(model, loader, optimizer, class_weights=None):
     for batch in loader:
         if hasattr(batch, "global_id"):
             epoch_nodes.update(batch.global_id.cpu().tolist())
+        elif hasattr(batch, "global_node_id"):
+            epoch_nodes.update(batch.global_node_id.cpu().tolist())
         # print(batch._store)
         # print(dir(batch._store))
         # exit()
@@ -481,6 +490,17 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     epochs = args.epochs
     for epoch in range(1, epochs + 1):
         epoch_start = time.perf_counter()
+
+        # === regenerate new k-hop subgraphs every epoch ===
+        if args.sampling_method == "khop":
+            subgraph_list = ego_subgraphs_from_data(
+                data,
+                radius=args.radius,
+                num_subgraphs=args.num_subgraphs,
+                seed=random.randint(0, 10**9)  # new seed per epoch
+            )
+            train_loader = DataLoader(subgraph_list, batch_size=32768, shuffle=True)
+
 
         # measure just the training step
         train_start = time.perf_counter()
@@ -775,9 +795,18 @@ if __name__ == "__main__":
     for i, gml_path in enumerate(args.train_gml):
         print(f"[{i+1}] {gml_path}")
         graph_data, label_map = load_aisec_single_gml(gml_path=gml_path, binary_label=True, label_mode = args.label_mode)
+
         if i == 0:
             id2label = label_map
+
+        # FIX: check connectivity of this specific graph
+        if not is_fully_connected(graph_data):
+            print(f"[WARN] Skipping {gml_path} because graph is not fully connected.")
+            continue
+
         train_graphs.append(graph_data)
+
+        
     aes_data = reduce(merge_data, train_graphs)
     print("[INFO] training on:", args.train_gml)
     print("Number of features:", aes_data.num_features)

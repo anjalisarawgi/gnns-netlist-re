@@ -92,12 +92,10 @@ train_gml:
 
 test_gml: "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m2.gml" 
 
-epochs: 500
+epochs: 1000
 label_mode: "boundary"
-radius: 2
-# batch_size: 1
-# neighbors_per_hop: 64
-num_subgraphs: 10000
+radius: 3
+num_subgraphs: 200
 
 set_gradient_clipping: true
 normalize_class_weights: true
