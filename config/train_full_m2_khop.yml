@@ -84,7 +84,7 @@ train_gml:
   - "mwe/graphs/processed/sha3_latest/nangate/f_permutation_combined_m2.gml"
   - "mwe/graphs/processed/sha3_latest/gscl45nm/keccak_combined_m2.gml"
   - "mwe/graphs/processed/sha3_latest/gscl45nm/f_permutation_combined_m2.gml"
-  - "mwe/graphs/processed/sha3_latest/gscl45nm/padder_combined_m1.gml"
+  - "mwe/graphs/processed/sha3_latest/gscl45nm/padder_combined_m2.gml"
 
 ### tiny_aes_latest
   # - "mwe/graphs/processed/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
@@ -94,8 +94,8 @@ test_gml: "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_cipher_top_co
 
 epochs: 1000
 label_mode: "boundary"
-radius: 3
-num_subgraphs: 200
+radius: 2
+num_subgraphs: 1000
 
 set_gradient_clipping: true
 normalize_class_weights: true

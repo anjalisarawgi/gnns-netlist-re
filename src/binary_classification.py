@@ -329,7 +329,7 @@ def train(model, loader, optimizer, class_weights=None):
         loss.backward()
         if args.set_gradient_clipping: 
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            # print("[INFO] Using gradient clipping")
+            print("[INFO] Using gradient clipping")
         optimizer.step()
 
         total_loss += loss.item()   # no multiplication
