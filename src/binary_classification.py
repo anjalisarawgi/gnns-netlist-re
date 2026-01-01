@@ -859,7 +859,7 @@ if __name__ == "__main__":
         )
     
     elif args.sampling_method == "graphsaint":
-        aes_loader =  GraphSAINTEdgeSampler(
+        aes_loader =  GraphSAINTSampler(
             aes_data, 
             batch_size =  int(args.perc_batchsize * aes_data.num_nodes), # kinda builds a subgraph ???!!!
             num_steps = args.num_steps,  # and then we can set this for how many of these subgraphs do we want per epochs
