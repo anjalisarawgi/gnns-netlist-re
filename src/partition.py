@@ -297,8 +297,6 @@ if __name__ == "__main__":
     print(f"[INFO] Number of nodes for boundary = 1:", (full_data.y == 1).sum().item())
     print(f"[INFO] Number of nodes for boundary = 0:", (full_data.y == 0).sum().item())
     print("[INFO] Total training nodes:", full_data.num_nodes)
-
-    print("[INFO] Combined data split:")
-    print("[INFO] Train nodes:", full_data.train_mask.sum().item())
-    print("[INFO] Val nodes  :", full_data.val_mask.sum().item())
-    print("[INFO] Test nodes :", full_data.test_mask.sum().item())
+    print("[INFO] (a) Train nodes:", full_data.train_mask.sum().item())
+    print("[INFO] (b) Val nodes  :", full_data.val_mask.sum().item())
+    print("[INFO] (c) Test nodes :", full_data.test_mask.sum().item())
