@@ -25,6 +25,7 @@ from torch_geometric.loader import NeighborLoader
 import yaml
 from sklearn.preprocessing import StandardScaler
 import csv
+from functools import reduce
 
 # could increase to 24 -- 
 torch.set_num_threads(20)        # for math mult (pytorch)    
@@ -118,6 +119,34 @@ def normalize_features(features):
     scaler = StandardScaler()
     features = scaler.fit_transform(features)
     return torch.tensor(features, dtype=torch.float)
+
+    
+#### merge_data
+def merge_data(gml_1, gml_2):
+    # note here we make offsets so we dont have overlapping edge indexes 
+    offset = gml_1.num_nodes
+    gml_2_edgeIndex = gml_2.edge_index + offset
+
+    # concat 
+    x = torch.cat([gml_1.x, gml_2.x], dim=0)
+    edge_index = torch.cat([gml_1.edge_index, gml_2.edge_index], dim=1)
+    y = torch.cat([gml_1.edge_index, gml_2.edge_index], dim=0)
+
+    train_mask = torch.cat([gml_1.train_mask, gml_2.train_mask], dim = 0)
+    val_mask = torch.cat([gml_1.val_mask, gml_2.val_mask], dim = 0)
+    test_mask = torch.cat([gml_1.test_mask, gml_2.test_mask], dim = 0)
+
+    # data obj
+    mertged_data = Data(
+        x = x, 
+        edge_index=edges,
+        y = y, 
+        train_mask = train_mask, 
+        val_mask = val_mask, 
+        test_mask = test_mask
+    )
+
+    return mertged_data
 
 ## this function takes a .gml graph --> changes to PyTorch Geometric Dataset
 ## note:
@@ -252,3 +281,24 @@ if __name__ == "__main__":
     print("id2label:", label_map)
 
     #### *** check feature matrix and problem with the length idk 
+
+    ### test gml 
+    testgml_data, _ = load_single_gml(gml_path = args.test_gml, remove_edges=True)
+    testgml_data.train_mask[:]= False
+    testgml_data.val_mask[:]= False
+    testgml_data.test_mask[:]= False
+    print("[INFO] Total number of nodes:", testgml_data.num_nodes)
+
+    ### merges / combines -- using reduce 
+    full_data = reduce(merge_data, train_graphs)
+    print("[INFO] training on:", args.train_gml)
+    print("[INFO] Number of features:", full_data.num_features)
+    print("[INFO] Feature matrix shape:", full_data.x.shape)
+    print(f"[INFO] Number of nodes for boundary = 1:", (full_data.y == 1).sum().item())
+    print(f"[INFO] Number of nodes for boundary = 0:", (full_data.y == 0).sum().item())
+    print("[INFO] Total training nodes:", full_data.num_nodes)
+
+    print("[INFO] Combined data split:")
+    print("[INFO] Train nodes:", full_data.train_mask.sum().item())
+    print("[INFO] Val nodes  :", full_data.val_mask.sum().item())
+    print("[INFO] Test nodes :", full_data.test_mask.sum().item())

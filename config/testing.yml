@@ -5,7 +5,7 @@ train_gml:
 - "graphs/processed_v2/aes-master/gscl45nm/aes_core_combined_m1.gml"
     
 
-test_gml:    "graphs/processed_v2/aes-master/nangate/aes_core_combined_m1.gml"
+test_gml: "graphs/processed_v2/aes-master/gscl45nm/aes_core_combined_m1.gml"
 
 epochs: 100
 walk_length: 20
