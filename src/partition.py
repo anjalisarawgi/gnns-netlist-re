@@ -42,7 +42,7 @@ parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn"
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?")
 parser.add_argument("--epochs", type = int, default=250)
-
+parser.add_argument("--lr", type = float, default=0.01, help = "learaning rate for main trianing")
 # parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
 # graphsaint
 parser.add_argument("--sample_coverage", type=int, default=50, help="how many times a node can be seen (sampled as a subgraph/node) for each epoch?") # for others
@@ -130,23 +130,23 @@ def merge_data(gml_1, gml_2):
     # concat 
     x = torch.cat([gml_1.x, gml_2.x], dim=0)
     edge_index = torch.cat([gml_1.edge_index, gml_2_edgeIndex], dim=1)
-    y = torch.cat([gml_1.y, gml_2_edgeIndex.y], dim=0)
+    y = torch.cat([gml_1.y, gml_2.y], dim=0)
 
-    train_mask = torch.cat([gml_1.train_mask, gml_2_edgeIndex.train_mask], dim = 0)
-    val_mask = torch.cat([gml_1.val_mask, gml_2_edgeIndex.val_mask], dim = 0)
-    test_mask = torch.cat([gml_1.test_mask, gml_2_edgeIndex.test_mask], dim = 0)
+    train_mask = torch.cat([gml_1.train_mask, gml_2.train_mask], dim = 0)
+    val_mask = torch.cat([gml_1.val_mask, gml_2.val_mask], dim = 0)
+    test_mask = torch.cat([gml_1.test_mask, gml_2.test_mask], dim = 0)
 
     # data obj
-    mertged_data = Data(
+    merged_data = Data(
         x = x, 
-        edge_index=edges,
+        edge_index=edge_index,
         y = y, 
         train_mask = train_mask, 
         val_mask = val_mask, 
         test_mask = test_mask
     )
 
-    return mertged_data
+    return merged_data
 
 ## this function takes a .gml graph --> changes to PyTorch Geometric Dataset
 ## note:
@@ -180,8 +180,8 @@ def load_single_gml(gml_path, remove_edges = False):
     id2label = {0: "not_boundary", 1:"boundary"}
     labels = torch.tensor(labels, dtype = torch.long)
 
-    ## normalizing features ***
-    # features = normalize_features(np.array(features, dtype = np.float32)) ### - this becomes one scaler for each graph
+    ## normalizing features *** ???
+    features = normalize_features(np.array(features, dtype = np.float32)) ### - this becomes one scaler for each graph
 
     # debugging for checking if everything is okay
     unique_classes, class_counts = np.unique(labels.cpu().numpy(), return_counts = True)
@@ -249,8 +249,288 @@ def load_single_gml(gml_path, remove_edges = False):
 
 
 
+def train(model, loader, optimizer, class_weights=None):
+    model.train()
+    total_loss = 0 
+    batch_count = 0 
+
+    epoch_nodes = set() # for coverage and debugging and analysis
+
+    for batch in loader: # here, batch is is not the full graph but the sampled subgraph by graphSAINT
+        ###### ?????? - i think this logs the node indexes covered in eahc epoch
+        if hasattr(batch, "global_id"):
+            epoch_nodes.update(batch.global_id.cpu().tolist())
+        elif hasattr(batch, "global_node_id"):
+            epoch_nodes.update(batch.global_node_id.cpu().tolist())
+  
+        ###
+
+        ### note:
+        # a) batch = subgraph
+        # b) batch.x = node features
+        # c) batch.edge_index = edges between those nodes
+        # d) batch.y = node labels
+        optimizer.zero_grad()
+        out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
+
+        valid_mask = (batch.y !=-1) & (batch.train_mask) # disable this later
+        if class_weights is not None:
+            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights)
+        else:
+            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
+        
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+        batch_count += 1
+
+    average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
+    # change to : ??? laber
+    # average_loss = total_loss / total_nodes if total_nodes > 0 else 0  # average for nodes
+
+    return average_loss, epoch_nodes
 
 
+
+
+@torch.no_grad()
+def evaluate_train_acc(model, data, mask):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    pred = out.argmax(dim=1)
+
+    valid_mask = mask & (data.y != -1) 
+    correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
+
+    accuracy = correct / valid_mask.sum().item() 
+    return accuracy
+
+
+@torch.no_grad()
+def evaluate_train_fpr(data, model, mask):
+    model.eval()
+    out = model(data.x, data.edge_index)
+
+    # another moving part: ???
+    pred = out.argmax(dim=1) 
+    # probs = torch.softmax(out, dim=1) # not so agressive (1) 
+    # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
+
+    valid_mask = mask & (data.y != -1)
+
+    y_true = data.y[valid_mask].cpu().numpy()
+    y_pred = pred[valid_mask].cpu().numpy()
+
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+    return f1, precision, recall
+
+
+
+@torch.no_grad()
+def eval_class_acc(data, model, mask, id2name=None):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    pred = out.argmax(dim=1)
+
+    valid_mask = mask & (data.y != -1)
+    y_true = data.y[valid_mask]
+    y_pred = pred[valid_mask]
+
+    unique_classes = torch.unique(y_true).tolist()
+
+
+    acc_per_class = {}
+    for c in unique_classes:
+        mask_c = y_true == c 
+        total_c = mask_c.sum().item()
+        correct_c = (y_pred[mask_c] == c).sum().item()  
+        acc = correct_c / total_c if total_c > 0 else 0
+        # acc_per_class[c] = acc
+        label_name = id2name.get(c, f"Class {c}") if id2name else f"Class {c}"
+        acc_per_class[label_name] = acc
+
+    return acc_per_class
+
+
+
+# test file acc only
+@torch.no_grad()
+def evaluate_test(data, model):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    
+    # another moving part: ???
+    pred = out.argmax(dim=1) 
+    # probs = torch.softmax(out, dim=1) # not so agressive (1) 
+    # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
+    
+    valid_mask = (data.y != -1)
+    y_true = data.y[valid_mask].cpu().numpy()
+    y_pred = pred[valid_mask].cpu().numpy()
+    # y_true = data.y.cpu().numpy() ???
+    # y_pred = pred.cpu().numpy() ???
+
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+    
+
+    total_acc = (y_true == y_pred).sum() / len(y_true)  # calculating acc
+    positive_mask = (y_true == 1)
+    negative_mask = (y_true == 0)
+    positive_acc = (y_pred[positive_mask] == y_true[positive_mask]).sum() / positive_mask.sum() if positive_mask.sum() > 0.0 else 0.0
+    negative_acc = (y_pred[negative_mask] == y_true[negative_mask]).sum() / negative_mask.sum() if negative_mask.sum() > 0.0 else 0.0
+
+    return {
+        "f1": f1,
+        "precision": precision,
+        "recall": recall,
+        "total_acc": total_acc,
+        "boundary_1_acc": positive_acc,
+        "boundary_0_acc": negative_acc
+    }
+
+
+
+##### training  and eval functions:
+
+def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, test_data = None):
+
+    # setting the model
+    if model_name == "graphsage":
+        model = graphSAGE(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using graphsage model")
+    elif model_name == "gat":
+        model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim) 
+        model = torch.compile(model) # ???
+        print("[INFO] using gat model")
+    elif model_name == "gcn":
+        model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using GCN model")
+    elif model_name == "graphTransformer":
+        model = GraphTransformer(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using GraphTransformer model")
+
+
+    ##### training parameters 
+    # base_lr = 0.01 
+    optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
+
+
+    # warmup_epochs = 50 
+    # warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+    #     optimizer,
+    #     lr_lambda = lambda epoch: min((epoch+1)/ warmup_epochs, 1.0)
+    # )
+    # warmup_scheduler.step()
+
+
+    ### weighted loss 
+    if use_weighted_loss:
+        print("[INFO] Using weighted losses")
+        train_labels = train_data.y[train_data.train_mask].cpu().numpy()
+        train_labels = train_labels[train_labels != -1] # ignoring labels with -1 -- can be ignored ???
+        classes = np.unique(train_labels) # can be ignored ???
+
+        weights= compute_class_weight('balanced', classes = classes, y = train_labels)
+        print("Class weights:", weights)
+
+        # normlaizing class weights: ??? can be disabled
+        print("[INFO] Normalizing class weights (weighted loss)")
+        weights = weights / np.mean(weights)
+
+        # final torch classes format 
+        class_weights = torch.tensor(weights, dtype = torch.float)
+
+
+    ##### main training loop now 
+    for epoch in range (1, args.epochs + 1):
+        loss, epoch_nodes = train(model, train_loader, optimizer, class_weights)
+
+        f1, precision, recall = evaluate_train_fpr(train_data, model, train_data.val_mask)
+        # print(f"Binary classification metrics:")
+        # print(f"  F1 Score    : {f1:.4f}")
+        # print(f"  Precision   : {precision:.4f}")
+        # print(f"  Recall      : {recall:.4f}")
+
+        classwise_acc = eval_class_acc( train_data, model, train_data.val_mask, id2name)
+        # print("  Test Class-wise Accuracy:")
+        # for cls, acc in classwise_acc.items():
+        #     print(f"    Class {cls}: {acc:.4f}")
+
+        class_acc_str = " | ".join(
+            [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
+        )
+
+
+        print(
+            f"Epoch: {epoch:03d}, "
+            f"Loss: {loss:.4f}, "
+            f"F1: {f1:.4f}, "
+            f"P: {precision:.4f}, "
+            f"R: {recall:.4f}", 
+            f"ClassAcc [{class_acc_str}]"
+        )
+
+
+        if epoch % 50 == 0 :
+            # the work for the main train dataset loop
+            train_acc = evaluate_train_acc(model, train_data, train_data.train_mask)
+            val_acc = evaluate_train_acc(model, train_data, train_data.val_mask)
+            test_acc = evaluate_train_acc(model, train_data, train_data.test_mask)
+
+            # test gml metrics
+            testgml_metrics = evaluate_test(testgml_data, model)
+            pos_acc_key = "boundary_1_acc"
+            neg_acc_key = "boundary_0_acc"
+            print(
+                f"[EPOCH {epoch}] testgml → "
+                f"F1={testgml_metrics['f1']:.4f}, "
+                f"precision = {testgml_metrics['precision']:.4f}, "
+                f"recall = {testgml_metrics['recall']:.4f}, "
+                f"ACC={testgml_metrics['total_acc']:.4f}, "
+                f"boundary_1_acc={testgml_metrics[pos_acc_key]:.4f}, "
+                f"boundary_0_acc={testgml_metrics[neg_acc_key]:.4f}"
+            )
+
+
+    ### Save model
+    run_dir =  os.path.join("models", wandb.run.name)
+    os.makedirs(run_dir, exist_ok=True)
+    model_path = f"{run_dir}/model.pt"
+    torch.save(model.state_dict(), model_path)
+    print("[INFO] Saved model to:", model_path)
+
+    # saving some meta data for logging
+    metadata = {
+        "model_file": model_path,
+        "run_name": wandb.run.name,
+        "num_training_graphs": len(args.train_gml),
+        "training_graphs": args.train_gml,
+        "test_graph": args.test_gml,
+        "model_type": args.model,
+        "sampling_method": args.sampling_method,
+        "epochs": args.epochs,
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    json_path = f"{run_dir}/metadata.json"
+    with open(json_path, "w") as f:
+        json.dump(metadata, f, indent=4)
+
+    print("[INFO] Saved metadata to:", json_path)
+
+    return model
+
+
+
+
+
+
+
+        
 
 
 
@@ -293,14 +573,14 @@ if __name__ == "__main__":
     combined_data = reduce(merge_data, train_graphs)
     combined_data.global_id = torch.arange(combined_data.num_nodes)  # setting global ids now which is permanent 
     print("[INFO] training on:", args.train_gml)
-    print("[INFO] Number of features:", full_data.num_features)
-    print("[INFO] Feature matrix shape:", full_data.x.shape)
-    print(f"[INFO] Number of nodes for boundary = 1:", (full_data.y == 1).sum().item())
-    print(f"[INFO] Number of nodes for boundary = 0:", (full_data.y == 0).sum().item())
-    print("[INFO] Total training nodes:", full_data.num_nodes)
-    print("[INFO] (a) Train nodes:", full_data.train_mask.sum().item())
-    print("[INFO] (b) Val nodes  :", full_data.val_mask.sum().item())
-    print("[INFO] (c) Test nodes :", full_data.test_mask.sum().item())
+    print("[INFO] Number of features:", combined_data.num_features)
+    print("[INFO] Feature matrix shape:", combined_data.x.shape)
+    print(f"[INFO] Number of nodes for boundary = 1:", (combined_data.y == 1).sum().item())
+    print(f"[INFO] Number of nodes for boundary = 0:", (combined_data.y == 0).sum().item())
+    print("[INFO] Total training nodes:", combined_data.num_nodes)
+    print("[INFO] (a) Train nodes:", combined_data.train_mask.sum().item())
+    print("[INFO] (b) Val nodes  :", combined_data.val_mask.sum().item())
+    print("[INFO] (c) Test nodes :", combined_data.test_mask.sum().item())
 
     ### samplers 
     # (a) graph saint
@@ -334,6 +614,47 @@ if __name__ == "__main__":
     #     )
 
     # (b) khop sampler (to do )
-    
 
-    
+
+    ## calling the model 
+    model = run_training(
+        train_data=combined_data,
+        train_loader=training_data_loader,
+        in_dim=combined_data.num_features,
+        out_dim=2,
+        id2name=id2label,
+        model_name=args.model, 
+        use_weighted_loss=True,
+        test_data=testgml_data 
+    )
+    metrics = evaluate_test( testgml_data, model)
+
+    # test gml prints
+    print("[INFO] Test GML results:")
+    print("Total nodes:", testgml_data.num_nodes)
+    print(f"Boundary = 1 nodes (+ve):", (testgml_data.y == 1).sum().item())
+    print(f"Boundary = 0 nodes (-ve):", (testgml_data.y == 0).sum().item())
+
+    print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")
+    print(f"Total Accuracy   : {metrics['total_acc']:.4f}")
+    print(f"Boundary = 1 Accuracy    : {metrics[f'boundary_1_acc']:.4f}")
+    print(f"Boundary = 0 Accuracy: {metrics[f'boundary_0_acc']:.4f}")
+
+    # saving the results in gml 
+    output_dir = "results/aes_to_testml"
+    os.makedirs(output_dir, exist_ok=True)
+    test_graph_name = os.path.splitext(os.path.basename(args.test_gml))[0]
+    output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
+    print("[INFO]  Saving predictions to:", output_path)
+
+    output_labels = {0: "not_boundary", 1: "boundary"}
+    print("[INFO] Output Lables:", output_labels )
+    save_predictions_to_gml(
+        original_gml_path = args.test_gml,
+        data=testgml_data,
+        model=model,
+        id2name=output_labels,
+        output_gml_path=output_path
+    )
+
+

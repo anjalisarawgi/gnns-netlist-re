@@ -2,17 +2,16 @@ sampling_method: "graphsaint_rw"
 model: "gat"
 
 train_gml: 
-- "graphs/processed_v2/aes-master/gscl45nm/aes_core_combined_m1.gml"
-    
+- "mwe/graphs/processed/gcm-aes_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "mwe/graphs/processed/gcm-aes_latest/gscl45nm/gcm_aes_v0_combined_m1.gml"
+
+ 
 
 test_gml: "graphs/processed_v2/aes-master/gscl45nm/aes_core_combined_m1.gml"
 
-epochs: 100
+epochs: 300
 walk_length: 20
 perc_batchsize: 0.01
-# num_steps: 1
-# radius: 7
-# num_subgraphs: 8000
-
+lr: 0.01
 set_gradient_clipping: true
 normalize_class_weights: true
