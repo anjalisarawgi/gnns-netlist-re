@@ -129,12 +129,12 @@ def merge_data(gml_1, gml_2):
 
     # concat 
     x = torch.cat([gml_1.x, gml_2.x], dim=0)
-    edge_index = torch.cat([gml_1.edge_index, gml_2.edge_index], dim=1)
-    y = torch.cat([gml_1.edge_index, gml_2.edge_index], dim=0)
+    edge_index = torch.cat([gml_1.edge_index, gml_2_edgeIndex], dim=1)
+    y = torch.cat([gml_1.y, gml_2_edgeIndex.y], dim=0)
 
-    train_mask = torch.cat([gml_1.train_mask, gml_2.train_mask], dim = 0)
-    val_mask = torch.cat([gml_1.val_mask, gml_2.val_mask], dim = 0)
-    test_mask = torch.cat([gml_1.test_mask, gml_2.test_mask], dim = 0)
+    train_mask = torch.cat([gml_1.train_mask, gml_2_edgeIndex.train_mask], dim = 0)
+    val_mask = torch.cat([gml_1.val_mask, gml_2_edgeIndex.val_mask], dim = 0)
+    test_mask = torch.cat([gml_1.test_mask, gml_2_edgeIndex.test_mask], dim = 0)
 
     # data obj
     mertged_data = Data(
@@ -290,7 +290,8 @@ if __name__ == "__main__":
     print("[INFO] Total number of nodes:", testgml_data.num_nodes)
 
     ### merges / combines -- using reduce 
-    full_data = reduce(merge_data, train_graphs)
+    combined_data = reduce(merge_data, train_graphs)
+    combined_data.global_id = torch.arange(combined_data.num_nodes)  # setting global ids now which is permanent 
     print("[INFO] training on:", args.train_gml)
     print("[INFO] Number of features:", full_data.num_features)
     print("[INFO] Feature matrix shape:", full_data.x.shape)
@@ -300,3 +301,39 @@ if __name__ == "__main__":
     print("[INFO] (a) Train nodes:", full_data.train_mask.sum().item())
     print("[INFO] (b) Val nodes  :", full_data.val_mask.sum().item())
     print("[INFO] (c) Test nodes :", full_data.test_mask.sum().item())
+
+    ### samplers 
+    # (a) graph saint
+    if args.sampling_method ==  "graphsaint_rw":
+        training_data_loader = GraphSAINTRandomWalkSampler(
+            combined_data, 
+            batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
+            walk_length = args.walk_length, 
+            sample_coverage = args.sample_coverage
+        )
+    elif args.sampling_method ==  "graphsaint_edge":
+        training_data_loader = GraphSAINTEdgeSampler(
+            combined_data, 
+            batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
+            num_steps = args.num_steps, 
+            sample_coverage = args.sample_coverage
+        )
+    elif args.sampling_method ==  "graphsaint_node":
+        training_data_loader = GraphSAINTNodeSampler(
+            combined_data, 
+            batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
+            num_steps = args.num_steps, 
+            sample_coverage = args.sample_coverage
+        )
+    # elif args.sampling_method ==  "graphsaint":
+    #     data_loader = GraphSAINTSampler(
+    #         combined_data, 
+    #         batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
+    #         num_steps = args.num_steps, 
+    #         sample_coverage = args.sample_coverage
+    #     )
+
+    # (b) khop sampler (to do )
+    
+
+    
