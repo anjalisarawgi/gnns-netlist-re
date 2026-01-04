@@ -59,7 +59,7 @@ parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the 
 # parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
-parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
+# parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
@@ -118,7 +118,8 @@ set_seed(42)
 def normalize_features(features):
     scaler = StandardScaler()
     features = scaler.fit_transform(features)
-    return torch.tensor(features, dtype=torch.float)
+    features_tensor = torch.tensor(features, dtype=torch.float)
+    return features_tensor
 
     
 #### merge_data
@@ -181,7 +182,7 @@ def load_single_gml(gml_path, remove_edges = False):
     labels = torch.tensor(labels, dtype = torch.long)
 
     ## normalizing features *** ???
-    features = normalize_features(np.array(features, dtype = np.float32)) ### - this becomes one scaler for each graph
+    # features = normalize_features(np.array(features, dtype = np.float32)) ### - this becomes one scaler for each graph
 
     # debugging for checking if everything is okay
     unique_classes, class_counts = np.unique(labels.cpu().numpy(), return_counts = True)
@@ -235,16 +236,25 @@ def load_single_gml(gml_path, remove_edges = False):
         print("Keeping all edges")
     ########################################
 
+    # data = Data(
+    #     # x = torch.tensor(featues, dtype = torch.float), 
+    #     x = torch.as_tensor(features, dtype = torch.float32), 
+    #     edge_index = edge_index,
+    #     y = labels, 
+    #     train_mask = train_mask, 
+    #     val_mask = val_mask, 
+    #     test_mask = test_mask
+    # )
+
+    features = torch.as_tensor(np.array(features, dtype=np.float32), dtype=torch.float32)
     data = Data(
-        # x = torch.tensor(featues, dtype = torch.float), 
-        x = torch.as_tensor(features, dtype = torch.float32), 
+        x = features,
         edge_index = edge_index,
-        y = labels, 
-        train_mask = train_mask, 
-        val_mask = val_mask, 
+        y = labels,
+        train_mask = train_mask,
+        val_mask = val_mask,
         test_mask = test_mask
     )
-
     return data, id2label
 
 
@@ -253,6 +263,7 @@ def train(model, loader, optimizer, class_weights=None):
     model.train()
     total_loss = 0 
     batch_count = 0 
+    total_nodes = 0 
 
     epoch_nodes = set() # for coverage and debugging and analysis
 
@@ -275,7 +286,7 @@ def train(model, loader, optimizer, class_weights=None):
 
         valid_mask = (batch.y !=-1) & (batch.train_mask) # disable this later
         if class_weights is not None:
-            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights)
+            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = "sum")
         else:
             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
         
@@ -284,10 +295,12 @@ def train(model, loader, optimizer, class_weights=None):
 
         total_loss += loss.item()
         batch_count += 1
+        
+        total_nodes += valid_mask.sum().item()
 
-    average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
+    # average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
     # change to : ??? laber
-    # average_loss = total_loss / total_nodes if total_nodes > 0 else 0  # average for nodes
+    average_loss = total_loss / total_nodes if total_nodes > 0 else 0  # average for nodes
 
     return average_loss, epoch_nodes
 
@@ -398,6 +411,7 @@ def evaluate_test(data, model):
 ##### training  and eval functions:
 
 def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, test_data = None):
+    class_weights = None
 
     # setting the model
     if model_name == "graphsage":
@@ -455,6 +469,8 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         # print(f"  F1 Score    : {f1:.4f}")
         # print(f"  Precision   : {precision:.4f}")
         # print(f"  Recall      : {recall:.4f}")
+        train_acc = evaluate_train_acc(model, train_data, train_data.train_mask)
+        val_acc   = evaluate_train_acc(model, train_data, train_data.val_mask)
 
         classwise_acc = eval_class_acc( train_data, model, train_data.val_mask, id2name)
         # print("  Test Class-wise Accuracy:")
@@ -467,14 +483,25 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
 
 
         print(
-            f"Epoch: {epoch:03d}, "
-            f"Loss: {loss:.4f}, "
-            f"F1: {f1:.4f}, "
-            f"P: {precision:.4f}, "
-            f"R: {recall:.4f}", 
+            f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
+            # f"TrainAcc: {train_acc:.4f}, ValAcc: {val_acc:.4f}, "
+            f"F1: {f1:.4f}, P: {precision:.4f}, R: {recall:.4f}, "
             f"ClassAcc [{class_acc_str}]"
         )
 
+        log_dict = {
+            "epoch": epoch,
+            "train/loss": loss,
+            "train/accuracy": train_acc,
+            "val/accuracy": val_acc,
+            "val/f1": f1,
+            "val/precision": precision,
+            "val/recall": recall,
+        }
+        for cls, acc in classwise_acc.items():
+            log_dict[f"val/class_acc/{cls}"] = acc
+        
+        wandb.log(log_dict)
 
         if epoch % 50 == 0 :
             # the work for the main train dataset loop
@@ -495,6 +522,16 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
                 f"boundary_1_acc={testgml_metrics[pos_acc_key]:.4f}, "
                 f"boundary_0_acc={testgml_metrics[neg_acc_key]:.4f}"
             )
+
+            wandb.log({
+                "epoch": epoch,
+                "testgml/f1": testgml_metrics["f1"],
+                "testgml/precision": testgml_metrics["precision"],
+                "testgml/recall": testgml_metrics["recall"],
+                "testgml/accuracy": testgml_metrics["total_acc"],
+                "testgml/boundary_acc": testgml_metrics["boundary_1_acc"],
+                "testgml/not_boundary_acc": testgml_metrics["boundary_0_acc"],
+            })
 
 
     ### Save model
@@ -564,6 +601,8 @@ if __name__ == "__main__":
 
     ### test gml 
     testgml_data, _ = load_single_gml(gml_path = args.test_gml, remove_edges=True)
+    # testgml_data.x= normalize_features(testgml_data.x.cpu().numpy()) # normalize
+
     testgml_data.train_mask[:]= False
     testgml_data.val_mask[:]= False
     testgml_data.test_mask[:]= False
@@ -571,6 +610,15 @@ if __name__ == "__main__":
 
     ### merges / combines -- using reduce 
     combined_data = reduce(merge_data, train_graphs)
+
+    scaler = StandardScaler()
+    combined_data.x = torch.tensor(scaler.fit_transform(combined_data.x.cpu().numpy()), dtype=torch.float32)
+    testgml_data.x  = torch.tensor(scaler.transform(testgml_data.x.cpu().numpy()), dtype=torch.float32)
+
+    # combined_data.x = normalize_features(combined_data.x.cpu().numpy()) # normalize
+    print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())
+    print("Test  mean/std:", testgml_data.x.mean().item(), testgml_data.x.std().item())
+
     combined_data.global_id = torch.arange(combined_data.num_nodes)  # setting global ids now which is permanent 
     print("[INFO] training on:", args.train_gml)
     print("[INFO] Number of features:", combined_data.num_features)
