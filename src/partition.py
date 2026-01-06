@@ -40,7 +40,8 @@ parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphs
                     help="Sampling method: 'graphsaint' or 'khop'")
 parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
-parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?")
+parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
+parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
 parser.add_argument("--epochs", type = int, default=250)
 parser.add_argument("--lr", type = float, default=0.01, help = "learaning rate for main trianing")
 # parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
@@ -77,7 +78,10 @@ if args.config:
         setattr(args, key, value)
 
 # wandb setup 
-test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
+# test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
+test_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.test_gml]
+test_name = "+".join(test_roots[:2]) + ("+more" if len(test_roots) > 2 else "")
+
 train_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.train_gml]
 train_name = "+".join(train_roots[:2]) + ("+test" if len(train_roots) > 2 else "")
 
@@ -180,6 +184,8 @@ def load_single_gml(gml_path, remove_edges = False):
 
     id2label = {0: "not_boundary", 1:"boundary"}
     labels = torch.tensor(labels, dtype = torch.long)
+    labels[labels == -1] = 0     # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
+
 
     ## normalizing features *** ???
     # features = normalize_features(np.array(features, dtype = np.float32)) ### - this becomes one scaler for each graph
@@ -284,13 +290,18 @@ def train(model, loader, optimizer, class_weights=None):
         optimizer.zero_grad()
         out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
 
-        valid_mask = (batch.y !=-1) & (batch.train_mask) # disable this later
+        valid_mask = batch.train_mask # disable this later
         if class_weights is not None:
             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = args.reduction_method_cel)
         else:
             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
         
         loss.backward()
+        
+        if args.set_gradient_clipping: 
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # print("[INFO] Using gradient clipping")
+
         optimizer.step()
 
         total_loss += loss.item()
@@ -314,7 +325,7 @@ def evaluate_train_acc(model, data, mask):
     out = model(data.x, data.edge_index)
     pred = out.argmax(dim=1)
 
-    valid_mask = mask & (data.y != -1) 
+    valid_mask = mask 
     correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
 
     accuracy = correct / valid_mask.sum().item() 
@@ -331,7 +342,7 @@ def evaluate_train_fpr(data, model, mask):
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
 
-    valid_mask = mask & (data.y != -1)
+    valid_mask = mask 
 
     y_true = data.y[valid_mask].cpu().numpy()
     y_pred = pred[valid_mask].cpu().numpy()
@@ -349,7 +360,7 @@ def eval_class_acc(data, model, mask, id2name=None):
     out = model(data.x, data.edge_index)
     pred = out.argmax(dim=1)
 
-    valid_mask = mask & (data.y != -1)
+    valid_mask = mask 
     y_true = data.y[valid_mask]
     y_pred = pred[valid_mask]
 
@@ -381,9 +392,9 @@ def evaluate_test(data, model):
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
     
-    valid_mask = (data.y != -1)
-    y_true = data.y[valid_mask].cpu().numpy()
-    y_pred = pred[valid_mask].cpu().numpy()
+    # valid_mask = (data.y != -1)
+    y_true = data.y.cpu().numpy()
+    y_pred = pred.cpu().numpy()
     # y_true = data.y.cpu().numpy() ???
     # y_pred = pred.cpu().numpy() ???
 
@@ -411,7 +422,7 @@ def evaluate_test(data, model):
 
 ##### training  and eval functions:
 
-def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, test_data = None):
+def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
     class_weights = None
 
     # setting the model
@@ -447,7 +458,6 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
     if use_weighted_loss:
         print("[INFO] Using weighted losses")
         train_labels = train_data.y[train_data.train_mask].cpu().numpy()
-        train_labels = train_labels[train_labels != -1] # ignoring labels with -1 -- can be ignored ???
         classes = np.unique(train_labels) # can be ignored ???
 
         weights= compute_class_weight('balanced', classes = classes, y = train_labels)
@@ -529,30 +539,57 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
 
             wandb.log(wandb_log)
 
-            ###########
-            # test gml metrics
-            ###########
-            testgml_metrics = evaluate_test(testgml_data, model)
-            pos_acc_key = "boundary_1_acc"
-            neg_acc_key = "boundary_0_acc"
+            # ---- VAL GRAPHS ----
+            eval_start = time.perf_counter()
+
+            val_metrics = defaultdict(list)  # collects lists of per-graph metrics
+
+            for path, g in val_graphs:
+                m = evaluate_test(g, model)
+                name = os.path.splitext(os.path.basename(path))[0]
+
+                print(
+                    f"[VAL][Epoch {epoch:03d}] {name} | "
+                    f"F1={m['f1']:.4f}, P={m['precision']:.4f}, R={m['recall']:.4f}, "
+                    f"Acc={m['total_acc']:.4f}, b1={m['boundary_1_acc']:.4f}, b0={m['boundary_0_acc']:.4f}"
+                )
+
+                # store for macro avg
+                for k, v in m.items():
+                    val_metrics[k].append(float(v))
+
+                # per-graph wandb
+                wandb.log({
+                    "epoch": epoch,
+                    f"val_pgraph/{name}/f1": m["f1"],
+                    f"val_pgraph/{name}/precision": m["precision"],
+                    f"val_pgraph/{name}/recall": m["recall"],
+                    f"val_pgraph/{name}/accuracy": m["total_acc"],
+                    f"val_pgraph/{name}/boundary_acc": m["boundary_1_acc"],
+                    f"val_pgraph/{name}/not_boundary_acc": m["boundary_0_acc"],
+                })
+
+            # macro avg over val designs
+            val_macro = {k: float(np.mean(v)) for k, v in val_metrics.items()} if len(val_graphs) else {}
             print(
-                f"[EPOCH {epoch}] testgml → "
-                f"F1={testgml_metrics['f1']:.4f}, "
-                f"precision = {testgml_metrics['precision']:.4f}, "
-                f"recall = {testgml_metrics['recall']:.4f}, "
-                f"ACC={testgml_metrics['total_acc']:.4f}, "
-                f"boundary_1_acc={testgml_metrics[pos_acc_key]:.4f}, "
-                f"boundary_0_acc={testgml_metrics[neg_acc_key]:.4f}"
+                f"[VAL][Epoch {epoch:03d}] MACRO | "
+                f"F1={val_macro.get('f1', 0.0):.4f}, "
+                f"P={val_macro.get('precision', 0.0):.4f}, "
+                f"R={val_macro.get('recall', 0.0):.4f}, "
+                f"Acc={val_macro.get('total_acc', 0.0):.4f}, "
+                f"b1={val_macro.get('boundary_1_acc', 0.0):.4f}, "
+                f"b0={val_macro.get('boundary_0_acc', 0.0):.4f}"
             )
 
             wandb.log({
                 "epoch": epoch,
-                "testgml/f1": testgml_metrics["f1"],
-                "testgml/precision": testgml_metrics["precision"],
-                "testgml/recall": testgml_metrics["recall"],
-                "testgml/accuracy": testgml_metrics["total_acc"],
-                "testgml/boundary_acc": testgml_metrics["boundary_1_acc"],
-                "testgml/not_boundary_acc": testgml_metrics["boundary_0_acc"],
+                "val_macro/f1": val_macro.get("f1", 0.0),
+                "val_macro/precision": val_macro.get("precision", 0.0),
+                "val_macro/recall": val_macro.get("recall", 0.0),
+                "val_macro/accuracy": val_macro.get("total_acc", 0.0),
+                "val_macro/boundary_acc": val_macro.get("boundary_1_acc", 0.0),
+                "val_macro/not_boundary_acc": val_macro.get("boundary_0_acc", 0.0),
+                "time/val_eval_sec": time.perf_counter() - eval_start,
             })
 
 
@@ -606,6 +643,9 @@ if __name__ == "__main__":
         print(f"[{i+1}] {gml_path}")
         graph_data, label_map = load_single_gml(gml_path = gml_path, remove_edges=True)
 
+        print("Label counts:", Counter(graph_data.y.tolist())) # debug for -1  label
+        assert (graph_data.y < 0).sum().item() == 0, "Still have negative labels!"
+
         if i ==0: ###???
             id2label = label_map
 
@@ -622,24 +662,66 @@ if __name__ == "__main__":
     #### *** check feature matrix and problem with the length idk 
 
     ### test gml 
-    testgml_data, _ = load_single_gml(gml_path = args.test_gml, remove_edges=True)
+    # testgml_data, _ = load_single_gml(gml_path = args.test_gml, remove_edges=True)
     # testgml_data.x= normalize_features(testgml_data.x.cpu().numpy()) # normalize
 
-    testgml_data.train_mask[:]= False
-    testgml_data.val_mask[:]= False
-    testgml_data.test_mask[:]= False
-    print("[INFO] Total number of nodes:", testgml_data.num_nodes)
+    print("[INFO] Loading validation graphs:")
+    val_graphs = []
+    for i, gml_path in enumerate(args.val_gml):
+        print(f"[VAL {i+1}] {gml_path}")
+        g, _ = load_single_gml(gml_path=gml_path, remove_edges=True)
+
+        print("[INFO] val graphs -- Label counts:", Counter(g.y.tolist())) # debug
+        assert (g.y < 0).sum().item() == 0
+
+        g.train_mask[:] = False
+        g.val_mask[:] = False
+        g.test_mask[:] = False
+        val_graphs.append((gml_path, g))
+
+    print("[INFO] Loading test graphs:")
+    test_graphs = []
+    for i, gml_path in enumerate(args.test_gml):
+        print(f"[TEST {i+1}] {gml_path}")
+        g, _ = load_single_gml(gml_path=gml_path, remove_edges=True)
+
+        print("[INFO] test graphs -- Label counts:", Counter(g.y.tolist())) # debug
+        assert (g.y < 0).sum().item() == 0
+        g.train_mask[:] = False
+        g.val_mask[:] = False
+        g.test_mask[:] = False
+        test_graphs.append((gml_path, g))
+
+
 
     ### merges / combines -- using reduce 
     combined_data = reduce(merge_data, train_graphs)
 
+    # train has the scaler and its fit here
     scaler = StandardScaler()
-    combined_data.x = torch.tensor(scaler.fit_transform(combined_data.x.cpu().numpy()), dtype=torch.float32)
-    testgml_data.x  = torch.tensor(scaler.transform(testgml_data.x.cpu().numpy()), dtype=torch.float32)
+    combined_data.x = torch.tensor(
+        scaler.fit_transform(combined_data.x.cpu().numpy()),
+        dtype=torch.float32
+    )
+
+    # we use the train sclaer to transform val and test
+    for path, g in val_graphs:
+        g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+
+    for path, g in test_graphs:
+        g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+
+    print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())
+    print("Val[0] mean/std:", val_graphs[0][1].x.mean().item(), val_graphs[0][1].x.std().item() if len(val_graphs) else ("NA", "NA"))
+    print("Test[0] mean/std:", test_graphs[0][1].x.mean().item(), test_graphs[0][1].x.std().item() if len(test_graphs) else ("NA", "NA"))
+
+    # scaler = StandardScaler()
+    # combined_data.x = torch.tensor(scaler.fit_transform(combined_data.x.cpu().numpy()), dtype=torch.float32)
+    # testgml_data.x  = torch.tensor(scaler.transform(testgml_data.x.cpu().numpy()), dtype=torch.float32)
 
     # combined_data.x = normalize_features(combined_data.x.cpu().numpy()) # normalize
-    print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())
-    print("Test  mean/std:", testgml_data.x.mean().item(), testgml_data.x.std().item())
+    # print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())
+    # print("Test  mean/std:", testgml_data.x.mean().item(), testgml_data.x.std().item())
 
     combined_data.global_id = torch.arange(combined_data.num_nodes)  # setting global ids now which is permanent 
     print("[INFO] training on:", args.train_gml)
@@ -693,38 +775,86 @@ if __name__ == "__main__":
         in_dim=combined_data.num_features,
         out_dim=2,
         id2name=id2label,
-        model_name=args.model, 
+        model_name=args.model,
         use_weighted_loss=True,
-        test_data=testgml_data 
+        val_graphs=val_graphs,
+        test_graphs=test_graphs,
     )
-    metrics = evaluate_test( testgml_data, model)
+    # metrics = evaluate_test( testgml_data, model)
 
     # test gml prints
-    print("[INFO] Test GML results:")
-    print("Total nodes:", testgml_data.num_nodes)
-    print(f"Boundary = 1 nodes (+ve):", (testgml_data.y == 1).sum().item())
-    print(f"Boundary = 0 nodes (-ve):", (testgml_data.y == 0).sum().item())
+    # print("[INFO] Test GML results:")
+    # print("Total nodes:", testgml_data.num_nodes)
+    # print(f"Boundary = 1 nodes (+ve):", (testgml_data.y == 1).sum().item())
+    # print(f"Boundary = 0 nodes (-ve):", (testgml_data.y == 0).sum().item())
 
-    print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")
-    print(f"Total Accuracy   : {metrics['total_acc']:.4f}")
-    print(f"Boundary = 1 Accuracy    : {metrics[f'boundary_1_acc']:.4f}")
-    print(f"Boundary = 0 Accuracy: {metrics[f'boundary_0_acc']:.4f}")
+    # print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")
+    # print(f"Total Accuracy   : {metrics['total_acc']:.4f}")
+    # print(f"Boundary = 1 Accuracy    : {metrics[f'boundary_1_acc']:.4f}")
+    # print(f"Boundary = 0 Accuracy: {metrics[f'boundary_0_acc']:.4f}")
+
+    print("[INFO] Final evaluation on TEST graphs:")
+
+    test_metrics = defaultdict(list)
+
+    for path, g in test_graphs:
+        n = evaluate_test(g, model)
+        name = os.path.splitext(os.path.basename(path))[0]
+
+        print(
+            f"[TEST] {name} | "
+            f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
+            f"Acc={n['total_acc']:.4f}, b1={n['boundary_1_acc']:.4f}, b0={n['boundary_0_acc']:.4f}"
+        )
+
+        for k, v in n.items():
+            test_metrics[k].append(float(v))
+
+        wandb.log({
+            f"test/{name}/f1": n["f1"],
+            f"test/{name}/precision": n["precision"],
+            f"test/{name}/recall": n["recall"],
+            f"test/{name}/accuracy": n["total_acc"],
+            f"test/{name}/boundary_acc": n["boundary_1_acc"],
+            f"test/{name}/not_boundary_acc": n["boundary_0_acc"],
+        })
+
+    test_macro = {k: float(np.mean(v)) for k, v in test_metrics.items()} if len(test_graphs) else {}
+    print(
+        f"[TEST] MACRO | "
+        f"F1={test_macro.get('f1', 0.0):.4f}, "
+        f"P={test_macro.get('precision', 0.0):.4f}, "
+        f"R={test_macro.get('recall', 0.0):.4f}, "
+        f"Acc={test_macro.get('total_acc', 0.0):.4f}, "
+        f"b1={test_macro.get('boundary_1_acc', 0.0):.4f}, "
+        f"b0={test_macro.get('boundary_0_acc', 0.0):.4f}"
+    )
+
+    wandb.log({
+        "test_macro/f1": test_macro.get("f1", 0.0),
+        "test_macro/precision": test_macro.get("precision", 0.0),
+        "test_macro/recall": test_macro.get("recall", 0.0),
+        "test_macro/accuracy": test_macro.get("total_acc", 0.0),
+        "test_macro/boundary_acc": test_macro.get("boundary_1_acc", 0.0),
+        "test_macro/not_boundary_acc": test_macro.get("boundary_0_acc", 0.0),
+    })
 
     # saving the results in gml 
     output_dir = "results/aes_to_testml"
     os.makedirs(output_dir, exist_ok=True)
-    test_graph_name = os.path.splitext(os.path.basename(args.test_gml))[0]
-    output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
-    print("[INFO]  Saving predictions to:", output_path)
 
     output_labels = {0: "not_boundary", 1: "boundary"}
-    print("[INFO] Output Lables:", output_labels )
-    save_predictions_to_gml(
-        original_gml_path = args.test_gml,
-        data=testgml_data,
-        model=model,
-        id2name=output_labels,
-        output_gml_path=output_path
-    )
+    print("[INFO] Output Labels:", output_labels)
 
+    for path, g in test_graphs:
+        test_graph_name = os.path.splitext(os.path.basename(path))[0]
+        output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
+        print("[INFO] Saving predictions to:", output_path)
 
+        save_predictions_to_gml(
+            original_gml_path=path,
+            data=g,
+            model=model,
+            id2name=output_labels,
+            output_gml_path=output_path
+        )
