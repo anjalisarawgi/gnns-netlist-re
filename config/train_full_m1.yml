@@ -100,5 +100,5 @@ perc_batchsize: 0.01
 # radius: 7
 # num_subgraphs: 8000
 
-set_gradient_clipping: true
-normalize_class_weights: true
+set_gradient_clipping: True
+normalize_class_weights: True

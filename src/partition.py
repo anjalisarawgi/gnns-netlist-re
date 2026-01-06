@@ -60,7 +60,7 @@ parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the 
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
 # parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
-
+parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -91,7 +91,7 @@ else:
 run_name = f"{args.perc_batchsize}perc_{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_for_{test_name}"
 
 
-wandb.init(project="gnn-boundary-detection", name=run_name)
+wandb.init(project="gnn-parition-detection", name=run_name)
 wandb.config.update(vars(args))
 
 
@@ -286,7 +286,7 @@ def train(model, loader, optimizer, class_weights=None):
 
         valid_mask = (batch.y !=-1) & (batch.train_mask) # disable this later
         if class_weights is not None:
-            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = "sum")
+            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = args.reduction_method_cel)
         else:
             loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
         
@@ -298,9 +298,10 @@ def train(model, loader, optimizer, class_weights=None):
         
         total_nodes += valid_mask.sum().item()
 
-    # average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
-    # change to : ??? laber
-    average_loss = total_loss / total_nodes if total_nodes > 0 else 0  # average for nodes
+    if args.reduction_method_cel == "mean":
+        average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
+    elif  args.reduction_method_cel == "sum":
+        average_loss = total_loss / total_nodes if total_nodes > 0 else 0  # average for nodes
 
     return average_loss, epoch_nodes
 
@@ -419,7 +420,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         print("[INFO] using graphsage model")
     elif model_name == "gat":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim) 
-        model = torch.compile(model) # ???
+        # model = torch.compile(model) # ???
         print("[INFO] using gat model")
     elif model_name == "gcn":
         model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
@@ -462,54 +463,75 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
 
     ##### main training loop now 
     for epoch in range (1, args.epochs + 1):
+        epoch_start = time.perf_counter()
+
+        train_start = time.perf_counter()
         loss, epoch_nodes = train(model, train_loader, optimizer, class_weights)
+        train_time = time.perf_counter() - train_start
 
-        f1, precision, recall = evaluate_train_fpr(train_data, model, train_data.val_mask)
-        # print(f"Binary classification metrics:")
-        # print(f"  F1 Score    : {f1:.4f}")
-        # print(f"  Precision   : {precision:.4f}")
-        # print(f"  Recall      : {recall:.4f}")
-        train_acc = evaluate_train_acc(model, train_data, train_data.train_mask)
-        val_acc   = evaluate_train_acc(model, train_data, train_data.val_mask)
-
-        classwise_acc = eval_class_acc( train_data, model, train_data.val_mask, id2name)
+        # eval_start = time.perf_counter()
+        # eval_time = time.perf_counter() - eval_start
+        
+        epoch_time = time.perf_counter() - epoch_start
         # print("  Test Class-wise Accuracy:")
         # for cls, acc in classwise_acc.items():
         #     print(f"    Class {cls}: {acc:.4f}")
 
-        class_acc_str = " | ".join(
-            [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
-        )
+        # class_acc_str = " | ".join(
+        #     [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
+        # )
 
 
         print(
             f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
-            # f"TrainAcc: {train_acc:.4f}, ValAcc: {val_acc:.4f}, "
-            f"F1: {f1:.4f}, P: {precision:.4f}, R: {recall:.4f}, "
-            f"ClassAcc [{class_acc_str}]"
+            f"time: train={train_time:.2f}s, total={epoch_time:.2f}s"
         )
 
         log_dict = {
             "epoch": epoch,
             "train/loss": loss,
-            "train/accuracy": train_acc,
-            "val/accuracy": val_acc,
-            "val/f1": f1,
-            "val/precision": precision,
-            "val/recall": recall,
+            "time/train_sec": train_time,
+            "time/epoch_sec": epoch_time,
         }
-        for cls, acc in classwise_acc.items():
-            log_dict[f"val/class_acc/{cls}"] = acc
-        
         wandb.log(log_dict)
 
-        if epoch % 50 == 0 :
-            # the work for the main train dataset loop
+        if epoch % 100 == 0 :
+            ###########
+            ## train side of eval
+            ###########
+            f1, precision, recall = evaluate_train_fpr(train_data, model, train_data.val_mask)
             train_acc = evaluate_train_acc(model, train_data, train_data.train_mask)
-            val_acc = evaluate_train_acc(model, train_data, train_data.val_mask)
-            test_acc = evaluate_train_acc(model, train_data, train_data.test_mask)
+            val_acc   = evaluate_train_acc(model, train_data, train_data.val_mask)
+            classwise_acc = eval_class_acc( train_data, model, train_data.val_mask, id2name)
+            class_acc_str = " | ".join(
+                [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
+            )
 
+            print(
+                f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
+                f"TrainAcc: {train_acc:.4f}, ValAcc: {val_acc:.4f}, "
+                f"F1: {f1:.4f}, P: {precision:.4f}, R: {recall:.4f}, "
+                f"ClassAcc [{class_acc_str}],"
+            )
+
+            wandb_log = {
+                "epoch": epoch,
+                "train_evaluate/train_acc": train_acc,
+                "train_evaluate/val_acc": val_acc,
+                "train_evaluate/f1": f1,
+                "train_evaluate/precision": precision,
+                "train_evaluate/recall": recall,
+            }
+
+            # classwise metrics under the same namespace
+            for cls, acc in classwise_acc.items():
+                wandb_log[f"train_evaluate/class_acc/{cls}"] = acc
+
+            wandb.log(wandb_log)
+
+            ###########
             # test gml metrics
+            ###########
             testgml_metrics = evaluate_test(testgml_data, model)
             pos_acc_key = "boundary_1_acc"
             neg_acc_key = "boundary_0_acc"

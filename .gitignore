@@ -6,7 +6,10 @@ misc/
 __pycache__/
 /__pycache__/
 __pycache__
+
 *.gml
+!test.gml
+
 *.png
 *.log
 *.csv
