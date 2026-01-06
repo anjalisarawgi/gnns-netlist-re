@@ -254,9 +254,9 @@ train_gml:
   -  "graphs/processed_v2/sdcard_mass_storage_controller_latest/osu035/sd_cmd_phy_combined_m2.gml"
   -  "graphs/processed_v2/sha3_latest/nangate/f_permutation_combined_m2.gml"
   -  "graphs/processed_v2/sha3_latest/gscl45nm/f_permutation_combined_m2.gml"
-  -  "graphs/processed_v2/sha3_latest/gscl45nm/keccak_combined_m2.gml"
+  # -  "graphs/processed_v2/sha3_latest/gscl45nm/keccak_combined_m2.gml"
   -  "graphs/processed_v2/sha3_latest/osu035/f_permutation_combined_m2.gml"
-  -  "graphs/processed_v2/sha3_latest/osu035/keccak_combined_m2.gml"
+  # -  "graphs/processed_v2/sha3_latest/osu035/keccak_combined_m2.gml"
   -  "graphs/processed_v2/rs_decoder_31_19_6_latest/gscl45nm/degree2_cell_combined_m2.gml"
   -  "graphs/processed_v2/rs_decoder_31_19_6_latest/gscl45nm/degree6_cell_combined_m2.gml"
   -  "graphs/processed_v2/rs_decoder_31_19_6_latest/gscl45nm/CSEEblock_combined_m2.gml"
@@ -340,12 +340,41 @@ train_gml:
   -  "graphs/processed_v2/suslik_latest/osu035/brpred_combined_m2.gml"
   
 
-test_gml: "graphs/processed_v2/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
+# test_gml: "graphs/processed_v2/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
+
+# epochs: 3000
+# label_mode: "boundary"
+# walk_length: 10
+# perc_batchsize: 0.01
+
+# set_gradient_clipping: true
+# normalize_class_weights: true
+
+
+val_gml:
+ -  "graphs/processed_v2/rsencoder_latest/gscl45nm/rs_encode_combined_m2.gml"
+ -  "graphs/processed_v2/trigonometric_functions_in_double_fpu_latest/nangate/top_combined_m2.gml"
+ -  "graphs/processed_v2/aes-master/gscl45nm/aes_core_combined_m2.gml"
+ -  "graphs/processed_v2/aes-master/gscl45nm/aes_decipher_block_combined_m2.gml"
+
+test_gml: 
+ -  "graphs/processed_v2/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
+ -  "graphs/processed_v2/rsencoder_latest/osu035/rs_encode_combined_m2.gml"
+ -  "graphs/processed_v2/rsencoder_latest/nangate/rs_encode_combined_m2.gml"
+ -  "graphs/processed_v2/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m2.gml"
+ -  "graphs/processed_v2/trigonometric_functions_in_double_fpu_latest/osu035/top_combined_m2.gml"
+ -  "graphs/processed_v2/aes-master/osu035/aes_core_combined_m2.gml"
+ -  "graphs/processed_v2/aes-master/osu035/aes_decipher_block_combined_m2.gm
+ 
 
 epochs: 3000
 label_mode: "boundary"
-walk_length: 10
+walk_length: 20
 perc_batchsize: 0.01
+# radius: 7
+# num_subgraphs: 8000
 
-set_gradient_clipping: true
-normalize_class_weights: true
+set_gradient_clipping: True
+normalize_class_weights: True
+reduction_method_cel : "mean"
+lr : 0.001

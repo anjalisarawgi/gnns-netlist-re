@@ -105,7 +105,7 @@ test_gml:
  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m2.gml"
  - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_mac_combined_m2.gml"
  - "mwe/graphs/processed/hight_latest/gscl45nm/KEY_SCHED_combined_m2.gml"
- - "mwe/graphs/processed/sha3_latest/nangate/keccak_combined_m2.gml"
+#  - "mwe/graphs/processed/sha3_latest/nangate/keccak_combined_m2.gml"
 
 
  

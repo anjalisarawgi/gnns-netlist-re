@@ -519,8 +519,8 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
 
             print(
                 f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
-                f"TrainAcc: {train_acc:.4f}, ValAcc: {val_acc:.4f}, "
-                f"F1: {f1:.4f}, P: {precision:.4f}, R: {recall:.4f}, "
+                f"TrainAcc_trainset: {train_acc:.4f}, ValAcc_trainset: {val_acc:.4f}, "
+                f"F1_trainset: {f1:.4f}, P_trainset: {precision:.4f}, R_trainset: {recall:.4f}, "
                 f"ClassAcc [{class_acc_str}],"
             )
 
