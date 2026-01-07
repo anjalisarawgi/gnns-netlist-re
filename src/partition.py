@@ -27,6 +27,35 @@ from sklearn.preprocessing import StandardScaler
 import csv
 from functools import reduce
 
+
+import sys
+import os
+from datetime import datetime
+
+class Tee(object):
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+            f.flush()
+
+    def flush(self):
+        for f in self.files:
+            f.flush()
+
+    def isatty(self):
+        return any(getattr(f, 'isatty', lambda: False)() for f in self.files)
+
+# Create logs directory
+os.makedirs("logs", exist_ok=True)
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_file = open(f"logs/run_{timestamp}.log", "w")
+sys.stdout = Tee(sys.__stdout__, log_file)
+sys.stderr = Tee(sys.__stderr__, log_file)
+
+
 # could increase to 24 -- 
 torch.set_num_threads(20)        # for math mult (pytorch)    
 torch.set_num_interop_threads(2)     # pytorch - helper threads
@@ -110,6 +139,7 @@ wandb.config.update(vars(args))
 # set seed
 set_seed(42)
 
+
 ############################################################
 
 ################
@@ -175,7 +205,7 @@ def load_single_gml(gml_path, remove_edges = False):
             raise ValueError(f"Node {node} has invalid features")
         features.append(feat)
     
-        boundary_value = attr.get("boundary", 0)
+        boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
         try:
             label = int(boundary_value)
         except (ValueError, TypeError): ######??? - we wanna change this ***s

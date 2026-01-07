@@ -97,6 +97,8 @@ val_gml:
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m2.gml"
   - "mwe/graphs/processed/gost28147-89_latest/gscl45nm/gost89_round_combined_m2.gml"
   - "mwe/graphs/processed/hight_latest/nangate/CRYPTO_PATH_combined_m2.gml"
+  - "mwe/graphs/processed/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
+  - "graphs/processed_v2/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
 
 test_gml: 
  - "mwe/graphs/processed/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m2.gml"
