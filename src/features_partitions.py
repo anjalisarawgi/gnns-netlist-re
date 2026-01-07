@@ -1,40 +1,46 @@
 import os
 import json
-import csv
 import numpy as np
 import networkx as nx
-from collections import defaultdict
 
 ############################################################
-# STEP 1: Put YOUR existing processing code into this function
+# STEP 1: Helper checks
 ############################################################
+
 def is_graph_connected(G):
-    """Return True if the graph is fully connected (weakly)."""
-    return nx.is_weakly_connected(G)
+    """Return True if the graph is fully connected."""
+    if G.is_directed():
+        return nx.is_weakly_connected(G)
+    return nx.is_connected(G)
 
 def has_boundary_labels(G):
-    """Return True if the graph contains at least one boundary label."""
+    """Return True if at least one node has boundary == 1."""
     for _, data in G.nodes(data=True):
-        if "boundary" in data:
+        if int(data.get("boundary", 0)) == 1:
             return True
     return False
+
+def is_io_label(label: str) -> bool:
+    s = str(label).upper()
+    return ("INPUT" in s) or ("OUTPUT" in s)
+
+############################################################
+# STEP 2: Single GML processing
+############################################################
 
 def process_single_gml(input_gml, output_gml):
     print("Processing:", input_gml)
 
-    G = nx.read_gml(input_gml)
-    G = G.to_directed()
+    G = nx.read_gml(input_gml).to_directed()
 
     gate_types = [
         "INPUT", "OUTPUT", "XOR", "XNOR", "AND", "OR", "NAND", "NOR",
         "INV", "BUF", "AOI", "OAI", "DFF", "MUX"
     ]
     gate2idx = {g: i for i, g in enumerate(gate_types)}
-    unknown_gates = []
-    log_lines = []
 
     def extract_gate_type(label):
-        base = label.strip("'").split("_")[0]
+        base = str(label).strip("'").split("_")[0].upper()
         for gate in gate_types:
             if gate in base:
                 return gate
@@ -42,54 +48,68 @@ def process_single_gml(input_gml, output_gml):
 
     clustering = nx.clustering(G.to_undirected())
 
-    # === YOUR NODE FEATURE EXTRACTION CODE ===
     for node in G.nodes():
         raw_label = G.nodes[node].get("label", node)
         raw_partition = G.nodes[node].get("partition", node)
 
-        parition_cleaned = raw_partition.strip("'")
-        label = raw_label.strip("'")
-        gate_type = extract_gate_type(label)
-
-        onehot = [0] * len(gate_types)
-        if gate_type in gate2idx:
-            onehot[gate2idx[gate_type]] = 1
-        else:
-            unknown_gates.append(gate_type)
+        label = str(raw_label).strip("'")
+        partition_cleaned = str(raw_partition).strip("'")
 
         indeg = G.in_degree(node)
         outdeg = G.out_degree(node)
 
         boundary_flag = int(G.nodes[node].get("boundary", 0))
-        avg_neighbor_degree = 0
-        clustering_coeff = clustering.get(node, 0)
+        clustering_coeff = float(clustering.get(node, 0.0))
 
-        G.nodes[node]['features'] = [indeg, outdeg, avg_neighbor_degree, boundary_flag]
+        nbrs = set(G.predecessors(node)) | set(G.successors(node))
 
-        clean_label = label.strip("'")
-        if "INPUT" in clean_label:
-            G.nodes[node]['is_IO'] = 1
-        elif "OUTPUT" in clean_label:
-            G.nodes[node]['is_IO'] = 2
+        if nbrs:
+            avg_neighbor_degree = float(np.mean([G.degree(n) for n in nbrs]))
+            boundary_nbrs = sum(
+                int(G.nodes[n].get("boundary", 0)) for n in nbrs
+            )
+            frac_boundary_nbrs = boundary_nbrs / len(nbrs)
+            is_connected_to_io = float(
+                any(is_io_label(G.nodes[n].get("label", "")) for n in nbrs)
+            )
         else:
-            G.nodes[node]['is_IO'] = 0
-            G.nodes[node]['subcircuit_id'] = parition_cleaned
+            avg_neighbor_degree = 0.0
+            frac_boundary_nbrs = 0.0
+            is_connected_to_io = 0.0
 
-    # === Save processed GML ===
-    os.makedirs(os.path.dirname(output_gml), exist_ok=True)
+        in_out_ratio = (indeg + 1) / (outdeg + 1)
+
+        G.nodes[node]["features"] = [
+            float(indeg),
+            float(outdeg),
+            avg_neighbor_degree,
+            clustering_coeff,
+            in_out_ratio,
+            frac_boundary_nbrs,
+            float(boundary_flag),
+            is_connected_to_io,
+        ]
+
+        clean_label = label.upper()
+        if "INPUT" in clean_label:
+            G.nodes[node]["is_IO"] = 1
+        elif "OUTPUT" in clean_label:
+            G.nodes[node]["is_IO"] = 2
+        else:
+            G.nodes[node]["is_IO"] = 0
+            G.nodes[node]["subcircuit_id"] = partition_cleaned
+
+    os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
     nx.write_gml(G, output_gml)
-
-    print(f"Saved processed GML to {output_gml}")
-
+    print(f"[INFO] Saved processed GML to {output_gml}")
 
 ############################################################
-# STEP 2: Auto process ALL folders + save processed paths
+# STEP 3: Batch processing
 ############################################################
 
 ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_v2"
+ROOT_OUT = "graphs/processed_v3"
 
-# This dictionary will store all processed directories
 processed_dirs = {}
 usable_graphs = []
 unusable_graphs_connectivity = []
@@ -100,7 +120,7 @@ for design in os.listdir(ROOT_RAW):
     if not os.path.isdir(design_path):
         continue
 
-    processed_dirs[design] = {}  # add entry for this design
+    processed_dirs[design] = {}
 
     for tech in os.listdir(design_path):
         tech_path = os.path.join(design_path, tech)
@@ -111,66 +131,56 @@ for design in os.listdir(ROOT_RAW):
 
         out_dir = os.path.join(ROOT_OUT, design, tech)
         os.makedirs(out_dir, exist_ok=True)
+        processed_dirs[design][tech] = out_dir
 
-        # Save processed folder path
-        processed_dirs[design][tech] = out_dir  
+        for fname in os.listdir(tech_path):
+            if not fname.endswith(".gml"):
+                continue
 
-        gml_files = [f for f in os.listdir(tech_path) if f.endswith(".gml")]
-
-        for fname in gml_files:
             input_gml = os.path.join(tech_path, fname)
             output_gml = os.path.join(out_dir, fname)
 
-            # Load graph first (before processing)
             G = nx.read_gml(input_gml)
 
-            # 1. Connectivity check
             if not is_graph_connected(G):
-                print(f"[ERROR 1] Graph NOT connected → unusable (type 1): {input_gml}")
+                print(f"[ERROR] Not connected → {input_gml}")
                 unusable_graphs_connectivity.append(input_gml)
                 continue
 
-            # 2. Boundary presence check
             if not has_boundary_labels(G):
-                print(f"[ERROR 2] Graph has NO boundary labels → unusable (type 2): {input_gml}")
+                print(f"[ERROR] No boundary → {input_gml}")
                 unusable_graphs_no_boundary.append(input_gml)
                 continue
 
-            # If passes all checks -> usable
-            usable_graphs.append(output_gml)
-
-            # Only process if graph is usable
-            process_single_gml(input_gml, output_gml)
+            try:
+                process_single_gml(input_gml, output_gml)
+                usable_graphs.append(output_gml)
+            except Exception as e:
+                print(f"[CRASH] {input_gml}: {e}")
 
 ############################################################
-# STEP 3: Save all processed directory paths to JSON
+# STEP 4: Save metadata / validation results
 ############################################################
 
+os.makedirs(ROOT_OUT, exist_ok=True)
 
-partitions_json_path = "graphs/processed_v2/partitions_path.json"
+with open(os.path.join(ROOT_OUT, "partitions_path.json"), "w") as f:
+    json.dump(
+        {k: list(v.values()) for k, v in processed_dirs.items()},
+        f,
+        indent=4
+    )
 
-# Convert dict-of-dicts → dict-of-lists
-cleaned_processed_dirs = {
-    design: list(tech_paths.values())
-    for design, tech_paths in processed_dirs.items()
-}
-
-with open(partitions_json_path, "w") as f:
-    json.dump(cleaned_processed_dirs, f, indent=4)
-
-print(f"\nSaved all processed directory paths to {partitions_json_path}\n")
-
-# Save validation results
-with open("graphs/processed_v2/usable_graphs.json", "w") as f:
+with open(os.path.join(ROOT_OUT, "usable_graphs.json"), "w") as f:
     json.dump(usable_graphs, f, indent=4)
 
-with open("graphs/processed_v2/unusable_graphs_connectivity.json", "w") as f:
+with open(os.path.join(ROOT_OUT, "unusable_graphs_connectivity.json"), "w") as f:
     json.dump(unusable_graphs_connectivity, f, indent=4)
 
-with open("graphs/processed_v2/unusable_graphs_no_boundary.json", "w") as f:
+with open(os.path.join(ROOT_OUT, "unusable_graphs_no_boundary.json"), "w") as f:
     json.dump(unusable_graphs_no_boundary, f, indent=4)
 
-print("\n=== CONNECTIVITY VALIDATION ===")
-print("Usable graphs                    :", len(usable_graphs))
-print("Unusable (not connected)         :", len(unusable_graphs_connectivity))
-print("Unusable (no boundary labels)    :", len(unusable_graphs_no_boundary))
+print("\n=== VALIDATION SUMMARY ===")
+print("Usable graphs                 :", len(usable_graphs))
+print("Unusable (not connected)      :", len(unusable_graphs_connectivity))
+print("Unusable (no boundary labels) :", len(unusable_graphs_no_boundary))
