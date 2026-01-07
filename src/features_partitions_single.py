@@ -3,10 +3,6 @@ import json
 import numpy as np
 import networkx as nx
 
-############################################################
-# Helper checks
-############################################################
-
 def is_graph_connected(G):
     if G.is_directed():
         return nx.is_weakly_connected(G)
@@ -22,23 +18,17 @@ def is_io_label(label: str) -> bool:
     s = str(label).upper()
     return ("INPUT" in s) or ("OUTPUT" in s)
 
-############################################################
-# Single GML processing
-############################################################
-
 def process_single_gml(input_gml, output_gml):
     print("Processing:", input_gml)
 
     G = nx.read_gml(input_gml).to_directed()
 
-    # --- sanity checks ---
     if not is_graph_connected(G):
         raise ValueError("Graph is not connected")
 
     if not has_boundary_labels(G):
         raise ValueError("Graph has no boundary labels")
 
-    # --- gate definitions ---
     gate_types = [
         "INPUT", "OUTPUT", "XOR", "XNOR", "AND", "OR", "NAND", "NOR",
         "INV", "BUF", "AOI", "OAI", "DFF", "MUX"
@@ -51,10 +41,8 @@ def process_single_gml(input_gml, output_gml):
                 return gate
         return "UNKNOWN"
 
-    # clustering on undirected graph
     clustering = nx.clustering(G.to_undirected())
 
-    # --- node feature extraction ---
     for node in G.nodes():
         raw_label = G.nodes[node].get("label", node)
         raw_partition = G.nodes[node].get("partition", node)
@@ -99,7 +87,6 @@ def process_single_gml(input_gml, output_gml):
             is_connected_to_io,
         ]
 
-        # IO + subcircuit labels
         clean_label = label.upper()
         if "INPUT" in clean_label:
             G.nodes[node]["is_IO"] = 1
@@ -109,7 +96,6 @@ def process_single_gml(input_gml, output_gml):
             G.nodes[node]["is_IO"] = 0
             G.nodes[node]["subcircuit_id"] = partition_cleaned
 
-    # --- save ---
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
     nx.write_gml(G, output_gml)
     print(f"[INFO] Saved processed GML to {output_gml}")
