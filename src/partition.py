@@ -203,7 +203,8 @@ def load_single_gml(gml_path, remove_edges = False):
 
         if not isinstance(feat, (list, tuple, np.ndarray)):
             raise ValueError(f"Node {node} has invalid features")
-        features.append(feat)
+        # features.append(feat[:5])
+        features.append(feat[:5] + [feat[6]])
     
         boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
         try:

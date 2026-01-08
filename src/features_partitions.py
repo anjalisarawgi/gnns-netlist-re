@@ -47,6 +47,25 @@ def process_single_gml(input_gml, output_gml):
         return "UNKNOWN"
 
     clustering = nx.clustering(G.to_undirected())
+    
+    # New features to compute
+    G_undirected = G.to_undirected()
+
+    # Betweenness centrality (can be slow on very large graphs)
+    betweenness = nx.betweenness_centrality(G_undirected, normalized=True, k=100)
+
+    # IO nodes
+    io_nodes = [n for n, d in G.nodes(data=True) if is_io_label(d.get("label", ""))]
+
+    # Precompute shortest paths from all IO nodes
+    min_io_distances = {}
+    for node in G.nodes():
+        try:
+            dists = [nx.shortest_path_length(G_undirected, source=node, target=io) for io in io_nodes if nx.has_path(G_undirected, node, io)]
+            min_io_distances[node] = min(dists) if dists else -1
+        except Exception:
+            min_io_distances[node] = -1  # No path
+            
 
     for node in G.nodes():
         raw_label = G.nodes[node].get("label", node)
@@ -58,7 +77,6 @@ def process_single_gml(input_gml, output_gml):
         indeg = G.in_degree(node)
         outdeg = G.out_degree(node)
 
-        boundary_flag = int(G.nodes[node].get("boundary", 0))
         clustering_coeff = float(clustering.get(node, 0.0))
 
         nbrs = set(G.predecessors(node)) | set(G.successors(node))
@@ -85,9 +103,9 @@ def process_single_gml(input_gml, output_gml):
             avg_neighbor_degree,
             clustering_coeff,
             in_out_ratio,
-            frac_boundary_nbrs,
-            float(boundary_flag),
             is_connected_to_io,
+            betweenness.get(node, 0.0),
+            float(min_io_distances.get(node, -1)),
         ]
 
         clean_label = label.upper()
@@ -108,7 +126,7 @@ def process_single_gml(input_gml, output_gml):
 ############################################################
 
 ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_v3"
+ROOT_OUT = "graphs/processed_v4"
 
 processed_dirs = {}
 usable_graphs = []
