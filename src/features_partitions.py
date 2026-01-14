@@ -52,7 +52,13 @@ def process_single_gml(input_gml, output_gml):
     G_undirected = G.to_undirected()
 
     # Betweenness centrality (can be slow on very large graphs)
-    betweenness = nx.betweenness_centrality(G_undirected, normalized=True, k=100)
+    n = G_undirected.number_of_nodes()
+    if n <= 1:
+        betweenness = {node: 0.0 for node in G.nodes()}
+    else:
+        k = min(100, n)
+        betweenness = nx.betweenness_centrality(G_undirected, normalized=True, k=k)
+    # betweenness = nx.betweenness_centrality(G_undirected, normalized=True, k=100)
 
     # IO nodes
     io_nodes = [n for n, d in G.nodes(data=True) if is_io_label(d.get("label", ""))]
