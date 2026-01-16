@@ -131,8 +131,8 @@ def process_single_gml(input_gml, output_gml):
 # STEP 3: Batch processing
 ############################################################
 
-ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_v4"
+ROOT_RAW = "new_graphs_crypto/raw/raw"
+ROOT_OUT = "new_graphs_crypto/processed"
 
 processed_dirs = {}
 usable_graphs = []

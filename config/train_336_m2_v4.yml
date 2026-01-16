@@ -363,8 +363,8 @@ test_gml:
 epochs: 3000
 label_mode: "boundary"
 walk_length: 10
-perc_batchsize: 0.01
+perc_batchsize: 0.03
 set_gradient_clipping: True
 normalize_class_weights: True
 reduction_method_cel : "mean"
-lr : 0.005
+lr : 0.003

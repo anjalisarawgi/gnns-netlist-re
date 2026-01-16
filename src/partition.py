@@ -204,7 +204,7 @@ def load_single_gml(gml_path, remove_edges = False):
         if not isinstance(feat, (list, tuple, np.ndarray)):
             raise ValueError(f"Node {node} has invalid features")
         # features.append(feat[:5])
-        features.append(feat[:5] + [feat[6]])
+        features.append(feat)
     
         boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
         try:
@@ -242,16 +242,19 @@ def load_single_gml(gml_path, remove_edges = False):
     indices = list(range(num_nodes))
     random.shuffle(indices)
 
-    train_cutoff = int(0.90 * num_nodes) # ***
-    val_cutoff = train_cutoff + int(0.05 * num_nodes)
+    # train_cutoff = int(0.90 * num_nodes) # ***
+    # val_cutoff = train_cutoff + int(0.05 * num_nodes)
     
-    train_mask = torch.zeros(num_nodes, dtype=torch.bool)
-    val_mask = torch.zeros(num_nodes, dtype=torch.bool)
-    test_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    # train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    # val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    # test_mask = torch.zeros(num_nodes, dtype=torch.bool)
 
-    train_mask[indices[:train_cutoff]] = True
-    val_mask[indices[train_cutoff:val_cutoff]] = True
-    test_mask[indices[val_cutoff:]] = True
+    # train_mask[indices[:train_cutoff]] = True
+    # val_mask[indices[train_cutoff:val_cutoff]] = True
+    # test_mask[indices[val_cutoff:]] = True
+    train_mask = torch.ones(num_nodes, dtype=torch.bool)
+    val_mask   = torch.zeros(num_nodes, dtype=torch.bool)
+    test_mask  = torch.zeros(num_nodes, dtype=torch.bool)
 
     #### this can be optional but we did thsi to remove the edges if it is connecting to for example a test node
     ### i.e. removing the edges that connects to diffefernt splits 
@@ -321,11 +324,13 @@ def train(model, loader, optimizer, class_weights=None):
         optimizer.zero_grad()
         out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
 
-        valid_mask = batch.train_mask # disable this later
+        # valid_mask = batch.train_mask # disable this later
         if class_weights is not None:
-            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = args.reduction_method_cel)
+            # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = args.reduction_method_cel)
+            loss = F.cross_entropy(out, batch.y, weight=class_weights)
         else:
-            loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
+            # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
+            loss = F.cross_entropy(out, batch.y)
         
         loss.backward()
         
@@ -338,7 +343,8 @@ def train(model, loader, optimizer, class_weights=None):
         total_loss += loss.item()
         batch_count += 1
         
-        total_nodes += valid_mask.sum().item()
+        # total_nodes += valid_mask.sum().item()
+        total_nodes += batch.num_nodes
 
     if args.reduction_method_cel == "mean":
         average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
@@ -451,6 +457,13 @@ def evaluate_test(data, model):
 
 
 
+@torch.no_grad()
+def evaluate_loss(data, model):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    loss = F.cross_entropy(out, data.y, reduction="mean")
+    return loss.item()
+    
 ##### training  and eval functions:
 
 def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
@@ -488,7 +501,8 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
     ### weighted loss 
     if use_weighted_loss:
         print("[INFO] Using weighted losses")
-        train_labels = train_data.y[train_data.train_mask].cpu().numpy()
+        # train_labels = train_data.y[train_data.train_mask].cpu().numpy()
+        train_labels = train_data.y.cpu().numpy()
         classes = np.unique(train_labels) # can be ignored ???
 
         weights= compute_class_weight('balanced', classes = classes, y = train_labels)
@@ -537,50 +551,52 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         wandb.log(log_dict)
 
         if epoch % 100 == 0 :
-            ###########
-            ## train side of eval
-            ###########
-            f1, precision, recall = evaluate_train_fpr(train_data, model, train_data.val_mask)
-            train_acc = evaluate_train_acc(model, train_data, train_data.train_mask)
-            val_acc   = evaluate_train_acc(model, train_data, train_data.val_mask)
-            classwise_acc = eval_class_acc( train_data, model, train_data.val_mask, id2name)
-            class_acc_str = " | ".join(
-                [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
-            )
+            # ###########
+            # ## train side of eval
+            # ###########
+            # f1, precision, recall = evaluate_train_fpr(train_data, model, train_data.val_mask)
+            # train_acc = evaluate_train_acc(model, train_data, train_data.train_mask)
+            # val_acc   = evaluate_train_acc(model, train_dfata, train_data.val_mask)
+            # classwise_acc = eval_class_acc( train_data, model, train_data.val_mask, id2name)
+            # class_acc_str = " | ".join(
+            #     [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
+            # )
 
-            print(
-                f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
-                f"TrainAcc_trainset: {train_acc:.4f}, ValAcc_trainset: {val_acc:.4f}, "
-                f"F1_trainset: {f1:.4f}, P_trainset: {precision:.4f}, R_trainset: {recall:.4f}, "
-                f"ClassAcc [{class_acc_str}],"
-            )
+            # print(
+            #     f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
+            #     f"TrainAcc_trainset: {train_acc:.4f}, ValAcc_trainset: {val_acc:.4f}, "
+            #     f"F1_trainset: {f1:.4f}, P_trainset: {precision:.4f}, R_trainset: {recall:.4f}, "
+            #     f"ClassAcc [{class_acc_str}],"
+            # )
 
-            wandb_log = {
-                "epoch": epoch,
-                "train_evaluate/train_acc": train_acc,
-                "train_evaluate/val_acc": val_acc,
-                "train_evaluate/f1": f1,
-                "train_evaluate/precision": precision,
-                "train_evaluate/recall": recall,
-            }
+            # wandb_log = {
+            #     "epoch": epoch,
+            #     "train_evaluate/train_acc": train_acc,
+            #     "train_evaluate/val_acc": val_acc,
+            #     "train_evaluate/f1": f1,
+            #     "train_evaluate/precision": precision,
+            #     "train_evaluate/recall": recall,
+            # }
 
             # classwise metrics under the same namespace
-            for cls, acc in classwise_acc.items():
-                wandb_log[f"train_evaluate/class_acc/{cls}"] = acc
+            # for cls, acc in classwise_acc.items():
+            #     wandb_log[f"train_evaluate/class_acc/{cls}"] = acc
 
-            wandb.log(wandb_log)
+            # wandb.log(wandb_log)
 
             # ---- VAL GRAPHS ----
             eval_start = time.perf_counter()
 
             val_metrics = defaultdict(list)  # collects lists of per-graph metrics
-
+            val_losses = []
             for path, g in val_graphs:
                 m = evaluate_test(g, model)
+                val_loss = evaluate_loss(g, model)
                 name = os.path.splitext(os.path.basename(path))[0]
 
                 print(
                     f"[VAL][Epoch {epoch:03d}] {name} | "
+                    f"Val Loss={val_loss:.4f}, "
                     f"F1={m['f1']:.4f}, P={m['precision']:.4f}, R={m['recall']:.4f}, "
                     f"Acc={m['total_acc']:.4f}, b1={m['boundary_1_acc']:.4f}, b0={m['boundary_0_acc']:.4f}"
                 )
@@ -593,6 +609,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
                 wandb.log({
                     "epoch": epoch,
                     f"val_pgraph/{name}/f1": m["f1"],
+                    f"val_pgraph/{name}/loss": val_loss,
                     f"val_pgraph/{name}/precision": m["precision"],
                     f"val_pgraph/{name}/recall": m["recall"],
                     f"val_pgraph/{name}/accuracy": m["total_acc"],
@@ -600,10 +617,13 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
                     f"val_pgraph/{name}/not_boundary_acc": m["boundary_0_acc"],
                 })
 
+                val_losses.append(val_loss)
+
             # macro avg over val designs
             val_macro = {k: float(np.mean(v)) for k, v in val_metrics.items()} if len(val_graphs) else {}
             print(
                 f"[VAL][Epoch {epoch:03d}] MACRO | "
+                f"Val Macro Loss={float(np.mean(val_losses))}, "
                 f"F1={val_macro.get('f1', 0.0):.4f}, "
                 f"P={val_macro.get('precision', 0.0):.4f}, "
                 f"R={val_macro.get('recall', 0.0):.4f}, "
@@ -615,6 +635,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
             wandb.log({
                 "epoch": epoch,
                 "val_macro/f1": val_macro.get("f1", 0.0),
+                "val_macro/loss": float(np.mean(val_losses)),
                 "val_macro/precision": val_macro.get("precision", 0.0),
                 "val_macro/recall": val_macro.get("recall", 0.0),
                 "val_macro/accuracy": val_macro.get("total_acc", 0.0),
@@ -672,7 +693,7 @@ if __name__ == "__main__":
     train_graphs = []
     for i, gml_path in enumerate(args.train_gml):
         print(f"[{i+1}] {gml_path}")
-        graph_data, label_map = load_single_gml(gml_path = gml_path, remove_edges=True)
+        graph_data, label_map = load_single_gml(gml_path = gml_path, remove_edges=False)
 
         print("Label counts:", Counter(graph_data.y.tolist())) # debug for -1  label
         assert (graph_data.y < 0).sum().item() == 0, "Still have negative labels!"
@@ -700,7 +721,7 @@ if __name__ == "__main__":
     val_graphs = []
     for i, gml_path in enumerate(args.val_gml):
         print(f"[VAL {i+1}] {gml_path}")
-        g, _ = load_single_gml(gml_path=gml_path, remove_edges=True)
+        g, _ = load_single_gml(gml_path=gml_path, remove_edges=False)
 
         print("[INFO] val graphs -- Label counts:", Counter(g.y.tolist())) # debug
         assert (g.y < 0).sum().item() == 0
@@ -714,7 +735,7 @@ if __name__ == "__main__":
     test_graphs = []
     for i, gml_path in enumerate(args.test_gml):
         print(f"[TEST {i+1}] {gml_path}")
-        g, _ = load_single_gml(gml_path=gml_path, remove_edges=True)
+        g, _ = load_single_gml(gml_path=gml_path, remove_edges=False)
 
         print("[INFO] test graphs -- Label counts:", Counter(g.y.tolist())) # debug
         assert (g.y < 0).sum().item() == 0
