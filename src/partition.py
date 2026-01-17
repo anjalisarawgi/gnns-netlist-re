@@ -89,11 +89,14 @@ parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the 
 # parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
+parser.add_argument("--decision_threshold", type=float, default=0.5, help="Probability threshold for boundary=1 at evaluation time"
+)
 # parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
+
 
 
 # yaml 
@@ -360,7 +363,8 @@ def train(model, loader, optimizer, class_weights=None):
 def evaluate_train_acc(model, data, mask):
     model.eval()
     out = model(data.x, data.edge_index)
-    pred = out.argmax(dim=1)
+    # pred = out.argmax(dim=1)
+    pred = predict_with_threshold(out, args.decision_threshold)
 
     valid_mask = mask 
     correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
@@ -375,9 +379,11 @@ def evaluate_train_fpr(data, model, mask):
     out = model(data.x, data.edge_index)
 
     # another moving part: ???
-    pred = out.argmax(dim=1) 
+    # pred = out.argmax(dim=1) 
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
+    pred = predict_with_threshold(out, args.decision_threshold)
+
 
     valid_mask = mask 
 
@@ -395,7 +401,9 @@ def evaluate_train_fpr(data, model, mask):
 def eval_class_acc(data, model, mask, id2name=None):
     model.eval()
     out = model(data.x, data.edge_index)
-    pred = out.argmax(dim=1)
+    # pred = out.argmax(dim=1)
+    pred = predict_with_threshold(out, args.decision_threshold)
+
 
     valid_mask = mask 
     y_true = data.y[valid_mask]
@@ -425,9 +433,11 @@ def evaluate_test(data, model):
     out = model(data.x, data.edge_index)
     
     # another moving part: ???
-    pred = out.argmax(dim=1) 
+    # pred = out.argmax(dim=1) 
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
+    pred = predict_with_threshold(out, args.decision_threshold)
+
     
     # valid_mask = (data.y != -1)
     y_true = data.y.cpu().numpy()
@@ -456,6 +466,9 @@ def evaluate_test(data, model):
     }
 
 
+def predict_with_threshold(out, threshold):
+    probs = torch.softmax(out, dim=1)
+    return (probs[:, 1] >= threshold).long()
 
 @torch.no_grad()
 def evaluate_loss(data, model):
