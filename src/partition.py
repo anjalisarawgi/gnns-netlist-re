@@ -334,6 +334,7 @@ def train(model, loader, optimizer, class_weights=None):
         loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
 
         if hasattr(batch, "node_norm"):
+            print("[INFO] using node_norm for loss calculation")
             loss = (loss_per_node * batch.node_norm).sum()
         else:
             loss = loss_per_node.mean()
@@ -360,10 +361,13 @@ def train(model, loader, optimizer, class_weights=None):
         # total_nodes += valid_mask.sum().item()
         total_nodes += batch.num_nodes
 
-    if args.reduction_method_cel == "mean":
+
+    if args.reduction_method_cel == "mean": ### ??? not sure if this is the right way to calculate the average loss
         average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
     elif  args.reduction_method_cel == "sum":
         average_loss = total_loss / total_nodes if total_nodes > 0 else 0  # average for nodes
+
+    # average_loss = total_loss
 
     return average_loss, epoch_nodes
 
