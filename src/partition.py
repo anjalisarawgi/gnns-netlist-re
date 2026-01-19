@@ -89,8 +89,7 @@ parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the 
 # parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
-parser.add_argument("--decision_threshold", type=float, default=0.5, help="Probability threshold for boundary=1 at evaluation time"
-)
+# parser.add_argument("--decision_threshold", type=float, default=0.5, help="Probability threshold for boundary=1 at evaluation time")
 # parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 # cofnig 
@@ -300,7 +299,11 @@ def load_single_gml(gml_path, remove_edges = False):
     )
     return data, id2label
 
-
+def focal_loss(logits, targets, gamma=2.0):
+    ce = F.cross_entropy(logits, targets, reduction="none")
+    pt = torch.exp(-ce)
+    return ((1 - pt) ** gamma * ce)
+    
 
 def train(model, loader, optimizer, class_weights=None):
     model.train()
@@ -327,13 +330,21 @@ def train(model, loader, optimizer, class_weights=None):
         optimizer.zero_grad()
         out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
 
-        # valid_mask = batch.train_mask # disable this later
-        if class_weights is not None:
-            # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = args.reduction_method_cel)
-            loss = F.cross_entropy(out, batch.y, weight=class_weights)
+        # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
+        loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
+
+        if hasattr(batch, "node_norm"):
+            loss = (loss_per_node * batch.node_norm).sum()
         else:
-            # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
-            loss = F.cross_entropy(out, batch.y)
+            loss = loss_per_node.mean()
+
+        # valid_mask = batch.train_mask # disable this later
+        # if class_weights is not None:
+        #     # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = args.reduction_method_cel)
+        #     loss = F.cross_entropy(out, batch.y, weight=class_weights)
+        # else:
+        #     # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
+        #     loss = F.cross_entropy(out, batch.y)
         
         loss.backward()
         
@@ -363,8 +374,8 @@ def train(model, loader, optimizer, class_weights=None):
 def evaluate_train_acc(model, data, mask):
     model.eval()
     out = model(data.x, data.edge_index)
-    # pred = out.argmax(dim=1)
-    pred = predict_with_threshold(out, args.decision_threshold)
+    pred = out.argmax(dim=1)
+    # pred = predict_with_threshold(out, args.decision_threshold)
 
     valid_mask = mask 
     correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
@@ -379,10 +390,10 @@ def evaluate_train_fpr(data, model, mask):
     out = model(data.x, data.edge_index)
 
     # another moving part: ???
-    # pred = out.argmax(dim=1) 
+    pred = out.argmax(dim=1) 
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
-    pred = predict_with_threshold(out, args.decision_threshold)
+    # pred = predict_with_threshold(out, args.decision_threshold)
 
 
     valid_mask = mask 
@@ -401,8 +412,8 @@ def evaluate_train_fpr(data, model, mask):
 def eval_class_acc(data, model, mask, id2name=None):
     model.eval()
     out = model(data.x, data.edge_index)
-    # pred = out.argmax(dim=1)
-    pred = predict_with_threshold(out, args.decision_threshold)
+    pred = out.argmax(dim=1)
+    # pred = predict_with_threshold(out, args.decision_threshold)
 
 
     valid_mask = mask 
@@ -433,10 +444,10 @@ def evaluate_test(data, model):
     out = model(data.x, data.edge_index)
     
     # another moving part: ???
-    # pred = out.argmax(dim=1) 
+    pred = out.argmax(dim=1) 
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
-    pred = predict_with_threshold(out, args.decision_threshold)
+    # pred = predict_with_threshold(out, args.decision_threshold)
 
     
     # valid_mask = (data.y != -1)
@@ -474,7 +485,8 @@ def predict_with_threshold(out, threshold):
 def evaluate_loss(data, model):
     model.eval()
     out = model(data.x, data.edge_index)
-    loss = F.cross_entropy(out, data.y, reduction="mean")
+    # loss = F.cross_entropy(out, data.y, reduction="mean")
+    loss = focal_loss(out, data.y, gamma=2.0).mean()
     return loss.item()
     
 ##### training  and eval functions:
@@ -841,7 +853,7 @@ if __name__ == "__main__":
         out_dim=2,
         id2name=id2label,
         model_name=args.model,
-        use_weighted_loss=True,
+        use_weighted_loss=False,
         val_graphs=val_graphs,
         test_graphs=test_graphs,
     )

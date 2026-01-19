@@ -33,45 +33,37 @@ def process_single_gml(input_gml, output_gml):
 
     G = nx.read_gml(input_gml).to_directed()
 
-    gate_types = [
-        "INPUT", "OUTPUT", "XOR", "XNOR", "AND", "OR", "NAND", "NOR",
-        "INV", "BUF", "AOI", "OAI", "DFF", "MUX"
-    ]
-    gate2idx = {g: i for i, g in enumerate(gate_types)}
-
-    def extract_gate_type(label):
-        base = str(label).strip("'").split("_")[0].upper()
-        for gate in gate_types:
-            if gate in base:
-                return gate
-        return "UNKNOWN"
-
     clustering = nx.clustering(G.to_undirected())
-    
-    # New features to compute
     G_undirected = G.to_undirected()
 
-    # Betweenness centrality (can be slow on very large graphs)
+    # Betweenness centrality (approximate for scalability)
     n = G_undirected.number_of_nodes()
     if n <= 1:
         betweenness = {node: 0.0 for node in G.nodes()}
     else:
         k = min(100, n)
-        betweenness = nx.betweenness_centrality(G_undirected, normalized=True, k=k)
-    # betweenness = nx.betweenness_centrality(G_undirected, normalized=True, k=100)
+        betweenness = nx.betweenness_centrality(
+            G_undirected, normalized=True, k=k
+        )
 
     # IO nodes
-    io_nodes = [n for n, d in G.nodes(data=True) if is_io_label(d.get("label", ""))]
+    io_nodes = [
+        n for n, d in G.nodes(data=True)
+        if is_io_label(d.get("label", ""))
+    ]
 
-    # Precompute shortest paths from all IO nodes
+    # Min distance to IO
     min_io_distances = {}
     for node in G.nodes():
         try:
-            dists = [nx.shortest_path_length(G_undirected, source=node, target=io) for io in io_nodes if nx.has_path(G_undirected, node, io)]
+            dists = [
+                nx.shortest_path_length(G_undirected, source=node, target=io)
+                for io in io_nodes
+                if nx.has_path(G_undirected, node, io)
+            ]
             min_io_distances[node] = min(dists) if dists else -1
         except Exception:
-            min_io_distances[node] = -1  # No path
-            
+            min_io_distances[node] = -1
 
     for node in G.nodes():
         raw_label = G.nodes[node].get("label", node)
@@ -87,31 +79,72 @@ def process_single_gml(input_gml, output_gml):
 
         nbrs = set(G.predecessors(node)) | set(G.successors(node))
 
+        # ------------------------
+        # Neighborhood statistics
+        # ------------------------
         if nbrs:
-            avg_neighbor_degree = float(np.mean([G.degree(n) for n in nbrs]))
+            nbr_degs = [G.degree(n) for n in nbrs]
+            avg_neighbor_degree = float(np.mean(nbr_degs))
+
             boundary_nbrs = sum(
                 int(G.nodes[n].get("boundary", 0)) for n in nbrs
             )
             frac_boundary_nbrs = boundary_nbrs / len(nbrs)
+
             is_connected_to_io = float(
                 any(is_io_label(G.nodes[n].get("label", "")) for n in nbrs)
+            )
+
+            # NEW: neighbor degree entropy
+            vals, counts = np.unique(nbr_degs, return_counts=True)
+            probs = counts / counts.sum()
+            neighbor_degree_entropy = float(
+                -np.sum(probs * np.log(probs + 1e-8))
             )
         else:
             avg_neighbor_degree = 0.0
             frac_boundary_nbrs = 0.0
             is_connected_to_io = 0.0
+            neighbor_degree_entropy = 0.0
 
-        in_out_ratio = (indeg + 1) / (outdeg + 1)
+        # ------------------------
+        # NEW: two-hop boundary exposure
+        # ------------------------
+        two_hop = set()
+        for n in nbrs:
+            two_hop |= set(G.predecessors(n)) | set(G.successors(n))
+        two_hop.discard(node)
 
+        if two_hop:
+            frac_boundary_2hop = float(np.mean([
+                int(G.nodes[n].get("boundary", 0)) for n in two_hop
+            ]))
+        else:
+            frac_boundary_2hop = 0.0
+
+        # ------------------------
+        # NEW: flow / cut features
+        # ------------------------
+        deg_imbalance = abs(indeg - outdeg)
+        flow_asym = (indeg - outdeg) / (indeg + outdeg + 1)
+        cut_proxy = indeg * outdeg
+
+        # ------------------------
+        # Final feature vector
+        # ------------------------
         G.nodes[node]["features"] = [
             float(indeg),
             float(outdeg),
-            avg_neighbor_degree,
-            clustering_coeff,
-            in_out_ratio,
-            is_connected_to_io,
-            betweenness.get(node, 0.0),
+            float(deg_imbalance),           # NEW
+            float(avg_neighbor_degree),
+            float(clustering_coeff),
+            float(cut_proxy),               # NEW
+            float(flow_asym),               # NEW
+            float(neighbor_degree_entropy), # NEW
+            float(is_connected_to_io),
+            float(betweenness.get(node, 0.0)),
             float(min_io_distances.get(node, -1)),
+            float(frac_boundary_2hop),      # NEW
         ]
 
         clean_label = label.upper()
@@ -131,8 +164,10 @@ def process_single_gml(input_gml, output_gml):
 # STEP 3: Batch processing
 ############################################################
 
-ROOT_RAW = "new_graphs_crypto/raw/raw"
-ROOT_OUT = "new_graphs_crypto/processed"
+# ROOT_RAW = "new_graphs_crypto/raw/raw"
+# ROOT_OUT = "new_graphs_crypto/processed_jan18"
+ROOT_RAW = "graphs/raw_v2/raw"
+ROOT_OUT = "graphs/processed_jan18"
 
 processed_dirs = {}
 usable_graphs = []
