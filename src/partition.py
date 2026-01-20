@@ -205,8 +205,8 @@ def load_single_gml(gml_path, remove_edges = False):
 
         if not isinstance(feat, (list, tuple, np.ndarray)):
             raise ValueError(f"Node {node} has invalid features")
-        # features.append(feat[:5])
-        features.append(feat)
+        features.append(feat[:-1])
+        # features.append(feat)
     
         boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
         try:
@@ -225,6 +225,10 @@ def load_single_gml(gml_path, remove_edges = False):
 
     # debugging for checking if everything is okay
     unique_classes, class_counts = np.unique(labels.cpu().numpy(), return_counts = True)
+    # unique_classes, class_counts = torch.unique(labels, return_counts=True)
+    # unique_classes = unique_classes.tolist()
+    # class_counts = class_counts.tolist()
+
     for u,c in zip(unique_classes, class_counts):
         print(f"Class {u} ({id2label.get(int(u), '?')}): {c} samples")
     print("[INFO] Total nodes:", len(nodes))
@@ -334,7 +338,7 @@ def train(model, loader, optimizer, class_weights=None):
         loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
 
         if hasattr(batch, "node_norm"):
-            print("[INFO] using node_norm for loss calculation")
+            # print("[INFO] using node_norm for loss calculation")
             loss = (loss_per_node * batch.node_norm).sum()
         else:
             loss = loss_per_node.mean()
