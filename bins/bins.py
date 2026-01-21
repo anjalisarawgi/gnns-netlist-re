@@ -1,12 +1,12 @@
 import json
 
-INPUT_JSON = "graph_stats.json"   # <-- change this
-OUT_LOW  = "bins/boundary_low.txt"
-OUT_MID  = "bins/boundary_mid.txt"
-OUT_HIGH = "bins/boundary_high.txt"
+INPUT_JSON = "data_statistics/graph_stats_combined.json"   # <-- change this
+OUT_LOW  = "bins/combined/boundary_low_combined.txt"
+OUT_MID  = "bins/combined/boundary_mid_combined.txt"
+OUT_HIGH = "bins/combined/boundary_high_combined.txt"
 
-LOW_THR = 0.40
-HIGH_THR = 0.550
+LOW_THR = 0.30
+HIGH_THR = 0.50
 
 with open(INPUT_JSON, "r") as f:
     data = json.load(f)
