@@ -139,7 +139,7 @@ train_gml:
 - "new_graphs_crypto/processed_jan21/sha3_latest/gscl45nm/round_combined_m2.gml"
 - "new_graphs_crypto/processed_jan21/sha3_latest/nangate/f_permutation_combined_m2.gml"
 - "new_graphs_crypto/processed_jan21/sha3_latest/nangate/round_combined_m2.gml"
-- "new_graphs_crypto/processed_jan21/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
+# - "new_graphs_crypto/processed_jan21/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
 
 
 val_gml: 
