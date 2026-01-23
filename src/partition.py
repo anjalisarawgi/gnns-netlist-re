@@ -92,6 +92,7 @@ parser.add_argument("--set_gradient_clipping", action="store_true", help="do you
 # parser.add_argument("--decision_threshold", type=float, default=0.5, help="Probability threshold for boundary=1 at evaluation time")
 # parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
+parser.add_argument( "--loss_type", type=str, choices=["ce", "focal"], default="focal" )
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -128,7 +129,7 @@ run_name = f"{args.perc_batchsize}perc_{config_tag}_{args.model}_{sampling_suffi
 
 wandb.init(project="gnn-parition-detection", name=run_name)
 wandb.config.update(vars(args))
-
+wandb.config.update({"loss_type": args.loss_type})
 
 # # setting label names 
 # if args.label_mode == "subcircuit_name":
@@ -335,7 +336,11 @@ def train(model, loader, optimizer, class_weights=None):
         out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
 
         # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
-        loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
+        # loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
+        if args.loss_type == "focal":
+            loss_per_node = focal_loss(out, batch.y, gamma=2.0)
+        else:
+            loss_per_node = F.cross_entropy(out, batch.y, reduction="none")
 
         if hasattr(batch, "node_norm"):
             # print("[INFO] using node_norm for loss calculation")
@@ -494,7 +499,12 @@ def evaluate_loss(data, model):
     model.eval()
     out = model(data.x, data.edge_index)
     # loss = F.cross_entropy(out, data.y, reduction="mean")
-    loss = focal_loss(out, data.y, gamma=2.0).mean()
+    # loss = focal_loss(out, data.y, gamma=2.0).mean()
+    if args.loss_type == "focal":
+        loss = focal_loss(out, data.y, gamma=2.0).mean()
+    else:
+        loss = F.cross_entropy(out, data.y)
+        
     return loss.item()
     
 ##### training  and eval functions:

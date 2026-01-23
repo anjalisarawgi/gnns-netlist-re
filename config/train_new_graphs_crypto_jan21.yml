@@ -495,4 +495,5 @@ set_gradient_clipping: true
 normalize_class_weights: true
 reduction_method_cel: "mean"
 lr: 0.003
+loss_type : ce
 # train_mode: per_graph_no_weight
