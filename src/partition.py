@@ -92,7 +92,7 @@ parser.add_argument("--set_gradient_clipping", action="store_true", help="do you
 # parser.add_argument("--decision_threshold", type=float, default=0.5, help="Probability threshold for boundary=1 at evaluation time")
 # parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
-parser.add_argument( "--loss_type", type=str, choices=["ce", "focal"], default="focal" )
+parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -310,7 +310,7 @@ def focal_loss(logits, targets, gamma=2.0):
     return ((1 - pt) ** gamma * ce)
     
 
-def train(model, loader, optimizer, class_weights=None):
+def train(model, loader, optimizer, class_weights=None, soft_class_weights=None):
     model.train()
     total_loss = 0 
     batch_count = 0 
@@ -339,8 +339,29 @@ def train(model, loader, optimizer, class_weights=None):
         # loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
         if args.loss_type == "focal":
             loss_per_node = focal_loss(out, batch.y, gamma=2.0)
+        elif args.loss_type == "ce_weighted":
+            loss_per_node = F.cross_entropy(
+                out,
+                batch.y,
+                weight=class_weights.to(out.device),
+                reduction="none"
+            )
+
+        elif args.loss_type == "ce_soft":
+            loss_per_node = F.cross_entropy(
+                out,
+                batch.y,
+                weight=soft_class_weights.to(out.device),
+                reduction="none"
+            )
+        elif args.loss_type == "ce":
+            loss_per_node = F.cross_entropy(
+                out,
+                batch.y,
+                reduction="none"
+            )
         else:
-            loss_per_node = F.cross_entropy(out, batch.y, reduction="none")
+            raise ValueError(f"Unknown loss_type: {args.loss_type}")
 
         if hasattr(batch, "node_norm"):
             # print("[INFO] using node_norm for loss calculation")
@@ -495,22 +516,39 @@ def predict_with_threshold(out, threshold):
     return (probs[:, 1] >= threshold).long()
 
 @torch.no_grad()
-def evaluate_loss(data, model):
+def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
     model.eval()
     out = model(data.x, data.edge_index)
     # loss = F.cross_entropy(out, data.y, reduction="mean")
     # loss = focal_loss(out, data.y, gamma=2.0).mean()
     if args.loss_type == "focal":
         loss = focal_loss(out, data.y, gamma=2.0).mean()
-    else:
+    elif args.loss_type == "ce_weighted":
+        loss = F.cross_entropy(
+            out,
+            data.y,
+            weight=class_weights.to(out.device)
+        )
+
+    elif args.loss_type == "ce_soft":
+        loss = F.cross_entropy(
+            out,
+            data.y,
+            weight=soft_class_weights.to(out.device)
+        )
+    elif args.loss_type == "ce":
         loss = F.cross_entropy(out, data.y)
+
+
+    else:
+        raise ValueError(f"Unknown loss_type: {args.loss_type}")
         
     return loss.item()
     
 ##### training  and eval functions:
 
 def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
-    class_weights = None
+
 
     # setting the model
     if model_name == "graphsage":
@@ -541,30 +579,39 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
     # warmup_scheduler.step()
 
 
-    ### weighted loss 
-    if use_weighted_loss:
-        print("[INFO] Using weighted losses")
-        # train_labels = train_data.y[train_data.train_mask].cpu().numpy()
+    class_weights = None
+    soft_class_weights = None
+
+    if args.loss_type in ["ce_weighted", "ce_soft"]:
+        print("[INFO] Computing class weights")
+
         train_labels = train_data.y.cpu().numpy()
-        classes = np.unique(train_labels) # can be ignored ???
+        classes = np.unique(train_labels)
 
-        weights= compute_class_weight('balanced', classes = classes, y = train_labels)
-        print("Class weights:", weights)
+        weights = compute_class_weight(
+            class_weight="balanced",
+            classes=classes,
+            y=train_labels
+        )
 
-        # normlaizing class weights: ??? can be disabled
-        print("[INFO] Normalizing class weights (weighted loss)")
         weights = weights / np.mean(weights)
+        class_weights = torch.tensor(weights, dtype=torch.float)
 
-        # final torch classes format 
-        class_weights = torch.tensor(weights, dtype = torch.float)
+        # ---- SOFTENING ----
+        alpha = 0.5   # <--- THIS is the knob
+        soft_weights = weights ** alpha
+        soft_weights = soft_weights / np.mean(soft_weights)
+        soft_class_weights = torch.tensor(soft_weights, dtype=torch.float)
 
+        print("[INFO] CE weights      :", class_weights.tolist())
+        print("[INFO] Soft CE weights :", soft_class_weights.tolist())
 
     ##### main training loop now 
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
 
         train_start = time.perf_counter()
-        loss, epoch_nodes = train(model, train_loader, optimizer, class_weights)
+        loss, epoch_nodes = train(model, train_loader, optimizer, class_weights=class_weights if args.loss_type== "ce_weighted" else None, soft_class_weights=soft_class_weights if args.loss_type=="ce_soft" else None)
         train_time = time.perf_counter() - train_start
 
         # eval_start = time.perf_counter()
@@ -634,7 +681,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
             val_losses = []
             for path, g in val_graphs:
                 m = evaluate_test(g, model)
-                val_loss = evaluate_loss(g, model)
+                val_loss = evaluate_loss(g, model, class_weights, soft_class_weights)
                 name = os.path.splitext(os.path.basename(path))[0]
 
                 print(

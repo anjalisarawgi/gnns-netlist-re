@@ -42,6 +42,31 @@ def process_single_gml(input_gml, output_gml):
     degrees = np.array([G.degree(n) for n in G.nodes()])
     avg_graph_degree = float(degrees.mean()) if len(degrees) > 0 else 1.0
 
+    # ================= GRAPH-LEVEL FEATURES =================
+    num_nodes = G.number_of_nodes()
+    num_edges = G.number_of_edges()
+
+    deg_std = float(degrees.std()) if len(degrees) > 0 else 0.0
+    avg_clustering_graph = float(nx.average_clustering(G_undirected))
+
+    num_io = sum(
+        1 for _, d in G.nodes(data=True)
+        if is_io_label(d.get("label", ""))
+    )
+    frac_io = num_io / num_nodes if num_nodes > 0 else 0.0
+
+    graph_features = [
+        np.log1p(num_nodes),     # graph size
+        avg_graph_degree,        # density
+        deg_std,                 # degree variance
+        avg_clustering_graph,    # structure
+        frac_io                  # IO fraction
+    ]
+
+    # store once per graph
+    G.graph["graph_features"] = graph_features
+    # ========================================================
+
 
     # Betweenness centrality (approximate for scalability)
     n = G_undirected.number_of_nodes()
@@ -133,11 +158,6 @@ def process_single_gml(input_gml, output_gml):
             density_contrast = G.degree(node) - avg_neighbor_degree
             norm_density_contrast = density_contrast / (avg_neighbor_degree + 1e-6)
 
-            boundary_nbrs = sum(
-                int(G.nodes[n].get("boundary", 0)) for n in nbrs
-            )
-            frac_boundary_nbrs = boundary_nbrs / len(nbrs)
-
             is_connected_to_io = float(
                 any(is_io_label(G.nodes[n].get("label", "")) for n in nbrs)
             )
@@ -153,7 +173,6 @@ def process_single_gml(input_gml, output_gml):
 
         else:
             avg_neighbor_degree = 0.0
-            frac_boundary_nbrs = 0.0
             is_connected_to_io = 0.0
             neighbor_degree_entropy = 0.0
 
@@ -164,13 +183,6 @@ def process_single_gml(input_gml, output_gml):
         for n in nbrs:
             two_hop |= set(G.predecessors(n)) | set(G.successors(n))
         two_hop.discard(node)
-
-        if two_hop:
-            frac_boundary_2hop = float(np.mean([
-                int(G.nodes[n].get("boundary", 0)) for n in two_hop
-            ]))
-        else:
-            frac_boundary_2hop = 0.0
 
         # ------------------------
         # NEW: flow / cut features
@@ -183,6 +195,7 @@ def process_single_gml(input_gml, output_gml):
         # ------------------------
         # Final feature vector
         # ------------------------
+        # gf = G.graph["graph_features"]
         G.nodes[node]["features"] = [
             float(indeg),
             float(outdeg),
@@ -200,7 +213,7 @@ def process_single_gml(input_gml, output_gml):
             float(norm_betweenness),        # NEW
             float(min_io_distances.get(node, -1)),
             float(core_distance),           # NEW
-        ]
+        ] # + gf
 
         ############ 
         # jan 18
@@ -237,10 +250,10 @@ def process_single_gml(input_gml, output_gml):
 # STEP 3: Batch processing
 ############################################################
 
-ROOT_RAW = "new_graphs_crypto/raw/raw"
-ROOT_OUT = "new_graphs_crypto/processed_jan21"
-# ROOT_RAW = "graphs/raw_v2/raw"
-# ROOT_OUT = "graphs/processed_jan21"
+# ROOT_RAW = "new_graphs_crypto/raw/raw"
+# ROOT_OUT = "new_graphs_crypto/processed_jan23_w_graphFeatures"
+ROOT_RAW = "graphs/raw_v2/raw"
+ROOT_OUT = "graphs/processed_jan23_w_graphFeatures"
 
 processed_dirs = {}
 usable_graphs = []
@@ -289,6 +302,11 @@ for design in os.listdir(ROOT_RAW):
                 usable_graphs.append(output_gml)
             except Exception as e:
                 print(f"[CRASH] {input_gml}: {e}")
+            
+            # print("Feature dim per node:", len(G.nodes[list(G.nodes())[0]]["features"]))
+            G_out = nx.read_gml(output_gml)
+            any_node = next(iter(G_out.nodes()))
+            print("Feature dim per node:", len(G_out.nodes[any_node]["features"]))
 
 ############################################################
 # STEP 4: Save metadata / validation results
