@@ -1,0 +1,53 @@
+{
+    "gcm-aes_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/gcm-aes_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/gcm-aes_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/gcm-aes_latest/osu035"
+    ],
+    "ecg_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/ecg_latest/osu035"
+    ],
+    "aes_core": [
+        "new_graphs_crypto/processed_jan24_newFeatures/aes_core/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/aes_core/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/aes_core/osu035"
+    ],
+    "gost28147-89_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/gost28147-89_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/gost28147-89_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/gost28147-89_latest/osu035"
+    ],
+    "aes-encryption_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/aes-encryption_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/aes-encryption_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/aes-encryption_latest/osu035"
+    ],
+    "sha3_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/sha3_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/sha3_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/sha3_latest/osu035"
+    ],
+    "hight_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/hight_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/hight_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/hight_latest/osu035"
+    ],
+    "trigonometric_functions_in_double_fpu_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/trigonometric_functions_in_double_fpu_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/trigonometric_functions_in_double_fpu_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/trigonometric_functions_in_double_fpu_latest/osu035"
+    ],
+    "des_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/des_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/des_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/des_latest/osu035"
+    ],
+    "tiny_aes_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/tiny_aes_latest/osu035"
+    ],
+    "rsencoder_latest": [
+        "new_graphs_crypto/processed_jan24_newFeatures/rsencoder_latest/nangate",
+        "new_graphs_crypto/processed_jan24_newFeatures/rsencoder_latest/gscl45nm",
+        "new_graphs_crypto/processed_jan24_newFeatures/rsencoder_latest/osu035"
+    ]
+}

@@ -24,6 +24,18 @@ def is_io_label(label: str) -> bool:
     s = str(label).upper()
     return ("INPUT" in s) or ("OUTPUT" in s)
 
+def percentile_map(values_by_node: dict):
+    nodes = list(values_by_node.keys())
+    vals = np.array([values_by_node[n] for n in nodes], dtype=np.float32)
+    order = np.argsort(vals)
+    ranks = np.empty_like(order)
+    ranks[order] = np.arange(len(vals))
+    pct = ranks / max(1, (len(vals) - 1))
+    return {nodes[i]: float(pct[i]) for i in range(len(nodes))}
+
+def safe_inv_dist(d):
+    return 0.0 if d is None or d < 0 else 1.0 / (1.0 + float(d))
+
 ############################################################
 # STEP 2: Single GML processing
 ############################################################
@@ -32,6 +44,7 @@ def process_single_gml(input_gml, output_gml):
     print("Processing:", input_gml)
 
     G = nx.read_gml(input_gml).to_directed()
+    G.remove_edges_from(nx.selfloop_edges(G))
 
     clustering = nx.clustering(G.to_undirected())
     G_undirected = G.to_undirected()
@@ -124,7 +137,30 @@ def process_single_gml(input_gml, output_gml):
         )
 
         G_undirected.remove_node(super_io)
-        
+    
+        # --- graph-wide maps for percentiles ---
+    deg_map     = {n: float(G.degree(n)) for n in G.nodes()}
+    indeg_map   = {n: float(G.in_degree(n)) for n in G.nodes()}
+    outdeg_map  = {n: float(G.out_degree(n)) for n in G.nodes()}
+    between_map = {n: float(betweenness.get(n, 0.0)) for n in G.nodes()}
+    clust_map   = {n: float(clustering.get(n, 0.0)) for n in G.nodes()}
+
+    deg_pct     = percentile_map(deg_map)
+    indeg_pct   = percentile_map(indeg_map)
+    outdeg_pct  = percentile_map(outdeg_map)
+    between_pct = percentile_map(between_map)
+    clust_pct   = percentile_map(clust_map)
+
+    # IO distance percentiles (treat -1 as far)
+    io_dist_map = {n: float(min_io_distances.get(n, -1)) for n in G.nodes()}
+    io_dist_filled = {n: (io_dist_map[n] if io_dist_map[n] >= 0 else 1e9) for n in G.nodes()}
+    io_dist_pct = percentile_map(io_dist_filled)
+
+    # k-core (undirected)
+    core_num = nx.core_number(G_undirected) if G_undirected.number_of_nodes() > 0 else {n: 0 for n in G.nodes()}
+    core_pct = percentile_map({n: float(core_num.get(n, 0)) for n in G.nodes()})
+
+
     # Min distance to IO
     for node in G.nodes():
         raw_label = G.nodes[node].get("label", node)
@@ -146,6 +182,31 @@ def process_single_gml(input_gml, output_gml):
 
         nbrs = set(G.predecessors(node)) | set(G.successors(node))
 
+        deg = float(G.degree(node))
+        btw = float(betweenness.get(node, 0.0))
+
+        if nbrs:
+            nbr_deg = np.array([G.degree(n) for n in nbrs], dtype=np.float32)
+            nbr_btw = np.array([betweenness.get(n, 0.0) for n in nbrs], dtype=np.float32)
+
+            nbr_deg_mean = float(nbr_deg.mean())
+            nbr_btw_mean = float(nbr_btw.mean())
+
+            deg_minus_nbr_mean = deg - nbr_deg_mean
+            deg_over_nbr_mean  = deg / (nbr_deg_mean + 1e-6)
+            btw_minus_nbr_mean = btw - nbr_btw_mean
+
+            # ego density: edges among neighbors / possible
+            H = G_undirected.subgraph(list(nbrs))
+            m = H.number_of_edges()
+            k = len(nbrs)
+            ego_edges_frac = float(m / (k * (k - 1) / 2)) if k > 1 else 0.0
+        else:
+            deg_minus_nbr_mean = 0.0
+            deg_over_nbr_mean  = 0.0
+            btw_minus_nbr_mean = 0.0
+            ego_edges_frac     = 0.0
+                
         # ------------------------
         # Neighborhood statistics
         # ------------------------
@@ -196,25 +257,59 @@ def process_single_gml(input_gml, output_gml):
         # Final feature vector
         # ------------------------
         # gf = G.graph["graph_features"]
+        # G.nodes[node]["features"] = [
+        #     float(indeg),
+        #     float(outdeg),
+        #     float(norm_indeg),              # NEW
+        #     float(norm_outdeg),             # NEW
+        #     float(deg_imbalance),
+        #     float(avg_neighbor_degree),
+        #     float(norm_density_contrast),   # NEW
+        #     float(clustering_coeff),
+        #     float(cut_proxy),
+        #     float(flow_asym),
+        #     float(neighbor_degree_entropy),
+        #     float(is_connected_to_io),
+        #     float(betweenness.get(node, 0.0)),
+        #     float(norm_betweenness),        # NEW
+        #     float(min_io_distances.get(node, -1)),
+        #     float(core_distance),           # NEW
+        # ] # + gf
+
+        io_d = float(min_io_distances.get(node, -1))
+        inv_io = safe_inv_dist(io_d)
+
         G.nodes[node]["features"] = [
             float(indeg),
             float(outdeg),
-            float(norm_indeg),              # NEW
-            float(norm_outdeg),             # NEW
+            float(np.log1p(indeg)),
+            float(np.log1p(outdeg)),
+            float(indeg / (outdeg + 1e-6)),        # in_out_ratio
             float(deg_imbalance),
             float(avg_neighbor_degree),
-            float(norm_density_contrast),   # NEW
+            float(norm_density_contrast),
             float(clustering_coeff),
-            float(cut_proxy),
-            float(flow_asym),
-            float(neighbor_degree_entropy),
-            float(is_connected_to_io),
-            float(betweenness.get(node, 0.0)),
-            float(norm_betweenness),        # NEW
-            float(min_io_distances.get(node, -1)),
-            float(core_distance),           # NEW
-        ] # + gf
+            float(ego_edges_frac),
 
+            float(betweenness.get(node, 0.0)),
+            float(norm_betweenness),
+            float(deg_minus_nbr_mean),
+            float(deg_over_nbr_mean),
+            float(btw_minus_nbr_mean),
+
+            float(io_d),
+            float(inv_io),
+            float(io_dist_pct[node]),
+
+            float(deg_pct[node]),
+            float(indeg_pct[node]),
+            float(outdeg_pct[node]),
+            float(between_pct[node]),
+            float(clust_pct[node]),
+
+            float(core_num.get(node, 0)),
+            float(core_pct[node]),
+        ]
         ############ 
         # jan 18
         ############
@@ -250,10 +345,10 @@ def process_single_gml(input_gml, output_gml):
 # STEP 3: Batch processing
 ############################################################
 
-# ROOT_RAW = "new_graphs_crypto/raw/raw"
-# ROOT_OUT = "new_graphs_crypto/processed_jan23_w_graphFeatures"
-ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_jan23_w_graphFeatures"
+ROOT_RAW = "new_graphs_crypto/raw/raw"
+ROOT_OUT = "new_graphs_crypto/processed_jan24_newFeatures"
+# ROOT_RAW = "graphs/raw_v2/raw"
+# ROOT_OUT = "graphs/processed_jan24_newFeatures"
 
 processed_dirs = {}
 usable_graphs = []
@@ -285,7 +380,7 @@ for design in os.listdir(ROOT_RAW):
             input_gml = os.path.join(tech_path, fname)
             output_gml = os.path.join(out_dir, fname)
 
-            G = nx.read_gml(input_gml)
+            G = nx.read_gml(input_gml) ###### ???????????
 
             if not is_graph_connected(G):
                 print(f"[ERROR] Not connected → {input_gml}")

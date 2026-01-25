@@ -338,7 +338,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
         # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
         # loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
         if args.loss_type == "focal":
-            loss_per_node = focal_loss(out, batch.y, gamma=2.0)
+            loss_per_node = focal_loss(out, batch.y, gamma=1.0)
         elif args.loss_type == "ce_weighted":
             loss_per_node = F.cross_entropy(
                 out,
