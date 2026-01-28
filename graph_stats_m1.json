@@ -1,0 +1,2630 @@
+{
+  "graphs/processed_jan27_m1/chacha-master/osu035/chacha_core_combined_m1.gml": {
+    "num_nodes": 18276,
+    "num_edges": 39115,
+    "boundary_1_count": 2212,
+    "boundary_1_ratio": 0.12103304880717881
+  },
+  "graphs/processed_jan27_m1/chacha-master/osu035/chacha_combined_m1.gml": {
+    "num_nodes": 21670,
+    "num_edges": 87876,
+    "boundary_1_count": 938,
+    "boundary_1_ratio": 0.043285648361790496
+  },
+  "graphs/processed_jan27_m1/simon_core_latest/nangate/top_module_combined_m1.gml": {
+    "num_nodes": 720,
+    "num_edges": 1771,
+    "boundary_1_count": 11,
+    "boundary_1_ratio": 0.015277777777777777
+  },
+  "graphs/processed_jan27_m1/simon_core_latest/gscl45nm/top_module_combined_m1.gml": {
+    "num_nodes": 997,
+    "num_edges": 2000,
+    "boundary_1_count": 11,
+    "boundary_1_ratio": 0.011033099297893681
+  },
+  "graphs/processed_jan27_m1/simon_core_latest/osu035/top_module_combined_m1.gml": {
+    "num_nodes": 1157,
+    "num_edges": 2515,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.00864304235090752
+  },
+  "graphs/processed_jan27_m1/cmac-master/gscl45nm/cmac_combined_m1.gml": {
+    "num_nodes": 33813,
+    "num_edges": 75104,
+    "boundary_1_count": 722,
+    "boundary_1_ratio": 0.02135273415550232
+  },
+  "graphs/processed_jan27_m1/cmac-master/osu035/cmac_combined_m1.gml": {
+    "num_nodes": 31796,
+    "num_edges": 84959,
+    "boundary_1_count": 1343,
+    "boundary_1_ratio": 0.0422380173606743
+  },
+  "graphs/processed_jan27_m1/aes-master/gscl45nm/aes_core_combined_m1.gml": {
+    "num_nodes": 29070,
+    "num_edges": 63369,
+    "boundary_1_count": 745,
+    "boundary_1_ratio": 0.02562779497764018
+  },
+  "graphs/processed_jan27_m1/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml": {
+    "num_nodes": 7052,
+    "num_edges": 14413,
+    "boundary_1_count": 923,
+    "boundary_1_ratio": 0.13088485536018152
+  },
+  "graphs/processed_jan27_m1/aes-master/osu035/aes_core_combined_m1.gml": {
+    "num_nodes": 27172,
+    "num_edges": 72102,
+    "boundary_1_count": 801,
+    "boundary_1_ratio": 0.029478875312822023
+  },
+  "graphs/processed_jan27_m1/aes-master/osu035/aes_decipher_block_combined_m1.gml": {
+    "num_nodes": 8353,
+    "num_edges": 20241,
+    "boundary_1_count": 965,
+    "boundary_1_ratio": 0.11552735544115887
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/nangate/adder_32bit_combined_m1.gml": {
+    "num_nodes": 454,
+    "num_edges": 696,
+    "boundary_1_count": 287,
+    "boundary_1_ratio": 0.6321585903083701
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/gscl45nm/shift_15b_combined_m1.gml": {
+    "num_nodes": 470,
+    "num_edges": 810,
+    "boundary_1_count": 145,
+    "boundary_1_ratio": 0.30851063829787234
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/gscl45nm/divider_dshift_combined_m1.gml": {
+    "num_nodes": 4371,
+    "num_edges": 9783,
+    "boundary_1_count": 1035,
+    "boundary_1_ratio": 0.2367879203843514
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/gscl45nm/adder_32bit_combined_m1.gml": {
+    "num_nodes": 405,
+    "num_edges": 647,
+    "boundary_1_count": 239,
+    "boundary_1_ratio": 0.5901234567901235
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/gscl45nm/shift_3b_combined_m1.gml": {
+    "num_nodes": 258,
+    "num_edges": 412,
+    "boundary_1_count": 130,
+    "boundary_1_ratio": 0.5038759689922481
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/gscl45nm/shift_7b_combined_m1.gml": {
+    "num_nodes": 360,
+    "num_edges": 607,
+    "boundary_1_count": 135,
+    "boundary_1_ratio": 0.375
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/osu035/shift_15b_combined_m1.gml": {
+    "num_nodes": 458,
+    "num_edges": 820,
+    "boundary_1_count": 157,
+    "boundary_1_ratio": 0.34279475982532753
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/osu035/divider_dshift_combined_m1.gml": {
+    "num_nodes": 4212,
+    "num_edges": 9962,
+    "boundary_1_count": 1058,
+    "boundary_1_ratio": 0.2511870845204179
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/osu035/adder_32bit_combined_m1.gml": {
+    "num_nodes": 582,
+    "num_edges": 920,
+    "boundary_1_count": 332,
+    "boundary_1_ratio": 0.570446735395189
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/osu035/shift_3b_combined_m1.gml": {
+    "num_nodes": 246,
+    "num_edges": 402,
+    "boundary_1_count": 163,
+    "boundary_1_ratio": 0.6626016260162602
+  },
+  "graphs/processed_jan27_m1/signed_integer_divider_latest/osu035/shift_7b_combined_m1.gml": {
+    "num_nodes": 342,
+    "num_edges": 597,
+    "boundary_1_count": 141,
+    "boundary_1_ratio": 0.41228070175438597
+  },
+  "graphs/processed_jan27_m1/rs_5_3_gf256_latest/nangate/SYN2ERR_combined_m1.gml": {
+    "num_nodes": 735,
+    "num_edges": 2062,
+    "boundary_1_count": 58,
+    "boundary_1_ratio": 0.07891156462585033
+  },
+  "graphs/processed_jan27_m1/rs_5_3_gf256_latest/nangate/RS_5_3_GF256_combined_m1.gml": {
+    "num_nodes": 1175,
+    "num_edges": 3233,
+    "boundary_1_count": 58,
+    "boundary_1_ratio": 0.04936170212765958
+  },
+  "graphs/processed_jan27_m1/rs_5_3_gf256_latest/gscl45nm/SYN2ERR_combined_m1.gml": {
+    "num_nodes": 1299,
+    "num_edges": 2645,
+    "boundary_1_count": 60,
+    "boundary_1_ratio": 0.046189376443418015
+  },
+  "graphs/processed_jan27_m1/rs_5_3_gf256_latest/gscl45nm/RS_5_3_GF256_combined_m1.gml": {
+    "num_nodes": 1795,
+    "num_edges": 3822,
+    "boundary_1_count": 50,
+    "boundary_1_ratio": 0.027855153203342618
+  },
+  "graphs/processed_jan27_m1/rs_5_3_gf256_latest/osu035/SYN2ERR_combined_m1.gml": {
+    "num_nodes": 1110,
+    "num_edges": 2736,
+    "boundary_1_count": 76,
+    "boundary_1_ratio": 0.06846846846846846
+  },
+  "graphs/processed_jan27_m1/rs_5_3_gf256_latest/osu035/RS_5_3_GF256_combined_m1.gml": {
+    "num_nodes": 1556,
+    "num_edges": 3936,
+    "boundary_1_count": 70,
+    "boundary_1_ratio": 0.04498714652956298
+  },
+  "graphs/processed_jan27_m1/uart2spi_latest/nangate/uart_core_combined_m1.gml": {
+    "num_nodes": 471,
+    "num_edges": 1129,
+    "boundary_1_count": 30,
+    "boundary_1_ratio": 0.06369426751592357
+  },
+  "graphs/processed_jan27_m1/uart2spi_latest/gscl45nm/uart_core_combined_m1.gml": {
+    "num_nodes": 599,
+    "num_edges": 1295,
+    "boundary_1_count": 28,
+    "boundary_1_ratio": 0.04674457429048414
+  },
+  "graphs/processed_jan27_m1/uart2spi_latest/osu035/uart_core_combined_m1.gml": {
+    "num_nodes": 611,
+    "num_edges": 1450,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.05564648117839607
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/gscl45nm/Processor_combined_m1.gml": {
+    "num_nodes": 31140,
+    "num_edges": 67369,
+    "boundary_1_count": 2012,
+    "boundary_1_ratio": 0.06461143224149005
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/gscl45nm/FIFO_NoFull_Count_combined_m1.gml": {
+    "num_nodes": 9990,
+    "num_edges": 22194,
+    "boundary_1_count": 69,
+    "boundary_1_ratio": 0.006906906906906907
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/gscl45nm/ALU_combined_m1.gml": {
+    "num_nodes": 14417,
+    "num_edges": 30398,
+    "boundary_1_count": 1205,
+    "boundary_1_ratio": 0.08358188249982659
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/gscl45nm/uart_min_combined_m1.gml": {
+    "num_nodes": 20062,
+    "num_edges": 44720,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.0016947462865118134
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/gscl45nm/Switches_combined_m1.gml": {
+    "num_nodes": 594,
+    "num_edges": 1149,
+    "boundary_1_count": 14,
+    "boundary_1_ratio": 0.02356902356902357
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/gscl45nm/uart_bootloader_combined_m1.gml": {
+    "num_nodes": 20963,
+    "num_edges": 46598,
+    "boundary_1_count": 141,
+    "boundary_1_ratio": 0.006726136526260554
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/gscl45nm/FIFO_Clear_combined_m1.gml": {
+    "num_nodes": 9929,
+    "num_edges": 22101,
+    "boundary_1_count": 56,
+    "boundary_1_ratio": 0.005640044314633901
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/osu035/Processor_combined_m1.gml": {
+    "num_nodes": 39785,
+    "num_edges": 99101,
+    "boundary_1_count": 1902,
+    "boundary_1_ratio": 0.04780696242302375
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/osu035/FIFO_NoFull_Count_combined_m1.gml": {
+    "num_nodes": 10997,
+    "num_edges": 25674,
+    "boundary_1_count": 84,
+    "boundary_1_ratio": 0.0076384468491406746
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/osu035/ALU_combined_m1.gml": {
+    "num_nodes": 21606,
+    "num_edges": 53490,
+    "boundary_1_count": 1400,
+    "boundary_1_ratio": 0.06479681569934277
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/osu035/uart_min_combined_m1.gml": {
+    "num_nodes": 22291,
+    "num_edges": 52053,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.00152527926068817
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/osu035/Switches_combined_m1.gml": {
+    "num_nodes": 524,
+    "num_edges": 1189,
+    "boundary_1_count": 14,
+    "boundary_1_ratio": 0.026717557251908396
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/osu035/uart_bootloader_combined_m1.gml": {
+    "num_nodes": 23251,
+    "num_edges": 54044,
+    "boundary_1_count": 220,
+    "boundary_1_ratio": 0.009461958625435465
+  },
+  "graphs/processed_jan27_m1/mips32r1_latest/osu035/FIFO_Clear_combined_m1.gml": {
+    "num_nodes": 10998,
+    "num_edges": 25664,
+    "boundary_1_count": 69,
+    "boundary_1_ratio": 0.006273867975995636
+  },
+  "graphs/processed_jan27_m1/mips_16_latest/nangate/mips_16_core_top_combined_m1.gml": {
+    "num_nodes": 13955,
+    "num_edges": 37521,
+    "boundary_1_count": 346,
+    "boundary_1_ratio": 0.024793980652096023
+  },
+  "graphs/processed_jan27_m1/mips_16_latest/gscl45nm/mips_16_core_top_combined_m1.gml": {
+    "num_nodes": 19714,
+    "num_edges": 43084,
+    "boundary_1_count": 229,
+    "boundary_1_ratio": 0.011616110378411282
+  },
+  "graphs/processed_jan27_m1/mips_16_latest/osu035/mips_16_core_top_combined_m1.gml": {
+    "num_nodes": 17983,
+    "num_edges": 45132,
+    "boundary_1_count": 290,
+    "boundary_1_ratio": 0.016126341544792304
+  },
+  "graphs/processed_jan27_m1/fixed_point_arithmetic_parameterized_latest/nangate/qmult_combined_m1.gml": {
+    "num_nodes": 6850,
+    "num_edges": 15994,
+    "boundary_1_count": 338,
+    "boundary_1_ratio": 0.04934306569343066
+  },
+  "graphs/processed_jan27_m1/fixed_point_arithmetic_parameterized_latest/nangate/top_combined_m1.gml": {
+    "num_nodes": 895,
+    "num_edges": 2020,
+    "boundary_1_count": 2,
+    "boundary_1_ratio": 0.0022346368715083797
+  },
+  "graphs/processed_jan27_m1/fixed_point_arithmetic_parameterized_latest/gscl45nm/qmult_combined_m1.gml": {
+    "num_nodes": 6995,
+    "num_edges": 14168,
+    "boundary_1_count": 276,
+    "boundary_1_ratio": 0.03945675482487491
+  },
+  "graphs/processed_jan27_m1/fixed_point_arithmetic_parameterized_latest/gscl45nm/top_combined_m1.gml": {
+    "num_nodes": 1101,
+    "num_edges": 2136,
+    "boundary_1_count": 4,
+    "boundary_1_ratio": 0.0036330608537693005
+  },
+  "graphs/processed_jan27_m1/fixed_point_arithmetic_parameterized_latest/osu035/qmult_combined_m1.gml": {
+    "num_nodes": 13025,
+    "num_edges": 33739,
+    "boundary_1_count": 398,
+    "boundary_1_ratio": 0.03055662188099808
+  },
+  "graphs/processed_jan27_m1/fixed_point_arithmetic_parameterized_latest/osu035/top_combined_m1.gml": {
+    "num_nodes": 1002,
+    "num_edges": 2102,
+    "boundary_1_count": 9,
+    "boundary_1_ratio": 0.008982035928143712
+  },
+  "graphs/processed_jan27_m1/8bit_vedic_multiplier_latest/nangate/full_adder_combined_m1.gml": {
+    "num_nodes": 10,
+    "num_edges": 12,
+    "boundary_1_count": 5,
+    "boundary_1_ratio": 0.5
+  },
+  "graphs/processed_jan27_m1/8bit_vedic_multiplier_latest/gscl45nm/full_adder_combined_m1.gml": {
+    "num_nodes": 10,
+    "num_edges": 12,
+    "boundary_1_count": 5,
+    "boundary_1_ratio": 0.5
+  },
+  "graphs/processed_jan27_m1/8bit_vedic_multiplier_latest/osu035/full_adder_combined_m1.gml": {
+    "num_nodes": 12,
+    "num_edges": 16,
+    "boundary_1_count": 6,
+    "boundary_1_ratio": 0.5
+  },
+  "graphs/processed_jan27_m1/mod3_calc_latest/nangate/mod3_combined_m1.gml": {
+    "num_nodes": 58,
+    "num_edges": 124,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.3103448275862069
+  },
+  "graphs/processed_jan27_m1/mod3_calc_latest/gscl45nm/mod3_combined_m1.gml": {
+    "num_nodes": 86,
+    "num_edges": 134,
+    "boundary_1_count": 24,
+    "boundary_1_ratio": 0.27906976744186046
+  },
+  "graphs/processed_jan27_m1/mod3_calc_latest/osu035/mod3_combined_m1.gml": {
+    "num_nodes": 80,
+    "num_edges": 140,
+    "boundary_1_count": 24,
+    "boundary_1_ratio": 0.3
+  },
+  "graphs/processed_jan27_m1/8051_latest/nangate/oc8051_sfr_combined_m1.gml": {
+    "num_nodes": 3197,
+    "num_edges": 8292,
+    "boundary_1_count": 339,
+    "boundary_1_ratio": 0.10603690960275258
+  },
+  "graphs/processed_jan27_m1/8051_latest/gscl45nm/oc8051_sfr_combined_m1.gml": {
+    "num_nodes": 4417,
+    "num_edges": 9415,
+    "boundary_1_count": 427,
+    "boundary_1_ratio": 0.09667194928684628
+  },
+  "graphs/processed_jan27_m1/8051_latest/osu035/oc8051_sfr_combined_m1.gml": {
+    "num_nodes": 3838,
+    "num_edges": 9339,
+    "boundary_1_count": 404,
+    "boundary_1_ratio": 0.10526315789473684
+  },
+  "graphs/processed_jan27_m1/edge_latest/nangate/Edge_core_combined_m1.gml": {
+    "num_nodes": 31856,
+    "num_edges": 79870,
+    "boundary_1_count": 4377,
+    "boundary_1_ratio": 0.1373995479658463
+  },
+  "graphs/processed_jan27_m1/edge_latest/nangate/id_ex_pipereg_combined_m1.gml": {
+    "num_nodes": 1743,
+    "num_edges": 2900,
+    "boundary_1_count": 308,
+    "boundary_1_ratio": 0.17670682730923695
+  },
+  "graphs/processed_jan27_m1/edge_latest/nangate/ex_mem_pipereg_combined_m1.gml": {
+    "num_nodes": 1986,
+    "num_edges": 3300,
+    "boundary_1_count": 342,
+    "boundary_1_ratio": 0.17220543806646527
+  },
+  "graphs/processed_jan27_m1/edge_latest/nangate/shift_unit_combined_m1.gml": {
+    "num_nodes": 770,
+    "num_edges": 1998,
+    "boundary_1_count": 140,
+    "boundary_1_ratio": 0.18181818181818182
+  },
+  "graphs/processed_jan27_m1/edge_latest/gscl45nm/Edge_core_combined_m1.gml": {
+    "num_nodes": 37643,
+    "num_edges": 79284,
+    "boundary_1_count": 4495,
+    "boundary_1_ratio": 0.11941131153202454
+  },
+  "graphs/processed_jan27_m1/edge_latest/gscl45nm/id_ex_pipereg_combined_m1.gml": {
+    "num_nodes": 2109,
+    "num_edges": 3266,
+    "boundary_1_count": 384,
+    "boundary_1_ratio": 0.18207681365576103
+  },
+  "graphs/processed_jan27_m1/edge_latest/gscl45nm/ex_mem_pipereg_combined_m1.gml": {
+    "num_nodes": 2374,
+    "num_edges": 3688,
+    "boundary_1_count": 400,
+    "boundary_1_ratio": 0.16849199663016007
+  },
+  "graphs/processed_jan27_m1/edge_latest/gscl45nm/shift_unit_combined_m1.gml": {
+    "num_nodes": 1240,
+    "num_edges": 2564,
+    "boundary_1_count": 179,
+    "boundary_1_ratio": 0.1443548387096774
+  },
+  "graphs/processed_jan27_m1/edge_latest/osu035/Edge_core_combined_m1.gml": {
+    "num_nodes": 46956,
+    "num_edges": 117095,
+    "boundary_1_count": 5080,
+    "boundary_1_ratio": 0.1081863872561547
+  },
+  "graphs/processed_jan27_m1/edge_latest/osu035/id_ex_pipereg_combined_m1.gml": {
+    "num_nodes": 1781,
+    "num_edges": 2938,
+    "boundary_1_count": 346,
+    "boundary_1_ratio": 0.19427288040426727
+  },
+  "graphs/processed_jan27_m1/edge_latest/osu035/ex_mem_pipereg_combined_m1.gml": {
+    "num_nodes": 2015,
+    "num_edges": 3329,
+    "boundary_1_count": 371,
+    "boundary_1_ratio": 0.18411910669975187
+  },
+  "graphs/processed_jan27_m1/edge_latest/osu035/shift_unit_combined_m1.gml": {
+    "num_nodes": 1282,
+    "num_edges": 3133,
+    "boundary_1_count": 235,
+    "boundary_1_ratio": 0.18330733229329174
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbHostCyc2Wrap_combined_m1.gml": {
+    "num_nodes": 12568,
+    "num_edges": 55794,
+    "boundary_1_count": 575,
+    "boundary_1_ratio": 0.0457511139401655
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbSerialInterfaceEngine_combined_m1.gml": {
+    "num_nodes": 3741,
+    "num_edges": 8580,
+    "boundary_1_count": 106,
+    "boundary_1_ratio": 0.028334669874365143
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/RxFifo_combined_m1.gml": {
+    "num_nodes": 3214,
+    "num_edges": 7208,
+    "boundary_1_count": 60,
+    "boundary_1_ratio": 0.018668326073428748
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbHostSlaveCyc2Wrap_combined_m1.gml": {
+    "num_nodes": 40152,
+    "num_edges": 90143,
+    "boundary_1_count": 887,
+    "boundary_1_ratio": 0.022091053994819684
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbHost_combined_m1.gml": {
+    "num_nodes": 12568,
+    "num_edges": 28627,
+    "boundary_1_count": 806,
+    "boundary_1_ratio": 0.06413112667091025
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbHostControl_combined_m1.gml": {
+    "num_nodes": 2465,
+    "num_edges": 5399,
+    "boundary_1_count": 169,
+    "boundary_1_ratio": 0.06855983772819473
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbHostSlave_combined_m1.gml": {
+    "num_nodes": 40226,
+    "num_edges": 90409,
+    "boundary_1_count": 1689,
+    "boundary_1_ratio": 0.04198776910455924
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbHostCyc2Wrap_usb1t11_combined_m1.gml": {
+    "num_nodes": 12568,
+    "num_edges": 28634,
+    "boundary_1_count": 574,
+    "boundary_1_ratio": 0.045671546785486954
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbSlaveCyc2Wrap_usb1t11_combined_m1.gml": {
+    "num_nodes": 31548,
+    "num_edges": 71811,
+    "boundary_1_count": 523,
+    "boundary_1_ratio": 0.016577913021427665
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbHostSlaveAvalonWrap_combined_m1.gml": {
+    "num_nodes": 40226,
+    "num_edges": 90412,
+    "boundary_1_count": 887,
+    "boundary_1_ratio": 0.022050415154377764
+  },
+  "graphs/processed_jan27_m1/usbhostslave_latest/osu035/usbSlaveControl_combined_m1.gml": {
+    "num_nodes": 2537,
+    "num_edges": 5479,
+    "boundary_1_count": 185,
+    "boundary_1_ratio": 0.07292077256602286
+  },
+  "graphs/processed_jan27_m1/md5_core-master/nangate/fifo_combined_m1.gml": {
+    "num_nodes": 7876,
+    "num_edges": 20077,
+    "boundary_1_count": 139,
+    "boundary_1_ratio": 0.017648552564753683
+  },
+  "graphs/processed_jan27_m1/md5_core-master/gscl45nm/fifo_combined_m1.gml": {
+    "num_nodes": 10885,
+    "num_edges": 22657,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.0011024345429490124
+  },
+  "graphs/processed_jan27_m1/md5_core-master/gscl45nm/md5_ctl_combined_m1.gml": {
+    "num_nodes": 8876,
+    "num_edges": 19048,
+    "boundary_1_count": 447,
+    "boundary_1_ratio": 0.0503605227579991
+  },
+  "graphs/processed_jan27_m1/md5_core-master/gscl45nm/md5_fsm_combined_m1.gml": {
+    "num_nodes": 5582,
+    "num_edges": 12093,
+    "boundary_1_count": 474,
+    "boundary_1_ratio": 0.08491580078824794
+  },
+  "graphs/processed_jan27_m1/md5_core-master/osu035/fifo_combined_m1.gml": {
+    "num_nodes": 12006,
+    "num_edges": 28903,
+    "boundary_1_count": 138,
+    "boundary_1_ratio": 0.011494252873563218
+  },
+  "graphs/processed_jan27_m1/md5_core-master/osu035/md5_ctl_combined_m1.gml": {
+    "num_nodes": 9675,
+    "num_edges": 22682,
+    "boundary_1_count": 466,
+    "boundary_1_ratio": 0.04816537467700258
+  },
+  "graphs/processed_jan27_m1/md5_core-master/osu035/md5_fsm_combined_m1.gml": {
+    "num_nodes": 6168,
+    "num_edges": 14658,
+    "boundary_1_count": 576,
+    "boundary_1_ratio": 0.0933852140077821
+  },
+  "graphs/processed_jan27_m1/verilog-axi-librecores/osu035/arbiter_combined_m1.gml": {
+    "num_nodes": 46,
+    "num_edges": 70,
+    "boundary_1_count": 13,
+    "boundary_1_ratio": 0.2826086956521739
+  },
+  "graphs/processed_jan27_m1/verilog-axi-librecores/osu035/axil_register_combined_m1.gml": {
+    "num_nodes": 934,
+    "num_edges": 1408,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.010706638115631691
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/nangate/altera_reset_controller_combined_m1.gml": {
+    "num_nodes": 30,
+    "num_edges": 32,
+    "boundary_1_count": 24,
+    "boundary_1_ratio": 0.8
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/nangate/ogfx_gpu_dma_combined_m1.gml": {
+    "num_nodes": 2555,
+    "num_edges": 6104,
+    "boundary_1_count": 150,
+    "boundary_1_ratio": 0.05870841487279843
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/nangate/ogfx_backend_combined_m1.gml": {
+    "num_nodes": 1914,
+    "num_edges": 4749,
+    "boundary_1_count": 84,
+    "boundary_1_ratio": 0.0438871473354232
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/nangate/ogfx_gpu_combined_m1.gml": {
+    "num_nodes": 3591,
+    "num_edges": 9250,
+    "boundary_1_count": 236,
+    "boundary_1_ratio": 0.0657198551935394
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/nangate/omsp_dbg_i2c_combined_m1.gml": {
+    "num_nodes": 347,
+    "num_edges": 811,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.05187319884726225
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/omsp_timerA_combined_m1.gml": {
+    "num_nodes": 1385,
+    "num_edges": 3291,
+    "boundary_1_count": 152,
+    "boundary_1_ratio": 0.10974729241877257
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/altera_reset_controller_combined_m1.gml": {
+    "num_nodes": 41,
+    "num_edges": 43,
+    "boundary_1_count": 22,
+    "boundary_1_ratio": 0.5365853658536586
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/ogfx_gpu_dma_combined_m1.gml": {
+    "num_nodes": 2952,
+    "num_edges": 6419,
+    "boundary_1_count": 167,
+    "boundary_1_ratio": 0.056571815718157184
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/ogfx_backend_combined_m1.gml": {
+    "num_nodes": 2432,
+    "num_edges": 5433,
+    "boundary_1_count": 79,
+    "boundary_1_ratio": 0.03248355263157895
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/omsp_execution_unit_combined_m1.gml": {
+    "num_nodes": 3456,
+    "num_edges": 7777,
+    "boundary_1_count": 275,
+    "boundary_1_ratio": 0.07957175925925926
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/omsp_dbg_combined_m1.gml": {
+    "num_nodes": 1061,
+    "num_edges": 3357,
+    "boundary_1_count": 115,
+    "boundary_1_ratio": 0.10838831291234684
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/ogfx_gpu_combined_m1.gml": {
+    "num_nodes": 4485,
+    "num_edges": 10283,
+    "boundary_1_count": 226,
+    "boundary_1_ratio": 0.0503901895206243
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/omsp_dbg_i2c_combined_m1.gml": {
+    "num_nodes": 431,
+    "num_edges": 953,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.04176334106728538
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/openGFX430_combined_m1.gml": {
+    "num_nodes": 14300,
+    "num_edges": 33014,
+    "boundary_1_count": 506,
+    "boundary_1_ratio": 0.03538461538461538
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/omsp_uart_combined_m1.gml": {
+    "num_nodes": 863,
+    "num_edges": 1916,
+    "boundary_1_count": 54,
+    "boundary_1_ratio": 0.06257242178447277
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/gscl45nm/omsp_de0_nano_soc_led_key_sw_combined_m1.gml": {
+    "num_nodes": 914,
+    "num_edges": 2105,
+    "boundary_1_count": 73,
+    "boundary_1_ratio": 0.07986870897155361
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/omsp_timerA_combined_m1.gml": {
+    "num_nodes": 1601,
+    "num_edges": 3955,
+    "boundary_1_count": 130,
+    "boundary_1_ratio": 0.08119925046845722
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/altera_reset_controller_combined_m1.gml": {
+    "num_nodes": 41,
+    "num_edges": 43,
+    "boundary_1_count": 22,
+    "boundary_1_ratio": 0.5365853658536586
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/ogfx_gpu_dma_combined_m1.gml": {
+    "num_nodes": 3839,
+    "num_edges": 8933,
+    "boundary_1_count": 263,
+    "boundary_1_ratio": 0.06850742380828341
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/ogfx_backend_combined_m1.gml": {
+    "num_nodes": 2843,
+    "num_edges": 6838,
+    "boundary_1_count": 95,
+    "boundary_1_ratio": 0.03341540626099191
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/omsp_execution_unit_combined_m1.gml": {
+    "num_nodes": 3397,
+    "num_edges": 8424,
+    "boundary_1_count": 318,
+    "boundary_1_ratio": 0.0936120105975861
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/omsp_dbg_combined_m1.gml": {
+    "num_nodes": 1154,
+    "num_edges": 3634,
+    "boundary_1_count": 147,
+    "boundary_1_ratio": 0.12738301559792028
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/ogfx_gpu_combined_m1.gml": {
+    "num_nodes": 5595,
+    "num_edges": 13626,
+    "boundary_1_count": 281,
+    "boundary_1_ratio": 0.050223413762287755
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/omsp_dbg_i2c_combined_m1.gml": {
+    "num_nodes": 404,
+    "num_edges": 943,
+    "boundary_1_count": 26,
+    "boundary_1_ratio": 0.06435643564356436
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/openGFX430_combined_m1.gml": {
+    "num_nodes": 16423,
+    "num_edges": 40642,
+    "boundary_1_count": 598,
+    "boundary_1_ratio": 0.03641234853559033
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/omsp_uart_combined_m1.gml": {
+    "num_nodes": 779,
+    "num_edges": 1924,
+    "boundary_1_count": 58,
+    "boundary_1_ratio": 0.07445442875481387
+  },
+  "graphs/processed_jan27_m1/openmsp430_latest/osu035/omsp_de0_nano_soc_led_key_sw_combined_m1.gml": {
+    "num_nodes": 1039,
+    "num_edges": 2463,
+    "boundary_1_count": 69,
+    "boundary_1_ratio": 0.06641000962463908
+  },
+  "graphs/processed_jan27_m1/dpll-isdn_latest/nangate/dpll_combined_m1.gml": {
+    "num_nodes": 270,
+    "num_edges": 654,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.05555555555555555
+  },
+  "graphs/processed_jan27_m1/dpll-isdn_latest/nangate/variableresetrandomwalkfilter_combined_m1.gml": {
+    "num_nodes": 207,
+    "num_edges": 510,
+    "boundary_1_count": 11,
+    "boundary_1_ratio": 0.05314009661835749
+  },
+  "graphs/processed_jan27_m1/dpll-isdn_latest/gscl45nm/dpll_combined_m1.gml": {
+    "num_nodes": 292,
+    "num_edges": 596,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.0547945205479452
+  },
+  "graphs/processed_jan27_m1/dpll-isdn_latest/gscl45nm/variableresetrandomwalkfilter_combined_m1.gml": {
+    "num_nodes": 232,
+    "num_edges": 481,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.04310344827586207
+  },
+  "graphs/processed_jan27_m1/dpll-isdn_latest/osu035/dpll_combined_m1.gml": {
+    "num_nodes": 290,
+    "num_edges": 617,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.05517241379310345
+  },
+  "graphs/processed_jan27_m1/dpll-isdn_latest/osu035/variableresetrandomwalkfilter_combined_m1.gml": {
+    "num_nodes": 224,
+    "num_edges": 486,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.044642857142857144
+  },
+  "graphs/processed_jan27_m1/cxd9731_latest/nangate/CRC_CAL_combined_m1.gml": {
+    "num_nodes": 148,
+    "num_edges": 257,
+    "boundary_1_count": 11,
+    "boundary_1_ratio": 0.07432432432432433
+  },
+  "graphs/processed_jan27_m1/cxd9731_latest/gscl45nm/CRC_CAL_combined_m1.gml": {
+    "num_nodes": 166,
+    "num_edges": 275,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.1144578313253012
+  },
+  "graphs/processed_jan27_m1/cxd9731_latest/osu035/CRC_CAL_combined_m1.gml": {
+    "num_nodes": 295,
+    "num_edges": 617,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.05423728813559322
+  },
+  "graphs/processed_jan27_m1/csa_latest/gscl45nm/block_decypher_combined_m1.gml": {
+    "num_nodes": 57584,
+    "num_edges": 117832,
+    "boundary_1_count": 2120,
+    "boundary_1_ratio": 0.03681578216171159
+  },
+  "graphs/processed_jan27_m1/csa_latest/gscl45nm/decrypt_combined_m1.gml": {
+    "num_nodes": 82947,
+    "num_edges": 169258,
+    "boundary_1_count": 4923,
+    "boundary_1_ratio": 0.059351151940395676
+  },
+  "graphs/processed_jan27_m1/csa_latest/osu035/stream_8bytes_combined_m1.gml": {
+    "num_nodes": 14327,
+    "num_edges": 32651,
+    "boundary_1_count": 4850,
+    "boundary_1_ratio": 0.33852167236685976
+  },
+  "graphs/processed_jan27_m1/csa_latest/osu035/block_decypher_combined_m1.gml": {
+    "num_nodes": 47224,
+    "num_edges": 120800,
+    "boundary_1_count": 2392,
+    "boundary_1_ratio": 0.05065221074030154
+  },
+  "graphs/processed_jan27_m1/csa_latest/osu035/stream_cypher_combined_m1.gml": {
+    "num_nodes": 14887,
+    "num_edges": 34021,
+    "boundary_1_count": 1647,
+    "boundary_1_ratio": 0.11063343857056493
+  },
+  "graphs/processed_jan27_m1/csa_latest/osu035/key_cnt_combined_m1.gml": {
+    "num_nodes": 7344,
+    "num_edges": 15570,
+    "boundary_1_count": 1291,
+    "boundary_1_ratio": 0.17578976034858387
+  },
+  "graphs/processed_jan27_m1/csa_latest/osu035/group_decrypt_combined_m1.gml": {
+    "num_nodes": 62903,
+    "num_edges": 156648,
+    "boundary_1_count": 8452,
+    "boundary_1_ratio": 0.13436561054321733
+  },
+  "graphs/processed_jan27_m1/csa_latest/osu035/decrypt_combined_m1.gml": {
+    "num_nodes": 71105,
+    "num_edges": 176231,
+    "boundary_1_count": 6499,
+    "boundary_1_ratio": 0.0914000421911258
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlz16_combined_m1.gml": {
+    "num_nodes": 59,
+    "num_edges": 99,
+    "boundary_1_count": 24,
+    "boundary_1_ratio": 0.4067796610169492
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlo8_combined_m1.gml": {
+    "num_nodes": 36,
+    "num_edges": 52,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.3333333333333333
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlo32_combined_m1.gml": {
+    "num_nodes": 157,
+    "num_edges": 256,
+    "boundary_1_count": 82,
+    "boundary_1_ratio": 0.5222929936305732
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlz64Reg_combined_m1.gml": {
+    "num_nodes": 267,
+    "num_edges": 490,
+    "boundary_1_count": 101,
+    "boundary_1_ratio": 0.3782771535580524
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlo16_combined_m1.gml": {
+    "num_nodes": 75,
+    "num_edges": 115,
+    "boundary_1_count": 43,
+    "boundary_1_ratio": 0.5733333333333334
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlz48_combined_m1.gml": {
+    "num_nodes": 180,
+    "num_edges": 319,
+    "boundary_1_count": 96,
+    "boundary_1_ratio": 0.5333333333333333
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlo48_combined_m1.gml": {
+    "num_nodes": 228,
+    "num_edges": 367,
+    "boundary_1_count": 135,
+    "boundary_1_ratio": 0.5921052631578947
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlz32Reg_combined_m1.gml": {
+    "num_nodes": 139,
+    "num_edges": 254,
+    "boundary_1_count": 56,
+    "boundary_1_ratio": 0.4028776978417266
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlz24_combined_m1.gml": {
+    "num_nodes": 87,
+    "num_edges": 150,
+    "boundary_1_count": 42,
+    "boundary_1_ratio": 0.4827586206896552
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/fpMulnr_combined_m1.gml": {
+    "num_nodes": 5680,
+    "num_edges": 13348,
+    "boundary_1_count": 816,
+    "boundary_1_ratio": 0.14366197183098592
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlo64_combined_m1.gml": {
+    "num_nodes": 315,
+    "num_edges": 519,
+    "boundary_1_count": 147,
+    "boundary_1_ratio": 0.4666666666666667
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlz32_combined_m1.gml": {
+    "num_nodes": 125,
+    "num_edges": 224,
+    "boundary_1_count": 60,
+    "boundary_1_ratio": 0.48
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/fpAddsubnr_combined_m1.gml": {
+    "num_nodes": 10811,
+    "num_edges": 28026,
+    "boundary_1_count": 1413,
+    "boundary_1_ratio": 0.13070021274627694
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/nangate/cntlz64_combined_m1.gml": {
+    "num_nodes": 251,
+    "num_edges": 455,
+    "boundary_1_count": 132,
+    "boundary_1_ratio": 0.5258964143426295
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlz16_combined_m1.gml": {
+    "num_nodes": 82,
+    "num_edges": 123,
+    "boundary_1_count": 35,
+    "boundary_1_ratio": 0.4268292682926829
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlo8_combined_m1.gml": {
+    "num_nodes": 44,
+    "num_edges": 59,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.2727272727272727
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlo32_combined_m1.gml": {
+    "num_nodes": 202,
+    "num_edges": 297,
+    "boundary_1_count": 94,
+    "boundary_1_ratio": 0.46534653465346537
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlz64Reg_combined_m1.gml": {
+    "num_nodes": 391,
+    "num_edges": 625,
+    "boundary_1_count": 119,
+    "boundary_1_ratio": 0.30434782608695654
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlo16_combined_m1.gml": {
+    "num_nodes": 98,
+    "num_edges": 139,
+    "boundary_1_count": 49,
+    "boundary_1_ratio": 0.5
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlz48_combined_m1.gml": {
+    "num_nodes": 266,
+    "num_edges": 416,
+    "boundary_1_count": 114,
+    "boundary_1_ratio": 0.42857142857142855
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlo48_combined_m1.gml": {
+    "num_nodes": 314,
+    "num_edges": 464,
+    "boundary_1_count": 150,
+    "boundary_1_ratio": 0.47770700636942676
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlz32Reg_combined_m1.gml": {
+    "num_nodes": 197,
+    "num_edges": 314,
+    "boundary_1_count": 68,
+    "boundary_1_ratio": 0.34517766497461927
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlz24_combined_m1.gml": {
+    "num_nodes": 124,
+    "num_edges": 190,
+    "boundary_1_count": 50,
+    "boundary_1_ratio": 0.4032258064516129
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/fpSqrtnr_combined_m1.gml": {
+    "num_nodes": 5199,
+    "num_edges": 11129,
+    "boundary_1_count": 359,
+    "boundary_1_ratio": 0.0690517407193691
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/fpMulnr_combined_m1.gml": {
+    "num_nodes": 7206,
+    "num_edges": 14675,
+    "boundary_1_count": 831,
+    "boundary_1_ratio": 0.11532056619483763
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/fpRoundReg_combined_m1.gml": {
+    "num_nodes": 2002,
+    "num_edges": 3617,
+    "boundary_1_count": 245,
+    "boundary_1_ratio": 0.12237762237762238
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlo64_combined_m1.gml": {
+    "num_nodes": 424,
+    "num_edges": 632,
+    "boundary_1_count": 161,
+    "boundary_1_ratio": 0.37971698113207547
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlz32_combined_m1.gml": {
+    "num_nodes": 170,
+    "num_edges": 265,
+    "boundary_1_count": 69,
+    "boundary_1_ratio": 0.40588235294117647
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/fpAddsubnr_combined_m1.gml": {
+    "num_nodes": 17491,
+    "num_edges": 35706,
+    "boundary_1_count": 2074,
+    "boundary_1_ratio": 0.11857526728031559
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/gscl45nm/cntlz64_combined_m1.gml": {
+    "num_nodes": 360,
+    "num_edges": 568,
+    "boundary_1_count": 154,
+    "boundary_1_ratio": 0.42777777777777776
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlz16_combined_m1.gml": {
+    "num_nodes": 69,
+    "num_edges": 108,
+    "boundary_1_count": 33,
+    "boundary_1_ratio": 0.4782608695652174
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlo8_combined_m1.gml": {
+    "num_nodes": 38,
+    "num_edges": 52,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.3157894736842105
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlo32_combined_m1.gml": {
+    "num_nodes": 172,
+    "num_edges": 263,
+    "boundary_1_count": 94,
+    "boundary_1_ratio": 0.5465116279069767
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlz64Reg_combined_m1.gml": {
+    "num_nodes": 330,
+    "num_edges": 556,
+    "boundary_1_count": 109,
+    "boundary_1_ratio": 0.3303030303030303
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlo16_combined_m1.gml": {
+    "num_nodes": 85,
+    "num_edges": 124,
+    "boundary_1_count": 49,
+    "boundary_1_ratio": 0.5764705882352941
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlz48_combined_m1.gml": {
+    "num_nodes": 219,
+    "num_edges": 363,
+    "boundary_1_count": 106,
+    "boundary_1_ratio": 0.4840182648401826
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlo48_combined_m1.gml": {
+    "num_nodes": 267,
+    "num_edges": 411,
+    "boundary_1_count": 147,
+    "boundary_1_ratio": 0.550561797752809
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlz32Reg_combined_m1.gml": {
+    "num_nodes": 166,
+    "num_edges": 279,
+    "boundary_1_count": 64,
+    "boundary_1_ratio": 0.3855421686746988
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlz24_combined_m1.gml": {
+    "num_nodes": 100,
+    "num_edges": 163,
+    "boundary_1_count": 44,
+    "boundary_1_ratio": 0.44
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/fpSqrtnr_combined_m1.gml": {
+    "num_nodes": 5145,
+    "num_edges": 12142,
+    "boundary_1_count": 391,
+    "boundary_1_ratio": 0.07599611273080661
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/fpMulnr_combined_m1.gml": {
+    "num_nodes": 9739,
+    "num_edges": 23252,
+    "boundary_1_count": 1023,
+    "boundary_1_ratio": 0.1050415853783756
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/fpRoundReg_combined_m1.gml": {
+    "num_nodes": 1816,
+    "num_edges": 3606,
+    "boundary_1_count": 250,
+    "boundary_1_ratio": 0.13766519823788545
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlo64_combined_m1.gml": {
+    "num_nodes": 364,
+    "num_edges": 564,
+    "boundary_1_count": 157,
+    "boundary_1_ratio": 0.43131868131868134
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlz32_combined_m1.gml": {
+    "num_nodes": 140,
+    "num_edges": 231,
+    "boundary_1_count": 64,
+    "boundary_1_ratio": 0.45714285714285713
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/fpAddsubnr_combined_m1.gml": {
+    "num_nodes": 18346,
+    "num_edges": 43494,
+    "boundary_1_count": 2737,
+    "boundary_1_ratio": 0.149187833860242
+  },
+  "graphs/processed_jan27_m1/ft816float_latest/osu035/cntlz64_combined_m1.gml": {
+    "num_nodes": 300,
+    "num_edges": 500,
+    "boundary_1_count": 147,
+    "boundary_1_ratio": 0.49
+  },
+  "graphs/processed_jan27_m1/cpu8080_latest/gscl45nm/M8080_combined_m1.gml": {
+    "num_nodes": 5150,
+    "num_edges": 11527,
+    "boundary_1_count": 383,
+    "boundary_1_ratio": 0.07436893203883495
+  },
+  "graphs/processed_jan27_m1/cpu8080_latest/gscl45nm/cpu8080_combined_m1.gml": {
+    "num_nodes": 5610,
+    "num_edges": 12563,
+    "boundary_1_count": 430,
+    "boundary_1_ratio": 0.0766488413547237
+  },
+  "graphs/processed_jan27_m1/cpu8080_latest/gscl45nm/SM8080_combined_m1.gml": {
+    "num_nodes": 5112,
+    "num_edges": 11559,
+    "boundary_1_count": 344,
+    "boundary_1_ratio": 0.06729264475743349
+  },
+  "graphs/processed_jan27_m1/cpu8080_latest/osu035/M8080_combined_m1.gml": {
+    "num_nodes": 4588,
+    "num_edges": 11400,
+    "boundary_1_count": 340,
+    "boundary_1_ratio": 0.07410636442894507
+  },
+  "graphs/processed_jan27_m1/cpu8080_latest/osu035/cpu8080_combined_m1.gml": {
+    "num_nodes": 4990,
+    "num_edges": 12421,
+    "boundary_1_count": 417,
+    "boundary_1_ratio": 0.08356713426853707
+  },
+  "graphs/processed_jan27_m1/cpu8080_latest/osu035/SM8080_combined_m1.gml": {
+    "num_nodes": 4608,
+    "num_edges": 11532,
+    "boundary_1_count": 358,
+    "boundary_1_ratio": 0.07769097222222222
+  },
+  "graphs/processed_jan27_m1/rs_encoder_decoder_latest/gscl45nm/RS8Encoder8t_combined_m1.gml": {
+    "num_nodes": 1192,
+    "num_edges": 2456,
+    "boundary_1_count": 445,
+    "boundary_1_ratio": 0.3733221476510067
+  },
+  "graphs/processed_jan27_m1/rs_encoder_decoder_latest/osu035/RS8Encoder8t_combined_m1.gml": {
+    "num_nodes": 1635,
+    "num_edges": 3712,
+    "boundary_1_count": 616,
+    "boundary_1_ratio": 0.3767584097859327
+  },
+  "graphs/processed_jan27_m1/sha1-master/nangate/sha1_combined_m1.gml": {
+    "num_nodes": 8491,
+    "num_edges": 23284,
+    "boundary_1_count": 195,
+    "boundary_1_ratio": 0.022965492874808622
+  },
+  "graphs/processed_jan27_m1/sha1-master/nangate/sha1_core_combined_m1.gml": {
+    "num_nodes": 6913,
+    "num_edges": 16835,
+    "boundary_1_count": 42,
+    "boundary_1_ratio": 0.006075509908867351
+  },
+  "graphs/processed_jan27_m1/sha1-master/gscl45nm/sha1_combined_m1.gml": {
+    "num_nodes": 11883,
+    "num_edges": 27848,
+    "boundary_1_count": 858,
+    "boundary_1_ratio": 0.07220398889169402
+  },
+  "graphs/processed_jan27_m1/sha1-master/gscl45nm/sha1_core_combined_m1.gml": {
+    "num_nodes": 8668,
+    "num_edges": 18986,
+    "boundary_1_count": 537,
+    "boundary_1_ratio": 0.06195200738347947
+  },
+  "graphs/processed_jan27_m1/sha1-master/osu035/sha1_combined_m1.gml": {
+    "num_nodes": 11234,
+    "num_edges": 48163,
+    "boundary_1_count": 949,
+    "boundary_1_ratio": 0.08447569877158626
+  },
+  "graphs/processed_jan27_m1/sha1-master/osu035/sha1_core_combined_m1.gml": {
+    "num_nodes": 8655,
+    "num_edges": 20455,
+    "boundary_1_count": 547,
+    "boundary_1_ratio": 0.06320046216060081
+  },
+  "graphs/processed_jan27_m1/sdcard_mass_storage_controller_latest/gscl45nm/sd_cmd_phy_combined_m1.gml": {
+    "num_nodes": 1423,
+    "num_edges": 3344,
+    "boundary_1_count": 25,
+    "boundary_1_ratio": 0.017568517217146872
+  },
+  "graphs/processed_jan27_m1/sdcard_mass_storage_controller_latest/gscl45nm/sd_cmd_serial_host_combined_m1.gml": {
+    "num_nodes": 2135,
+    "num_edges": 4840,
+    "boundary_1_count": 24,
+    "boundary_1_ratio": 0.011241217798594848
+  },
+  "graphs/processed_jan27_m1/sdcard_mass_storage_controller_latest/osu035/sd_cmd_phy_combined_m1.gml": {
+    "num_nodes": 1310,
+    "num_edges": 3307,
+    "boundary_1_count": 20,
+    "boundary_1_ratio": 0.015267175572519083
+  },
+  "graphs/processed_jan27_m1/sdcard_mass_storage_controller_latest/osu035/sd_cmd_serial_host_combined_m1.gml": {
+    "num_nodes": 1943,
+    "num_edges": 4808,
+    "boundary_1_count": 26,
+    "boundary_1_ratio": 0.013381369016984045
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/degree4_cell_combined_m1.gml": {
+    "num_nodes": 44,
+    "num_edges": 66,
+    "boundary_1_count": 20,
+    "boundary_1_ratio": 0.45454545454545453
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/degree1_cell_combined_m1.gml": {
+    "num_nodes": 40,
+    "num_edges": 58,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.425
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/degree3_cell_combined_m1.gml": {
+    "num_nodes": 42,
+    "num_edges": 62,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.4523809523809524
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/degree5_cell_combined_m1.gml": {
+    "num_nodes": 46,
+    "num_edges": 70,
+    "boundary_1_count": 21,
+    "boundary_1_ratio": 0.45652173913043476
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/degree2_cell_combined_m1.gml": {
+    "num_nodes": 41,
+    "num_edges": 60,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.43902439024390244
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/fifo_register_combined_m1.gml": {
+    "num_nodes": 837,
+    "num_edges": 1616,
+    "boundary_1_count": 156,
+    "boundary_1_ratio": 0.1863799283154122
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/CSEEblock_combined_m1.gml": {
+    "num_nodes": 694,
+    "num_edges": 1213,
+    "boundary_1_count": 193,
+    "boundary_1_ratio": 0.2780979827089337
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/gscl45nm/degree6_cell_combined_m1.gml": {
+    "num_nodes": 46,
+    "num_edges": 70,
+    "boundary_1_count": 21,
+    "boundary_1_ratio": 0.45652173913043476
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/degree4_cell_combined_m1.gml": {
+    "num_nodes": 49,
+    "num_edges": 78,
+    "boundary_1_count": 27,
+    "boundary_1_ratio": 0.5510204081632653
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/degree1_cell_combined_m1.gml": {
+    "num_nodes": 41,
+    "num_edges": 61,
+    "boundary_1_count": 20,
+    "boundary_1_ratio": 0.4878048780487805
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/degree3_cell_combined_m1.gml": {
+    "num_nodes": 47,
+    "num_edges": 73,
+    "boundary_1_count": 20,
+    "boundary_1_ratio": 0.425531914893617
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/degree5_cell_combined_m1.gml": {
+    "num_nodes": 57,
+    "num_edges": 95,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.5964912280701754
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/degree2_cell_combined_m1.gml": {
+    "num_nodes": 44,
+    "num_edges": 67,
+    "boundary_1_count": 20,
+    "boundary_1_ratio": 0.45454545454545453
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/fifo_register_combined_m1.gml": {
+    "num_nodes": 651,
+    "num_edges": 1430,
+    "boundary_1_count": 125,
+    "boundary_1_ratio": 0.19201228878648233
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/CSEEblock_combined_m1.gml": {
+    "num_nodes": 1008,
+    "num_edges": 2042,
+    "boundary_1_count": 182,
+    "boundary_1_ratio": 0.18055555555555555
+  },
+  "graphs/processed_jan27_m1/rs_decoder_31_19_6_latest/osu035/degree6_cell_combined_m1.gml": {
+    "num_nodes": 57,
+    "num_edges": 95,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.5964912280701754
+  },
+  "graphs/processed_jan27_m1/hight_latest/nangate/HIGHT_CORE_TOP_combined_m1.gml": {
+    "num_nodes": 2663,
+    "num_edges": 6381,
+    "boundary_1_count": 573,
+    "boundary_1_ratio": 0.21517085993240706
+  },
+  "graphs/processed_jan27_m1/hight_latest/nangate/KEY_SCHED_combined_m1.gml": {
+    "num_nodes": 1084,
+    "num_edges": 2744,
+    "boundary_1_count": 158,
+    "boundary_1_ratio": 0.14575645756457564
+  },
+  "graphs/processed_jan27_m1/trigonometric_functions_in_double_fpu_latest/nangate/top_combined_m1.gml": {
+    "num_nodes": 7885,
+    "num_edges": 22920,
+    "boundary_1_count": 351,
+    "boundary_1_ratio": 0.0445149017121116
+  },
+  "graphs/processed_jan27_m1/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml": {
+    "num_nodes": 12872,
+    "num_edges": 26867,
+    "boundary_1_count": 375,
+    "boundary_1_ratio": 0.02913300186451212
+  },
+  "graphs/processed_jan27_m1/trigonometric_functions_in_double_fpu_latest/osu035/top_combined_m1.gml": {
+    "num_nodes": 11809,
+    "num_edges": 27604,
+    "boundary_1_count": 393,
+    "boundary_1_ratio": 0.03327970192226268
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/nangate/N8080_Reg_combined_m1.gml": {
+    "num_nodes": 787,
+    "num_edges": 1783,
+    "boundary_1_count": 158,
+    "boundary_1_ratio": 0.20076238881829733
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/gscl45nm/Next8080_combined_m1.gml": {
+    "num_nodes": 2306,
+    "num_edges": 4896,
+    "boundary_1_count": 285,
+    "boundary_1_ratio": 0.1235906331309627
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/gscl45nm/N8080_Reg_combined_m1.gml": {
+    "num_nodes": 1267,
+    "num_edges": 2359,
+    "boundary_1_count": 182,
+    "boundary_1_ratio": 0.143646408839779
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/gscl45nm/NextZ80_combined_m1.gml": {
+    "num_nodes": 4437,
+    "num_edges": 9755,
+    "boundary_1_count": 450,
+    "boundary_1_ratio": 0.10141987829614604
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/gscl45nm/Z80Reg_combined_m1.gml": {
+    "num_nodes": 2375,
+    "num_edges": 4922,
+    "boundary_1_count": 215,
+    "boundary_1_ratio": 0.09052631578947369
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/osu035/Next8080_combined_m1.gml": {
+    "num_nodes": 2345,
+    "num_edges": 5508,
+    "boundary_1_count": 305,
+    "boundary_1_ratio": 0.1300639658848614
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/osu035/N8080_Reg_combined_m1.gml": {
+    "num_nodes": 1145,
+    "num_edges": 2429,
+    "boundary_1_count": 182,
+    "boundary_1_ratio": 0.1589519650655022
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/osu035/NextZ80_combined_m1.gml": {
+    "num_nodes": 4363,
+    "num_edges": 10513,
+    "boundary_1_count": 430,
+    "boundary_1_ratio": 0.09855603942241577
+  },
+  "graphs/processed_jan27_m1/nextz80_latest/osu035/Z80Reg_combined_m1.gml": {
+    "num_nodes": 2334,
+    "num_edges": 5414,
+    "boundary_1_count": 240,
+    "boundary_1_ratio": 0.10282776349614396
+  },
+  "graphs/processed_jan27_m1/orsoc_graphics_accelerator/osu035/gfx_interp_combined_m1.gml": {
+    "num_nodes": 36959,
+    "num_edges": 85435,
+    "boundary_1_count": 431,
+    "boundary_1_ratio": 0.011661570929949404
+  },
+  "graphs/processed_jan27_m1/orsoc_graphics_accelerator/osu035/gfx_renderer_combined_m1.gml": {
+    "num_nodes": 4647,
+    "num_edges": 11285,
+    "boundary_1_count": 409,
+    "boundary_1_ratio": 0.08801377232623198
+  },
+  "graphs/processed_jan27_m1/des_latest/nangate/des_combined_m1.gml": {
+    "num_nodes": 1798,
+    "num_edges": 5081,
+    "boundary_1_count": 227,
+    "boundary_1_ratio": 0.12625139043381536
+  },
+  "graphs/processed_jan27_m1/des_latest/nangate/des3_combined_m1.gml": {
+    "num_nodes": 2796,
+    "num_edges": 7426,
+    "boundary_1_count": 343,
+    "boundary_1_ratio": 0.1226752503576538
+  },
+  "graphs/processed_jan27_m1/cavlc_latest/nangate/cavlc_top_combined_m1.gml": {
+    "num_nodes": 4537,
+    "num_edges": 11816,
+    "boundary_1_count": 234,
+    "boundary_1_ratio": 0.05157593123209169
+  },
+  "graphs/processed_jan27_m1/cavlc_latest/gscl45nm/cavlc_top_combined_m1.gml": {
+    "num_nodes": 5086,
+    "num_edges": 11905,
+    "boundary_1_count": 214,
+    "boundary_1_ratio": 0.042076287848997244
+  },
+  "graphs/processed_jan27_m1/cavlc_latest/osu035/cavlc_top_combined_m1.gml": {
+    "num_nodes": 5139,
+    "num_edges": 13039,
+    "boundary_1_count": 243,
+    "boundary_1_ratio": 0.047285464098073555
+  },
+  "graphs/processed_jan27_m1/blue_latest/nangate/uart_combined_m1.gml": {
+    "num_nodes": 293,
+    "num_edges": 724,
+    "boundary_1_count": 7,
+    "boundary_1_ratio": 0.023890784982935155
+  },
+  "graphs/processed_jan27_m1/blue_latest/gscl45nm/uart_combined_m1.gml": {
+    "num_nodes": 354,
+    "num_edges": 818,
+    "boundary_1_count": 7,
+    "boundary_1_ratio": 0.01977401129943503
+  },
+  "graphs/processed_jan27_m1/blue_latest/osu035/uart_combined_m1.gml": {
+    "num_nodes": 345,
+    "num_edges": 826,
+    "boundary_1_count": 7,
+    "boundary_1_ratio": 0.020289855072463767
+  },
+  "graphs/processed_jan27_m1/aemb_latest/osu035/aeMB2_gprf_combined_m1.gml": {
+    "num_nodes": 34837,
+    "num_edges": 80899,
+    "boundary_1_count": 937,
+    "boundary_1_ratio": 0.026896690300542526
+  },
+  "graphs/processed_jan27_m1/apbtoaes128_latest/nangate/aes_core_combined_m1.gml": {
+    "num_nodes": 6643,
+    "num_edges": 17081,
+    "boundary_1_count": 861,
+    "boundary_1_ratio": 0.12961011591148577
+  },
+  "graphs/processed_jan27_m1/apbtoaes128_latest/gscl45nm/aes_core_combined_m1.gml": {
+    "num_nodes": 8638,
+    "num_edges": 19639,
+    "boundary_1_count": 796,
+    "boundary_1_ratio": 0.0921509608705719
+  },
+  "graphs/processed_jan27_m1/apbtoaes128_latest/osu035/aes_core_combined_m1.gml": {
+    "num_nodes": 9874,
+    "num_edges": 24856,
+    "boundary_1_count": 921,
+    "boundary_1_ratio": 0.09327526838160827
+  },
+  "graphs/processed_jan27_m1/mac_layer_switch_latest/nangate/eth_registers_combined_m1.gml": {
+    "num_nodes": 2591,
+    "num_edges": 5712,
+    "boundary_1_count": 725,
+    "boundary_1_ratio": 0.27981474334233886
+  },
+  "graphs/processed_jan27_m1/mac_layer_switch_latest/gscl45nm/eth_registers_combined_m1.gml": {
+    "num_nodes": 3278,
+    "num_edges": 6702,
+    "boundary_1_count": 446,
+    "boundary_1_ratio": 0.13605857230018303
+  },
+  "graphs/processed_jan27_m1/mac_layer_switch_latest/gscl45nm/eth_txethmac_combined_m1.gml": {
+    "num_nodes": 1165,
+    "num_edges": 2427,
+    "boundary_1_count": 151,
+    "boundary_1_ratio": 0.1296137339055794
+  },
+  "graphs/processed_jan27_m1/mac_layer_switch_latest/osu035/eth_registers_combined_m1.gml": {
+    "num_nodes": 2649,
+    "num_edges": 6052,
+    "boundary_1_count": 381,
+    "boundary_1_ratio": 0.1438278595696489
+  },
+  "graphs/processed_jan27_m1/mac_layer_switch_latest/osu035/eth_txethmac_combined_m1.gml": {
+    "num_nodes": 1250,
+    "num_edges": 2780,
+    "boundary_1_count": 153,
+    "boundary_1_ratio": 0.1224
+  },
+  "graphs/processed_jan27_m1/ssp_uart_latest/gscl45nm/UART_INT_combined_m1.gml": {
+    "num_nodes": 80,
+    "num_edges": 161,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.2
+  },
+  "graphs/processed_jan27_m1/ssp_uart_latest/osu035/UART_INT_combined_m1.gml": {
+    "num_nodes": 80,
+    "num_edges": 161,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.225
+  },
+  "graphs/processed_jan27_m1/Aquarius_latest/osu035/datapath_combined_m1.gml": {
+    "num_nodes": 10082,
+    "num_edges": 24246,
+    "boundary_1_count": 1075,
+    "boundary_1_ratio": 0.10662566951001785
+  },
+  "graphs/processed_jan27_m1/Aquarius_latest/osu035/cpu_combined_m1.gml": {
+    "num_nodes": 21229,
+    "num_edges": 52783,
+    "boundary_1_count": 355,
+    "boundary_1_ratio": 0.016722408026755852
+  },
+  "graphs/processed_jan27_m1/sha256-master/gscl45nm/sha256_stream_combined_m1.gml": {
+    "num_nodes": 11064,
+    "num_edges": 25276,
+    "boundary_1_count": 46,
+    "boundary_1_ratio": 0.0041576283441793205
+  },
+  "graphs/processed_jan27_m1/sha256-master/gscl45nm/sha256_core_combined_m1.gml": {
+    "num_nodes": 11071,
+    "num_edges": 25232,
+    "boundary_1_count": 962,
+    "boundary_1_ratio": 0.08689368620720803
+  },
+  "graphs/processed_jan27_m1/sha256-master/osu035/sha256_stream_combined_m1.gml": {
+    "num_nodes": 13200,
+    "num_edges": 31381,
+    "boundary_1_count": 524,
+    "boundary_1_ratio": 0.039696969696969696
+  },
+  "graphs/processed_jan27_m1/sha256-master/osu035/sha256_core_combined_m1.gml": {
+    "num_nodes": 13153,
+    "num_edges": 31370,
+    "boundary_1_count": 1002,
+    "boundary_1_ratio": 0.07618033908614004
+  },
+  "graphs/processed_jan27_m1/double_fpu_latest/nangate/fpu_combined_m1.gml": {
+    "num_nodes": 46966,
+    "num_edges": 111981,
+    "boundary_1_count": 870,
+    "boundary_1_ratio": 0.018524038666269216
+  },
+  "graphs/processed_jan27_m1/double_fpu_latest/gscl45nm/fpu_combined_m1.gml": {
+    "num_nodes": 51689,
+    "num_edges": 114115,
+    "boundary_1_count": 568,
+    "boundary_1_ratio": 0.010988798390373193
+  },
+  "graphs/processed_jan27_m1/double_fpu_latest/osu035/fpu_combined_m1.gml": {
+    "num_nodes": 64232,
+    "num_edges": 152747,
+    "boundary_1_count": 729,
+    "boundary_1_ratio": 0.011349483123676672
+  },
+  "graphs/processed_jan27_m1/usb_device_core_latest/gscl45nm/usbf_sie_tx_combined_m1.gml": {
+    "num_nodes": 299,
+    "num_edges": 648,
+    "boundary_1_count": 49,
+    "boundary_1_ratio": 0.16387959866220736
+  },
+  "graphs/processed_jan27_m1/usb_device_core_latest/osu035/usbf_sie_tx_combined_m1.gml": {
+    "num_nodes": 400,
+    "num_edges": 901,
+    "boundary_1_count": 86,
+    "boundary_1_ratio": 0.215
+  },
+  "graphs/processed_jan27_m1/suslik_latest/osu035/brpred_combined_m1.gml": {
+    "num_nodes": 35904,
+    "num_edges": 83005,
+    "boundary_1_count": 349,
+    "boundary_1_ratio": 0.00972036541889483
+  },
+  "graphs/processed_jan27_m1/suslik_latest/osu035/regfileint0_combined_m1.gml": {
+    "num_nodes": 15996,
+    "num_edges": 37830,
+    "boundary_1_count": 228,
+    "boundary_1_ratio": 0.014253563390847712
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/nangate/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 3071,
+    "num_edges": 8637,
+    "boundary_1_count": 263,
+    "boundary_1_ratio": 0.08563985672419408
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/nangate/aes_sbox_combined_m1.gml": {
+    "num_nodes": 572,
+    "num_edges": 1803,
+    "boundary_1_count": 35,
+    "boundary_1_ratio": 0.06118881118881119
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/nangate/aes_rcon_combined_m1.gml": {
+    "num_nodes": 54,
+    "num_edges": 112,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.18518518518518517
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/nangate/gcm_aes_v0_combined_m1.gml": {
+    "num_nodes": 23903,
+    "num_edges": 65116,
+    "boundary_1_count": 5669,
+    "boundary_1_ratio": 0.2371668828180563
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/nangate/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 13619,
+    "num_edges": 40660,
+    "boundary_1_count": 2022,
+    "boundary_1_ratio": 0.14846905059108598
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/gscl45nm/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 5119,
+    "num_edges": 10297,
+    "boundary_1_count": 231,
+    "boundary_1_ratio": 0.04512600117210393
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/gscl45nm/aes_sbox_combined_m1.gml": {
+    "num_nodes": 1056,
+    "num_edges": 2176,
+    "boundary_1_count": 29,
+    "boundary_1_ratio": 0.027462121212121212
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/gscl45nm/aes_rcon_combined_m1.gml": {
+    "num_nodes": 62,
+    "num_edges": 112,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.16129032258064516
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/gscl45nm/gcm_aes_v0_combined_m1.gml": {
+    "num_nodes": 36087,
+    "num_edges": 75462,
+    "boundary_1_count": 4849,
+    "boundary_1_ratio": 0.13436971762684624
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/gscl45nm/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 23851,
+    "num_edges": 48869,
+    "boundary_1_count": 1698,
+    "boundary_1_ratio": 0.07119198356463041
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/osu035/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 4640,
+    "num_edges": 11282,
+    "boundary_1_count": 347,
+    "boundary_1_ratio": 0.0747844827586207
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/osu035/aes_sbox_combined_m1.gml": {
+    "num_nodes": 794,
+    "num_edges": 2086,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.042821158690176324
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/osu035/aes_rcon_combined_m1.gml": {
+    "num_nodes": 55,
+    "num_edges": 105,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.18181818181818182
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/osu035/gcm_aes_v0_combined_m1.gml": {
+    "num_nodes": 35160,
+    "num_edges": 85763,
+    "boundary_1_count": 6250,
+    "boundary_1_ratio": 0.17775881683731512
+  },
+  "new_graphs_crypto/processed_m1/gcm-aes_latest/osu035/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 21071,
+    "num_edges": 53110,
+    "boundary_1_count": 2806,
+    "boundary_1_ratio": 0.13316881021308907
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/func10_combined_m1.gml": {
+    "num_nodes": 29141,
+    "num_edges": 64074,
+    "boundary_1_count": 9249,
+    "boundary_1_ratio": 0.31738787275659724
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/func11_combined_m1.gml": {
+    "num_nodes": 45731,
+    "num_edges": 99681,
+    "boundary_1_count": 18299,
+    "boundary_1_ratio": 0.4001443222321839
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3_sub1_combined_m1.gml": {
+    "num_nodes": 7,
+    "num_edges": 7,
+    "boundary_1_count": 2,
+    "boundary_1_ratio": 0.2857142857142857
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3_add1_combined_m1.gml": {
+    "num_nodes": 7,
+    "num_edges": 7,
+    "boundary_1_count": 2,
+    "boundary_1_ratio": 0.2857142857142857
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/func4_combined_m1.gml": {
+    "num_nodes": 1374,
+    "num_edges": 2156,
+    "boundary_1_count": 588,
+    "boundary_1_ratio": 0.4279475982532751
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/func9_combined_m1.gml": {
+    "num_nodes": 2332,
+    "num_edges": 2719,
+    "boundary_1_count": 391,
+    "boundary_1_ratio": 0.1676672384219554
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3_mult_combined_m1.gml": {
+    "num_nodes": 16,
+    "num_edges": 22,
+    "boundary_1_count": 6,
+    "boundary_1_ratio": 0.375
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3m_inv_combined_m1.gml": {
+    "num_nodes": 12472,
+    "num_edges": 28263,
+    "boundary_1_count": 6281,
+    "boundary_1_ratio": 0.5036080821039127
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3m_mux3_combined_m1.gml": {
+    "num_nodes": 1555,
+    "num_edges": 1940,
+    "boundary_1_count": 197,
+    "boundary_1_ratio": 0.12668810289389068
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3m_mult3_combined_m1.gml": {
+    "num_nodes": 16028,
+    "num_edges": 30788,
+    "boundary_1_count": 7063,
+    "boundary_1_ratio": 0.44066633391564763
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3m_nine_combined_m1.gml": {
+    "num_nodes": 3223,
+    "num_edges": 6742,
+    "boundary_1_count": 1367,
+    "boundary_1_ratio": 0.4241390009308098
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3m_mult_combined_m1.gml": {
+    "num_nodes": 16028,
+    "num_edges": 51920,
+    "boundary_1_count": 4226,
+    "boundary_1_ratio": 0.26366358871974044
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/func6_combined_m1.gml": {
+    "num_nodes": 11,
+    "num_edges": 13,
+    "boundary_1_count": 4,
+    "boundary_1_ratio": 0.36363636363636365
+  },
+  "new_graphs_crypto/processed_m1/ecg_latest/osu035/f3m_mux6_combined_m1.gml": {
+    "num_nodes": 2140,
+    "num_edges": 3104,
+    "boundary_1_count": 200,
+    "boundary_1_ratio": 0.09345794392523364
+  },
+  "new_graphs_crypto/processed_m1/aes_core/nangate/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 3168,
+    "num_edges": 8853,
+    "boundary_1_count": 263,
+    "boundary_1_ratio": 0.08301767676767677
+  },
+  "new_graphs_crypto/processed_m1/aes_core/nangate/aes_sbox_combined_m1.gml": {
+    "num_nodes": 572,
+    "num_edges": 1803,
+    "boundary_1_count": 35,
+    "boundary_1_ratio": 0.06118881118881119
+  },
+  "new_graphs_crypto/processed_m1/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml": {
+    "num_nodes": 19531,
+    "num_edges": 55991,
+    "boundary_1_count": 3238,
+    "boundary_1_ratio": 0.16578772208284265
+  },
+  "new_graphs_crypto/processed_m1/aes_core/nangate/aes_inv_sbox_combined_m1.gml": {
+    "num_nodes": 592,
+    "num_edges": 1869,
+    "boundary_1_count": 32,
+    "boundary_1_ratio": 0.05405405405405406
+  },
+  "new_graphs_crypto/processed_m1/aes_core/nangate/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 13717,
+    "num_edges": 40880,
+    "boundary_1_count": 2022,
+    "boundary_1_ratio": 0.14740832543559088
+  },
+  "new_graphs_crypto/processed_m1/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 5144,
+    "num_edges": 10345,
+    "boundary_1_count": 207,
+    "boundary_1_ratio": 0.04024105754276827
+  },
+  "new_graphs_crypto/processed_m1/aes_core/gscl45nm/aes_sbox_combined_m1.gml": {
+    "num_nodes": 1056,
+    "num_edges": 2176,
+    "boundary_1_count": 29,
+    "boundary_1_ratio": 0.027462121212121212
+  },
+  "new_graphs_crypto/processed_m1/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml": {
+    "num_nodes": 30973,
+    "num_edges": 63970,
+    "boundary_1_count": 1551,
+    "boundary_1_ratio": 0.05007587253414264
+  },
+  "new_graphs_crypto/processed_m1/aes_core/gscl45nm/aes_inv_sbox_combined_m1.gml": {
+    "num_nodes": 1069,
+    "num_edges": 2133,
+    "boundary_1_count": 31,
+    "boundary_1_ratio": 0.028999064546304958
+  },
+  "new_graphs_crypto/processed_m1/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 23876,
+    "num_edges": 48915,
+    "boundary_1_count": 1674,
+    "boundary_1_ratio": 0.07011224660747194
+  },
+  "new_graphs_crypto/processed_m1/aes_core/osu035/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 4953,
+    "num_edges": 12026,
+    "boundary_1_count": 347,
+    "boundary_1_ratio": 0.070058550373511
+  },
+  "new_graphs_crypto/processed_m1/aes_core/osu035/aes_sbox_combined_m1.gml": {
+    "num_nodes": 794,
+    "num_edges": 2086,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.042821158690176324
+  },
+  "new_graphs_crypto/processed_m1/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml": {
+    "num_nodes": 30768,
+    "num_edges": 77855,
+    "boundary_1_count": 1825,
+    "boundary_1_ratio": 0.0593148725949038
+  },
+  "new_graphs_crypto/processed_m1/aes_core/osu035/aes_inv_sbox_combined_m1.gml": {
+    "num_nodes": 860,
+    "num_edges": 2216,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.03953488372093023
+  },
+  "new_graphs_crypto/processed_m1/aes_core/osu035/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 21388,
+    "num_edges": 53856,
+    "boundary_1_count": 2806,
+    "boundary_1_ratio": 0.13119506265195438
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m1.gml": {
+    "num_nodes": 39329,
+    "num_edges": 91104,
+    "boundary_1_count": 16248,
+    "boundary_1_ratio": 0.4131302601134023
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_cfb_combined_m1.gml": {
+    "num_nodes": 3611,
+    "num_edges": 6900,
+    "boundary_1_count": 1013,
+    "boundary_1_ratio": 0.280531708667959
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_cfb_encrypt_combined_m1.gml": {
+    "num_nodes": 3608,
+    "num_edges": 6630,
+    "boundary_1_count": 951,
+    "boundary_1_ratio": 0.2635809312638581
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_ecb_encrypt_combined_m1.gml": {
+    "num_nodes": 2893,
+    "num_edges": 5017,
+    "boundary_1_count": 806,
+    "boundary_1_ratio": 0.27860352575181474
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_cfb_decrypt_combined_m1.gml": {
+    "num_nodes": 3546,
+    "num_edges": 6642,
+    "boundary_1_count": 1076,
+    "boundary_1_ratio": 0.30344049633389736
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_sbox_combined_m1.gml": {
+    "num_nodes": 185,
+    "num_edges": 280,
+    "boundary_1_count": 60,
+    "boundary_1_ratio": 0.32432432432432434
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_ecb_combined_m1.gml": {
+    "num_nodes": 3350,
+    "num_edges": 6184,
+    "boundary_1_count": 967,
+    "boundary_1_ratio": 0.28865671641791046
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_mac_combined_m1.gml": {
+    "num_nodes": 3132,
+    "num_edges": 5578,
+    "boundary_1_count": 1150,
+    "boundary_1_ratio": 0.36717752234993617
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml": {
+    "num_nodes": 39329,
+    "num_edges": 91104,
+    "boundary_1_count": 16248,
+    "boundary_1_ratio": 0.4131302601134023
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/nangate/gost89_ecb_decrypt_combined_m1.gml": {
+    "num_nodes": 2943,
+    "num_edges": 4994,
+    "boundary_1_count": 934,
+    "boundary_1_ratio": 0.31736323479442746
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_decrypt_combined_m1.gml": {
+    "num_nodes": 50017,
+    "num_edges": 97792,
+    "boundary_1_count": 7208,
+    "boundary_1_ratio": 0.14411100225923187
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m1.gml": {
+    "num_nodes": 4852,
+    "num_edges": 7898,
+    "boundary_1_count": 684,
+    "boundary_1_ratio": 0.14097279472382523
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m1.gml": {
+    "num_nodes": 4471,
+    "num_edges": 7271,
+    "boundary_1_count": 682,
+    "boundary_1_ratio": 0.15253858197271303
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_ecb_encrypt_combined_m1.gml": {
+    "num_nodes": 3557,
+    "num_edges": 5441,
+    "boundary_1_count": 484,
+    "boundary_1_ratio": 0.1360697216755693
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m1.gml": {
+    "num_nodes": 4532,
+    "num_edges": 7389,
+    "boundary_1_count": 554,
+    "boundary_1_ratio": 0.12224183583406885
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_sbox_combined_m1.gml": {
+    "num_nodes": 224,
+    "num_edges": 304,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.05357142857142857
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m1.gml": {
+    "num_nodes": 4170,
+    "num_edges": 6687,
+    "boundary_1_count": 528,
+    "boundary_1_ratio": 0.12661870503597122
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_mac_combined_m1.gml": {
+    "num_nodes": 3769,
+    "num_edges": 5871,
+    "boundary_1_count": 614,
+    "boundary_1_ratio": 0.1629079331387636
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_encrypt_combined_m1.gml": {
+    "num_nodes": 50017,
+    "num_edges": 97792,
+    "boundary_1_count": 7208,
+    "boundary_1_ratio": 0.14411100225923187
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml": {
+    "num_nodes": 3550,
+    "num_edges": 5429,
+    "boundary_1_count": 484,
+    "boundary_1_ratio": 0.13633802816901408
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_pipelined_ecb_decrypt_combined_m1.gml": {
+    "num_nodes": 45601,
+    "num_edges": 100960,
+    "boundary_1_count": 14106,
+    "boundary_1_ratio": 0.3093353215938247
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_cfb_combined_m1.gml": {
+    "num_nodes": 4293,
+    "num_edges": 8229,
+    "boundary_1_count": 890,
+    "boundary_1_ratio": 0.2073142324714652
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_cfb_encrypt_combined_m1.gml": {
+    "num_nodes": 4076,
+    "num_edges": 7543,
+    "boundary_1_count": 761,
+    "boundary_1_ratio": 0.186702649656526
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_ecb_encrypt_combined_m1.gml": {
+    "num_nodes": 3187,
+    "num_edges": 5515,
+    "boundary_1_count": 740,
+    "boundary_1_ratio": 0.23219328522121116
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_cfb_decrypt_combined_m1.gml": {
+    "num_nodes": 4030,
+    "num_edges": 7522,
+    "boundary_1_count": 763,
+    "boundary_1_ratio": 0.18933002481389577
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_sbox_combined_m1.gml": {
+    "num_nodes": 200,
+    "num_edges": 302,
+    "boundary_1_count": 36,
+    "boundary_1_ratio": 0.18
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_ecb_combined_m1.gml": {
+    "num_nodes": 3853,
+    "num_edges": 7102,
+    "boundary_1_count": 878,
+    "boundary_1_ratio": 0.227874383597197
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_mac_combined_m1.gml": {
+    "num_nodes": 3450,
+    "num_edges": 6251,
+    "boundary_1_count": 874,
+    "boundary_1_ratio": 0.25333333333333335
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_pipelined_ecb_encrypt_combined_m1.gml": {
+    "num_nodes": 45601,
+    "num_edges": 100960,
+    "boundary_1_count": 14106,
+    "boundary_1_ratio": 0.3093353215938247
+  },
+  "new_graphs_crypto/processed_m1/gost28147-89_latest/osu035/gost89_ecb_decrypt_combined_m1.gml": {
+    "num_nodes": 3197,
+    "num_edges": 5541,
+    "boundary_1_count": 740,
+    "boundary_1_ratio": 0.23146700031279324
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/nangate/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 5610,
+    "num_edges": 16328,
+    "boundary_1_count": 354,
+    "boundary_1_ratio": 0.06310160427807486
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/nangate/aes_sbox_combined_m1.gml": {
+    "num_nodes": 572,
+    "num_edges": 1803,
+    "boundary_1_count": 35,
+    "boundary_1_ratio": 0.06118881118881119
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/nangate/aes_rcon_combined_m1.gml": {
+    "num_nodes": 62,
+    "num_edges": 135,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.2903225806451613
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/nangate/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 25541,
+    "num_edges": 78155,
+    "boundary_1_count": 1989,
+    "boundary_1_ratio": 0.07787478955405035
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 9578,
+    "num_edges": 19357,
+    "boundary_1_count": 351,
+    "boundary_1_ratio": 0.03664648152015035
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/gscl45nm/aes_sbox_combined_m1.gml": {
+    "num_nodes": 1056,
+    "num_edges": 2176,
+    "boundary_1_count": 29,
+    "boundary_1_ratio": 0.027462121212121212
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/gscl45nm/aes_rcon_combined_m1.gml": {
+    "num_nodes": 73,
+    "num_edges": 125,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.2054794520547945
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 45418,
+    "num_edges": 93678,
+    "boundary_1_count": 2153,
+    "boundary_1_ratio": 0.04740411290677705
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml": {
+    "num_nodes": 8095,
+    "num_edges": 20162,
+    "boundary_1_count": 467,
+    "boundary_1_ratio": 0.057689932056825204
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/osu035/aes_sbox_combined_m1.gml": {
+    "num_nodes": 794,
+    "num_edges": 2086,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.042821158690176324
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/osu035/aes_rcon_combined_m1.gml": {
+    "num_nodes": 76,
+    "num_edges": 149,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.21052631578947367
+  },
+  "new_graphs_crypto/processed_m1/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml": {
+    "num_nodes": 37639,
+    "num_edges": 96702,
+    "boundary_1_count": 3226,
+    "boundary_1_ratio": 0.0857089720768352
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/nangate/f_permutation_combined_m1.gml": {
+    "num_nodes": 18038,
+    "num_edges": 37111,
+    "boundary_1_count": 3153,
+    "boundary_1_ratio": 0.17479764940680784
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/nangate/keccak_combined_m1.gml": {
+    "num_nodes": 18798,
+    "num_edges": 41647,
+    "boundary_1_count": 4559,
+    "boundary_1_ratio": 0.24252580061708692
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/nangate/round2in1_combined_m1.gml": {
+    "num_nodes": 31389,
+    "num_edges": 69915,
+    "boundary_1_count": 2267,
+    "boundary_1_ratio": 0.07222275319379401
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/nangate/round_combined_m1.gml": {
+    "num_nodes": 11489,
+    "num_edges": 18104,
+    "boundary_1_count": 2300,
+    "boundary_1_ratio": 0.200191487509792
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/gscl45nm/f_permutation_combined_m1.gml": {
+    "num_nodes": 21520,
+    "num_edges": 40270,
+    "boundary_1_count": 3665,
+    "boundary_1_ratio": 0.1703066914498141
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/gscl45nm/keccak_combined_m1.gml": {
+    "num_nodes": 22529,
+    "num_edges": 44484,
+    "boundary_1_count": 4582,
+    "boundary_1_ratio": 0.20338230724843534
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/gscl45nm/round2in1_combined_m1.gml": {
+    "num_nodes": 21216,
+    "num_edges": 37574,
+    "boundary_1_count": 2242,
+    "boundary_1_ratio": 0.10567496229260935
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/gscl45nm/round_combined_m1.gml": {
+    "num_nodes": 12702,
+    "num_edges": 20590,
+    "boundary_1_count": 2240,
+    "boundary_1_ratio": 0.17635018107384665
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/osu035/f_permutation_combined_m1.gml": {
+    "num_nodes": 35746,
+    "num_edges": 84785,
+    "boundary_1_count": 5113,
+    "boundary_1_ratio": 0.14303698315895486
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/osu035/keccak_combined_m1.gml": {
+    "num_nodes": 37230,
+    "num_edges": 90818,
+    "boundary_1_count": 7181,
+    "boundary_1_ratio": 0.19288208434058554
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/osu035/round2in1_combined_m1.gml": {
+    "num_nodes": 60117,
+    "num_edges": 148171,
+    "boundary_1_count": 4743,
+    "boundary_1_ratio": 0.07889615250261989
+  },
+  "new_graphs_crypto/processed_m1/sha3_latest/osu035/round_combined_m1.gml": {
+    "num_nodes": 28475,
+    "num_edges": 63909,
+    "boundary_1_count": 4184,
+    "boundary_1_ratio": 0.14693590869183495
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/nangate/SKG_combined_m1.gml": {
+    "num_nodes": 1020,
+    "num_edges": 2439,
+    "boundary_1_count": 143,
+    "boundary_1_ratio": 0.14019607843137255
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/nangate/RF_combined_m1.gml": {
+    "num_nodes": 717,
+    "num_edges": 1409,
+    "boundary_1_count": 140,
+    "boundary_1_ratio": 0.19525801952580196
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/nangate/WKG_combined_m1.gml": {
+    "num_nodes": 131,
+    "num_edges": 130,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.2595419847328244
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/nangate/HIGHT_CORE_TOP_combined_m1.gml": {
+    "num_nodes": 2458,
+    "num_edges": 5930,
+    "boundary_1_count": 568,
+    "boundary_1_ratio": 0.23108218063466232
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/nangate/KEY_SCHED_combined_m1.gml": {
+    "num_nodes": 1121,
+    "num_edges": 2729,
+    "boundary_1_count": 220,
+    "boundary_1_ratio": 0.19625334522747548
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/nangate/CRYPTO_PATH_combined_m1.gml": {
+    "num_nodes": 1237,
+    "num_edges": 2734,
+    "boundary_1_count": 321,
+    "boundary_1_ratio": 0.25949878738884397
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/gscl45nm/SKG_combined_m1.gml": {
+    "num_nodes": 1469,
+    "num_edges": 2834,
+    "boundary_1_count": 40,
+    "boundary_1_ratio": 0.02722940776038121
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/gscl45nm/RF_combined_m1.gml": {
+    "num_nodes": 779,
+    "num_edges": 1408,
+    "boundary_1_count": 114,
+    "boundary_1_ratio": 0.14634146341463414
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/gscl45nm/WKG_combined_m1.gml": {
+    "num_nodes": 196,
+    "num_edges": 228,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.17346938775510204
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/gscl45nm/HIGHT_CORE_TOP_combined_m1.gml": {
+    "num_nodes": 3431,
+    "num_edges": 6907,
+    "boundary_1_count": 696,
+    "boundary_1_ratio": 0.20285631011366947
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/gscl45nm/KEY_SCHED_combined_m1.gml": {
+    "num_nodes": 1701,
+    "num_edges": 3351,
+    "boundary_1_count": 151,
+    "boundary_1_ratio": 0.08877131099353322
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/gscl45nm/CRYPTO_PATH_combined_m1.gml": {
+    "num_nodes": 1506,
+    "num_edges": 2978,
+    "boundary_1_count": 466,
+    "boundary_1_ratio": 0.3094289508632138
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/osu035/SKG_combined_m1.gml": {
+    "num_nodes": 1258,
+    "num_edges": 2837,
+    "boundary_1_count": 83,
+    "boundary_1_ratio": 0.06597774244833068
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/osu035/RF_combined_m1.gml": {
+    "num_nodes": 1008,
+    "num_edges": 1997,
+    "boundary_1_count": 171,
+    "boundary_1_ratio": 0.16964285714285715
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/osu035/WKG_combined_m1.gml": {
+    "num_nodes": 198,
+    "num_edges": 296,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.1717171717171717
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/osu035/HIGHT_CORE_TOP_combined_m1.gml": {
+    "num_nodes": 3381,
+    "num_edges": 7761,
+    "boundary_1_count": 733,
+    "boundary_1_ratio": 0.2167997633836143
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/osu035/KEY_SCHED_combined_m1.gml": {
+    "num_nodes": 1491,
+    "num_edges": 3421,
+    "boundary_1_count": 168,
+    "boundary_1_ratio": 0.11267605633802817
+  },
+  "new_graphs_crypto/processed_m1/hight_latest/osu035/CRYPTO_PATH_combined_m1.gml": {
+    "num_nodes": 1750,
+    "num_edges": 3828,
+    "boundary_1_count": 410,
+    "boundary_1_ratio": 0.2342857142857143
+  },
+  "new_graphs_crypto/processed_m1/trigonometric_functions_in_double_fpu_latest/nangate/dividor_combined_m1.gml": {
+    "num_nodes": 782,
+    "num_edges": 1859,
+    "boundary_1_count": 67,
+    "boundary_1_ratio": 0.08567774936061381
+  },
+  "new_graphs_crypto/processed_m1/trigonometric_functions_in_double_fpu_latest/nangate/top_combined_m1.gml": {
+    "num_nodes": 7962,
+    "num_edges": 23212,
+    "boundary_1_count": 891,
+    "boundary_1_ratio": 0.11190655614167294
+  },
+  "new_graphs_crypto/processed_m1/trigonometric_functions_in_double_fpu_latest/gscl45nm/dividor_combined_m1.gml": {
+    "num_nodes": 809,
+    "num_edges": 1537,
+    "boundary_1_count": 61,
+    "boundary_1_ratio": 0.0754017305315204
+  },
+  "new_graphs_crypto/processed_m1/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml": {
+    "num_nodes": 12294,
+    "num_edges": 25613,
+    "boundary_1_count": 1020,
+    "boundary_1_ratio": 0.08296730112249878
+  },
+  "new_graphs_crypto/processed_m1/trigonometric_functions_in_double_fpu_latest/osu035/dividor_combined_m1.gml": {
+    "num_nodes": 1063,
+    "num_edges": 2496,
+    "boundary_1_count": 72,
+    "boundary_1_ratio": 0.06773283160865474
+  },
+  "new_graphs_crypto/processed_m1/trigonometric_functions_in_double_fpu_latest/osu035/top_combined_m1.gml": {
+    "num_nodes": 11196,
+    "num_edges": 25677,
+    "boundary_1_count": 1063,
+    "boundary_1_ratio": 0.09494462307967132
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox3_combined_m1.gml": {
+    "num_nodes": 95,
+    "num_edges": 269,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.17894736842105263
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/des_combined_m1.gml": {
+    "num_nodes": 1788,
+    "num_edges": 5043,
+    "boundary_1_count": 432,
+    "boundary_1_ratio": 0.24161073825503357
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/des3_combined_m1.gml": {
+    "num_nodes": 2850,
+    "num_edges": 7594,
+    "boundary_1_count": 580,
+    "boundary_1_ratio": 0.20350877192982456
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox2_combined_m1.gml": {
+    "num_nodes": 99,
+    "num_edges": 287,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.15151515151515152
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox1_combined_m1.gml": {
+    "num_nodes": 126,
+    "num_edges": 367,
+    "boundary_1_count": 22,
+    "boundary_1_ratio": 0.1746031746031746
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox4_combined_m1.gml": {
+    "num_nodes": 102,
+    "num_edges": 289,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.14705882352941177
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox6_combined_m1.gml": {
+    "num_nodes": 102,
+    "num_edges": 288,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.1568627450980392
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox8_combined_m1.gml": {
+    "num_nodes": 102,
+    "num_edges": 289,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.16666666666666666
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox5_combined_m1.gml": {
+    "num_nodes": 100,
+    "num_edges": 289,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.15
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/key_selh_combined_m1.gml": {
+    "num_nodes": 749,
+    "num_edges": 2200,
+    "boundary_1_count": 55,
+    "boundary_1_ratio": 0.07343124165554073
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/key_sel3_combined_m1.gml": {
+    "num_nodes": 1613,
+    "num_edges": 4191,
+    "boundary_1_count": 170,
+    "boundary_1_ratio": 0.10539367637941724
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/sbox7_combined_m1.gml": {
+    "num_nodes": 103,
+    "num_edges": 297,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.17475728155339806
+  },
+  "new_graphs_crypto/processed_m1/des_latest/nangate/crp_combined_m1.gml": {
+    "num_nodes": 909,
+    "num_edges": 2471,
+    "boundary_1_count": 80,
+    "boundary_1_ratio": 0.08800880088008801
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox3_combined_m1.gml": {
+    "num_nodes": 174,
+    "num_edges": 338,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.10919540229885058
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/des_combined_m1.gml": {
+    "num_nodes": 3035,
+    "num_edges": 6054,
+    "boundary_1_count": 467,
+    "boundary_1_ratio": 0.15387149917627677
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/des3_combined_m1.gml": {
+    "num_nodes": 4739,
+    "num_edges": 8969,
+    "boundary_1_count": 447,
+    "boundary_1_ratio": 0.09432369698248576
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox2_combined_m1.gml": {
+    "num_nodes": 182,
+    "num_edges": 348,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.1043956043956044
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox1_combined_m1.gml": {
+    "num_nodes": 180,
+    "num_edges": 345,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.1
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox4_combined_m1.gml": {
+    "num_nodes": 182,
+    "num_edges": 348,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.0989010989010989
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox6_combined_m1.gml": {
+    "num_nodes": 177,
+    "num_edges": 333,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.096045197740113
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox8_combined_m1.gml": {
+    "num_nodes": 177,
+    "num_edges": 340,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.096045197740113
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox5_combined_m1.gml": {
+    "num_nodes": 189,
+    "num_edges": 363,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.09523809523809523
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/key_selh_combined_m1.gml": {
+    "num_nodes": 1289,
+    "num_edges": 2736,
+    "boundary_1_count": 111,
+    "boundary_1_ratio": 0.08611326609775019
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/key_sel3_combined_m1.gml": {
+    "num_nodes": 2828,
+    "num_edges": 5256,
+    "boundary_1_count": 57,
+    "boundary_1_ratio": 0.020155586987270154
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/sbox7_combined_m1.gml": {
+    "num_nodes": 177,
+    "num_edges": 337,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.10734463276836158
+  },
+  "new_graphs_crypto/processed_m1/des_latest/gscl45nm/crp_combined_m1.gml": {
+    "num_nodes": 1518,
+    "num_edges": 2848,
+    "boundary_1_count": 80,
+    "boundary_1_ratio": 0.052700922266139656
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox3_combined_m1.gml": {
+    "num_nodes": 134,
+    "num_edges": 309,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.11940298507462686
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/des_combined_m1.gml": {
+    "num_nodes": 2831,
+    "num_edges": 6735,
+    "boundary_1_count": 751,
+    "boundary_1_ratio": 0.26527728717767574
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/des3_combined_m1.gml": {
+    "num_nodes": 3874,
+    "num_edges": 9109,
+    "boundary_1_count": 599,
+    "boundary_1_ratio": 0.1546205472379969
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox2_combined_m1.gml": {
+    "num_nodes": 145,
+    "num_edges": 347,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.12413793103448276
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox1_combined_m1.gml": {
+    "num_nodes": 147,
+    "num_edges": 353,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.12244897959183673
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox4_combined_m1.gml": {
+    "num_nodes": 152,
+    "num_edges": 360,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.125
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox6_combined_m1.gml": {
+    "num_nodes": 154,
+    "num_edges": 351,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.11688311688311688
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox8_combined_m1.gml": {
+    "num_nodes": 151,
+    "num_edges": 348,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.11920529801324503
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox5_combined_m1.gml": {
+    "num_nodes": 150,
+    "num_edges": 354,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.12
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/key_selh_combined_m1.gml": {
+    "num_nodes": 1020,
+    "num_edges": 2605,
+    "boundary_1_count": 113,
+    "boundary_1_ratio": 0.11078431372549019
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/key_sel3_combined_m1.gml": {
+    "num_nodes": 1927,
+    "num_edges": 4548,
+    "boundary_1_count": 56,
+    "boundary_1_ratio": 0.029060716139076286
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/sbox7_combined_m1.gml": {
+    "num_nodes": 148,
+    "num_edges": 338,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.11486486486486487
+  },
+  "new_graphs_crypto/processed_m1/des_latest/osu035/crp_combined_m1.gml": {
+    "num_nodes": 1357,
+    "num_edges": 3048,
+    "boundary_1_count": 80,
+    "boundary_1_ratio": 0.058953574060427415
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/nangate/rs_encode_combined_m1.gml": {
+    "num_nodes": 3701,
+    "num_edges": 7218,
+    "boundary_1_count": 2074,
+    "boundary_1_ratio": 0.5603890840313429
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/nangate/FF_combined_m1.gml": {
+    "num_nodes": 26,
+    "num_edges": 32,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.38461538461538464
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/nangate/GFMUL8_combined_m1.gml": {
+    "num_nodes": 222,
+    "num_edges": 410,
+    "boundary_1_count": 71,
+    "boundary_1_ratio": 0.31981981981981983
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/gscl45nm/rs_encode_combined_m1.gml": {
+    "num_nodes": 3718,
+    "num_edges": 7330,
+    "boundary_1_count": 2072,
+    "boundary_1_ratio": 0.5572888649811727
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/gscl45nm/FF_combined_m1.gml": {
+    "num_nodes": 27,
+    "num_edges": 40,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.37037037037037035
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/gscl45nm/GFMUL8_combined_m1.gml": {
+    "num_nodes": 223,
+    "num_edges": 409,
+    "boundary_1_count": 70,
+    "boundary_1_ratio": 0.31390134529147984
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/osu035/rs_encode_combined_m1.gml": {
+    "num_nodes": 8374,
+    "num_edges": 18818,
+    "boundary_1_count": 3228,
+    "boundary_1_ratio": 0.3854788631478385
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/osu035/FF_combined_m1.gml": {
+    "num_nodes": 27,
+    "num_edges": 40,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.37037037037037035
+  },
+  "new_graphs_crypto/processed_m1/rsencoder_latest/osu035/GFMUL8_combined_m1.gml": {
+    "num_nodes": 497,
+    "num_edges": 1093,
+    "boundary_1_count": 94,
+    "boundary_1_ratio": 0.1891348088531187
+  },
+  "new_graphs_crypto/processed_m1/tiny_aes_latest/osu035/aes_128_combined_m1.gml": {
+    "num_nodes": 305107,
+    "num_edges": 794304,
+    "boundary_1_count": 61208,
+    "boundary_1_ratio": 0.20061158872133383
+  }
+}

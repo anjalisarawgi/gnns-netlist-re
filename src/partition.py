@@ -555,7 +555,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         model = graphSAGE(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using graphsage model")
     elif model_name == "gat":
-        model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim) 
+        model = gat(in_channels = in_dim, hidden_channels = 512, out_channels = out_dim) 
         # model = torch.compile(model) # ???
         print("[INFO] using gat model")
     elif model_name == "gcn":

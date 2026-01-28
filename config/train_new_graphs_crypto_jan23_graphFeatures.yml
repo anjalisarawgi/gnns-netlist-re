@@ -476,7 +476,7 @@ train_gml:
 
 
 val_gml: 
-  - "new_graphs_crypto/processed_jan23_w_graphFeatures/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
+  # - "new_graphs_crypto/processed_jan23_w_graphFeatures/tiny_aes_latest/osu035/aes_128_combined_m2.gml"
   - "new_graphs_crypto/processed_jan23_w_graphFeatures/aes-encryption_latest/nangate/aes_cipher_top_combined_m2.gml"
   - "new_graphs_crypto/processed_jan23_w_graphFeatures/aes-encryption_latest/nangate/aes_key_expand_128_combined_m2.gml"
 

@@ -1,7 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 
-with open("graph_stats_new.json", "r") as f:
+with open("graph_stats_m1.json", "r") as f:
     data = json.load(f)
 
 # extract boundary_1_ratio values
@@ -13,4 +13,4 @@ plt.hist(ratios, bins=20)
 plt.xlabel("boundary_1_ratio")
 plt.ylabel("count")
 plt.title("Distribution of boundary_1_ratio across designs")
-plt.savefig("distribution_new.png")
+plt.savefig("distribution_m1.png")

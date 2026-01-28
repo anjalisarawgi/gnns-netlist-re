@@ -488,7 +488,7 @@ test_gml:
   - "new_graphs_crypto/processed_jan24_newFeatures/aes-encryption_latest/nangate/aes_key_expand_128_combined_m2.gml"
 
 
-epochs: 4000
+epochs: 3000
 walk_length: 7
 perc_batchsize: 0.01
 set_gradient_clipping: true
@@ -496,5 +496,5 @@ normalize_class_weights: true
 reduction_method_cel: "mean"
 lr: 0.003
 loss_type : "focal" # ce_soft # ce_weighted
-sample_coverage : 50
+sample_coverage : 20
 # train_mode: per_graph_no_weight

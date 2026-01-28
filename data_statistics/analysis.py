@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import seaborn as sns
 
-with open("data_statistics/graph_stats_combined.json") as f:
+with open("graph_stats_m1.json") as f:
     data = json.load(f)
 
 rows = []
@@ -46,14 +46,14 @@ plt.figure(figsize=(6,4))
 sns.scatterplot(data=df,x="log_nodes", y="boundary_ratio", hue="library",  alpha=0.6)
 plt.title("Boundary ratio vs graph size")
 plt.tight_layout()
-plt.savefig("data_statistics/boundary_vs_graphSize.png")
+plt.savefig("data_statistics/m1/boundary_vs_graphSize.png")
 
 # b) boundary ration by library 
 plt.figure(figsize=(6,4))
 sns.boxplot(data=df, x="library", y="boundary_ratio")
 plt.title("Boundary ratio by library")
 plt.tight_layout()
-plt.savefig("data_statistics/boundary_vs_library.png")
+plt.savefig("data_statistics/m1/boundary_vs_library.png")
 
 
 # c) boundary distribution 
@@ -61,7 +61,7 @@ plt.figure(figsize=(6,4))
 sns.histplot(df["boundary_ratio"], bins=40, kde=True)
 plt.title("Boundary ratio distribution")
 plt.tight_layout()
-plt.savefig("data_statistics/boundary_dist.png")
+plt.savefig("data_statistics/m1/boundary_dist.png")
 
 
 # d) graph size vs boundary ratio
@@ -77,7 +77,7 @@ plt.title("Boundary ratio vs graph size (log nodes)")
 plt.xlabel("log10(number of nodes)")
 plt.ylabel("Boundary ratio")
 plt.tight_layout()
-plt.savefig("data_statistics/boundary_vs_log_nodes_reg.png")
+plt.savefig("data_statistics/m1/boundary_vs_log_nodes_reg.png")
 corr = df["log_nodes"].corr(df["boundary_ratio"])
 print("Pearson correlation:", corr)
 
@@ -94,7 +94,7 @@ plt.title("Boundary ratio vs graph density (avg degree)")
 plt.xlabel("Average degree")
 plt.ylabel("Boundary ratio")
 plt.tight_layout()
-plt.savefig("data_statistics/boundary_vs_avg_degree_reg.png")
+plt.savefig("data_statistics/m1/boundary_vs_avg_degree_reg.png")
 corr = df["avg_degree"].corr(df["boundary_ratio"])
 print("Pearson correlation:", corr)
 
