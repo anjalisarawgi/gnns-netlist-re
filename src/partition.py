@@ -89,10 +89,10 @@ parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the 
 # parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
-# parser.add_argument("--decision_threshold", type=float, default=0.5, help="Probability threshold for boundary=1 at evaluation time")
 # parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
+parser.add_argument("--decision_threshold", type=float, default = None)
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -304,10 +304,11 @@ def load_single_gml(gml_path, remove_edges = False):
     )
     return data, id2label
 
-def focal_loss(logits, targets, gamma=2.0):
+def focal_loss(logits, targets, gamma=2.0, alpha = 0.25):
     ce = F.cross_entropy(logits, targets, reduction="none")
     pt = torch.exp(-ce)
-    return ((1 - pt) ** gamma * ce)
+    at = torch.where(targets ==1, alpha, 1 - alpha)
+    return at * ((1 - pt) ** gamma) * ce
     
 
 def train(model, loader, optimizer, class_weights=None, soft_class_weights=None):
@@ -333,12 +334,13 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
         # c) batch.edge_index = edges between those nodes
         # d) batch.y = node labels
         optimizer.zero_grad()
+
         out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
 
         # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
         # loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
         if args.loss_type == "focal":
-            loss_per_node = focal_loss(out, batch.y, gamma=1.0)
+            loss_per_node = focal_loss(out, batch.y, gamma=2.0)
         elif args.loss_type == "ce_weighted":
             loss_per_node = F.cross_entropy(
                 out,
@@ -408,7 +410,11 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
 def evaluate_train_acc(model, data, mask):
     model.eval()
     out = model(data.x, data.edge_index)
-    pred = out.argmax(dim=1)
+    if args.decision_threshold is not None:
+        probs = torch.softmax(out, dim=1)
+        pred = (probs[:, 1] >= args.decision_threshold).long()
+    else:
+        pred = out.argmax(dim=1)
     # pred = predict_with_threshold(out, args.decision_threshold)
 
     valid_mask = mask 
@@ -424,10 +430,16 @@ def evaluate_train_fpr(data, model, mask):
     out = model(data.x, data.edge_index)
 
     # another moving part: ???
-    pred = out.argmax(dim=1) 
+    # pred = out.argmax(dim=1) 
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
     # pred = predict_with_threshold(out, args.decision_threshold)
+
+    if args.decision_threshold is not None:
+        probs = torch.softmax(out, dim=1)
+        pred = (probs[:, 1] >= args.decision_threshold).long()
+    else:
+        pred = out.argmax(dim=1)
 
 
     valid_mask = mask 
@@ -446,9 +458,12 @@ def evaluate_train_fpr(data, model, mask):
 def eval_class_acc(data, model, mask, id2name=None):
     model.eval()
     out = model(data.x, data.edge_index)
-    pred = out.argmax(dim=1)
-    # pred = predict_with_threshold(out, args.decision_threshold)
-
+    # pred = out.argmax(dim=1)
+    if args.decision_threshold is not None:
+        probs = torch.softmax(out, dim=1)
+        pred = (probs[:, 1] >= args.decision_threshold).long()
+    else:
+        pred = out.argmax(dim=1)
 
     valid_mask = mask 
     y_true = data.y[valid_mask]
@@ -478,10 +493,16 @@ def evaluate_test(data, model):
     out = model(data.x, data.edge_index)
     
     # another moving part: ???
-    pred = out.argmax(dim=1) 
+    # pred = out.argmax(dim=1) 
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
     # pred = predict_with_threshold(out, args.decision_threshold)
+
+    if args.decision_threshold is not None:
+        probs = torch.softmax(out, dim=1)
+        pred = (probs[:, 1] >= args.decision_threshold).long()
+    else:
+        pred = out.argmax(dim=1)
 
     
     # valid_mask = (data.y != -1)
@@ -545,6 +566,34 @@ def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
         
     return loss.item()
     
+### threholding start
+@torch.no_grad()
+def get_probs_and_labels(model, data):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
+    labels = data.y.cpu().numpy()
+    return probs, labels
+
+def find_best_threshold(probs, labels, thresholds=None):
+    if thresholds is None:
+        thresholds = np.linspace(0.01, 0.99, 99)
+
+    best_f1 = -1
+    best_t = 0.5
+
+    for t in thresholds:
+        preds = (probs >= t).astype(int)
+        f1 = f1_score(labels, preds, zero_division=0)
+        if f1 > best_f1:
+            best_f1 = f1
+            best_t = t
+
+    return best_t, best_f1
+
+
+### threholding end
+
 ##### training  and eval functions:
 
 def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
@@ -555,7 +604,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         model = graphSAGE(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using graphsage model")
     elif model_name == "gat":
-        model = gat(in_channels = in_dim, hidden_channels = 512, out_channels = out_dim) 
+        model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim) 
         # model = torch.compile(model) # ???
         print("[INFO] using gat model")
     elif model_name == "gcn":
@@ -569,6 +618,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
     ##### training parameters 
     # base_lr = 0.01 
     optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=200,   gamma=0.5 )       # halve the LR)
 
 
     # warmup_epochs = 50 
@@ -598,7 +648,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         class_weights = torch.tensor(weights, dtype=torch.float)
 
         # ---- SOFTENING ----
-        alpha = 0.5   # <--- THIS is the knob
+        alpha = 0.7   # <--- THIS is the knob
         soft_weights = weights ** alpha
         soft_weights = soft_weights / np.mean(soft_weights)
         soft_class_weights = torch.tensor(soft_weights, dtype=torch.float)
@@ -606,7 +656,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         print("[INFO] CE weights      :", class_weights.tolist())
         print("[INFO] Soft CE weights :", soft_class_weights.tolist())
 
-    ##### main training loop now 
+    #### main training loop now 
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
 
@@ -639,6 +689,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
             "time/epoch_sec": epoch_time,
         }
         wandb.log(log_dict)
+        # scheduler.step()
 
         if epoch % 100 == 0 :
             # ###########
@@ -935,18 +986,40 @@ if __name__ == "__main__":
     # print(f"Boundary = 1 Accuracy    : {metrics[f'boundary_1_acc']:.4f}")
     # print(f"Boundary = 0 Accuracy: {metrics[f'boundary_0_acc']:.4f}")
 
+    print("\n[INFO] Tuning per-design thresholds on validation set")
+    design_thresholds = {}
+    for path, g in val_graphs:
+        name = os.path.splitext(os.path.basename(path))[0]
+        probs, labels = get_probs_and_labels(model, g)
+        best_t, best_f1 = find_best_threshold(probs, labels)
+        design_thresholds[name] = best_t
+        print(f"[THRESHOLD][VAL] {name}: best_t={best_t:.3f}, F1={best_f1:.4f}")
+
+        with open("design_thresholds.json", "w") as f:
+            json.dump(design_thresholds, f, indent=2)
+        
     print("[INFO] Final evaluation on TEST graphs:")
 
     test_metrics = defaultdict(list)
 
     for path, g in test_graphs:
-        n = evaluate_test(g, model)
-        name = os.path.splitext(os.path.basename(path))[0]
+        # n = evaluate_test(g, model)
+        # name = os.path.splitext(os.path.basename(path))[0]
 
+        name = os.path.splitext(os.path.basename(path))[0]
+        t = design_thresholds.get(name, 0.5)
+        args.decision_threshold = t
+        n = evaluate_test(g, model)
+
+        # print(
+        #     f"[TEST] {name} | "
+        #     f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
+        #     f"Acc={n['total_acc']:.4f}, b1={n['boundary_1_acc']:.4f}, b0={n['boundary_0_acc']:.4f}"
+        # )
         print(
-            f"[TEST] {name} | "
+            f"[TEST] {name} (t={t:.3f}) | "
             f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
-            f"Acc={n['total_acc']:.4f}, b1={n['boundary_1_acc']:.4f}, b0={n['boundary_0_acc']:.4f}"
+            f"Acc={n['total_acc']:.4f}"
         )
 
         for k, v in n.items():

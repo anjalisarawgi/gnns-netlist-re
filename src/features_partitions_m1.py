@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 import networkx as nx
+from collections import deque
 
 ############################################################
 # STEP 1: Helper checks
@@ -19,30 +20,84 @@ def has_boundary_labels(G):
     return False
 
 ############################################################
-# STEP 2: Single GML processing (M1)
+# STEP 2: Small helpers for new features
+############################################################
+
+def safe_float(x):
+    try:
+        return float(x)
+    except Exception:
+        return 0.0
+
+def neighbors_undirected(G, node):
+    # treat digraph as undirected neighborhood for local structure stats
+    return set(G.predecessors(node)) | set(G.successors(node))
+
+def two_hop_neighbors(G, node):
+    """
+    Returns the set of 2-hop neighbors (excluding the node itself).
+    Uses undirected neighbor notion (pred ∪ succ).
+    """
+    one_hop = neighbors_undirected(G, node)
+    two_hop = set()
+    for n1 in one_hop:
+        two_hop.update(neighbors_undirected(G, n1))
+    two_hop.discard(node)
+    return two_hop
+
+############################################################
+# STEP 3: Single GML processing (M1 + improved features)
 ############################################################
 
 def process_single_gml(input_gml, output_gml):
     print("Processing:", input_gml)
 
+    # keep IDs stable: your other scripts sometimes use label="id"
+    # Here we read default, then force directed for consistent in/out
     G = nx.read_gml(input_gml).to_directed()
     G.remove_edges_from(nx.selfloop_edges(G))
 
+    # For clustering + ego density we want undirected view
     G_undirected = G.to_undirected()
     clustering = nx.clustering(G_undirected)
 
-    for node in G.nodes():
-        indeg = G.in_degree(node)
-        outdeg = G.out_degree(node)
-        deg = G.degree(node)
+    # Precompute degrees for speed
+    deg_dict = dict(G.degree())
+    indeg_dict = dict(G.in_degree())
+    outdeg_dict = dict(G.out_degree())
 
-        nbrs = set(G.predecessors(node)) | set(G.successors(node))
+    # If partition attribute exists, we can compute external exposure.
+    # We’ll try a few common keys; if none exists, we fallback to 0.0.
+    # (You can add/remove keys depending on your partition2gephi output.)
+    partition_keys = ["partition", "cluster", "community", "part", "subcircuit", "subcircuit_id"]
+    node_part = {}
+    detected_key = None
+    for k in partition_keys:
+        # check if at least one node has it
+        any_has = any(k in data for _, data in G.nodes(data=True))
+        if any_has:
+            detected_key = k
+            break
+
+    if detected_key is not None:
+        for n, data in G.nodes(data=True):
+            node_part[n] = data.get(detected_key, None)
+        print(f"[INFO] Using partition key: '{detected_key}' for external-neighbor features")
+    else:
+        print("[INFO] No partition key found; external-neighbor features will be 0.0")
+
+    for node in G.nodes():
+        indeg = indeg_dict.get(node, 0)
+        outdeg = outdeg_dict.get(node, 0)
+        deg = deg_dict.get(node, 0)
+
+        nbrs = neighbors_undirected(G, node)
 
         # ------------------------
-        # Local neighborhood stats
+        # Local neighborhood stats (1-hop)
         # ------------------------
         if nbrs:
-            nbr_degs = np.array([G.degree(n) for n in nbrs], dtype=np.float32)
+            nbr_degs = np.array([deg_dict.get(n, 0) for n in nbrs], dtype=np.float32)
             avg_neighbor_degree = float(nbr_degs.mean())
 
             deg_minus_nbr_mean = float(deg - avg_neighbor_degree)
@@ -71,10 +126,44 @@ def process_single_gml(input_gml, output_gml):
         is_source = float(indeg == 0)
         is_sink   = float(outdeg == 0)
 
+        # Simple “regime” flags (often very helpful)
+        # thresholds are intentionally mild
+        is_low_in_high_out = float(indeg <= 1 and outdeg >= 3)
+        is_high_in_low_out = float(outdeg <= 1 and indeg >= 3)
+
         clustering_coeff = float(clustering.get(node, 0.0))
 
         # ------------------------
-        # FINAL M1 FEATURE VECTOR
+        # NEW: 2-hop neighborhood contrast
+        # ------------------------
+        two_hop = two_hop_neighbors(G, node)
+        if two_hop:
+            twohop_degs = np.array([deg_dict.get(n, 0) for n in two_hop], dtype=np.float32)
+            twohop_avg_degree = float(twohop_degs.mean())
+        else:
+            twohop_avg_degree = 0.0
+
+        hop_contrast = float(abs(avg_neighbor_degree - twohop_avg_degree))
+
+        # ------------------------
+        # NEW: External neighbor fraction (partition-aware)
+        # ------------------------
+        ext_frac = 0.0
+        if detected_key is not None:
+            p0 = node_part.get(node, None)
+            if p0 is None:
+                ext_frac = 0.0
+            else:
+                ext = 0
+                for nb in nbrs:
+                    if node_part.get(nb, None) != p0:
+                        ext += 1
+                ext_frac = float(ext / (len(nbrs) + 1e-6))
+        else:
+            ext_frac = 0.0
+
+        # ------------------------
+        # FINAL FEATURE VECTOR (M1 + 3 additions)
         # ------------------------
         G.nodes[node]["features"] = [
             float(indeg),
@@ -82,7 +171,7 @@ def process_single_gml(input_gml, output_gml):
             float(np.log1p(indeg)),
             float(np.log1p(outdeg)),
 
-            float(indeg / (outdeg + 1e-6)),  # in/out ratio
+            float(indeg / (outdeg + 1e-6)),   # in/out ratio
             float(deg_imbalance),
             float(flow_asym),
 
@@ -96,6 +185,15 @@ def process_single_gml(input_gml, output_gml):
 
             float(clustering_coeff),
             float(ego_edges_frac),
+
+            # ---- NEW (recommended minimal set) ----
+            float(ext_frac),
+            float(twohop_avg_degree),
+            float(hop_contrast),
+
+            # ---- NEW tiny binary regime flags ----
+            float(is_low_in_high_out),
+            float(is_high_in_low_out),
         ]
 
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
@@ -103,14 +201,15 @@ def process_single_gml(input_gml, output_gml):
     print(f"[INFO] Saved processed GML → {output_gml}")
 
 ############################################################
-# STEP 3: Batch processing
+# STEP 4: Batch processing
 ############################################################
 
-# ROOT_RAW = "new_graphs_crypto/raw/raw"
-# ROOT_OUT = "new_graphs_crypto/processed_m1/"
+# ROOT_RAW = "graphs/raw_v2/raw"
+# ROOT_OUT = "graphs/processed_jan30_m1"
 
-ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_jan27_m1"
+
+ROOT_RAW = "new_graphs_crypto/raw/raw"
+ROOT_OUT = "new_graphs_crypto/processed_jan30_m1"
 
 
 processed_dirs = {}
@@ -167,7 +266,7 @@ for design in os.listdir(ROOT_RAW):
                 print(f"[CRASH] {input_gml}: {e}")
 
 ############################################################
-# STEP 4: Save metadata
+# STEP 5: Save metadata
 ############################################################
 
 os.makedirs(ROOT_OUT, exist_ok=True)

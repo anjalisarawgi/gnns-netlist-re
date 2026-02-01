@@ -62,7 +62,7 @@ def check_feature_dimensions(gml_paths, feature_key="features"):
 
     return file2dim, dim2files
 
-with open("config/train_new_graphs_crypto_jan18.yml", "r") as f:
+with open("config/train_m1_jan31_low.yml", "r") as f:
     cfg = yaml.safe_load(f)
 
 all_paths = (

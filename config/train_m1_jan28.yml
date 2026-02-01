@@ -452,5 +452,5 @@ set_gradient_clipping: true
 normalize_class_weights: true
 reduction_method_cel: "mean"
 lr: 0.003
-loss_type : "ce_weighted" # ce_soft # ce_weighted # focal
+loss_type : "ce_soft" # ce_soft # ce_weighted # focal
 sample_coverage : 50
