@@ -86,6 +86,25 @@ def process_single_gml(input_gml, output_gml):
     else:
         print("[INFO] No partition key found; external-neighbor features will be 0.0")
 
+
+    # ------------------------
+    # NEW: Bridge + SCC precomputation (cheap, global)
+    # ------------------------
+    try:
+        bridge_edges = set(nx.bridges(G_undirected))
+    except nx.NetworkXError:
+        bridge_edges = set()
+
+    # Directed SCCs
+    sccs = list(nx.strongly_connected_components(G))
+    scc_id = {}
+    scc_sizes = {}
+    for i, comp in enumerate(sccs):
+        for n in comp:
+            scc_id[n] = i
+        scc_sizes[i] = len(comp)
+
+            
     for node in G.nodes():
         indeg = indeg_dict.get(node, 0)
         outdeg = outdeg_dict.get(node, 0)
@@ -148,30 +167,118 @@ def process_single_gml(input_gml, output_gml):
         # ------------------------
         # NEW: External neighbor fraction (partition-aware)
         # ------------------------
-        ext_frac = 0.0
-        if detected_key is not None:
-            p0 = node_part.get(node, None)
-            if p0 is None:
-                ext_frac = 0.0
-            else:
-                ext = 0
-                for nb in nbrs:
-                    if node_part.get(nb, None) != p0:
-                        ext += 1
-                ext_frac = float(ext / (len(nbrs) + 1e-6))
-        else:
-            ext_frac = 0.0
+        # ext_frac = 0.0
+        # if detected_key is not None:
+        #     p0 = node_part.get(node, None)
+        #     if p0 is None:
+        #         ext_frac = 0.0
+        #     else:
+        #         ext = 0
+        #         for nb in nbrs:
+        #             if node_part.get(nb, None) != p0:
+        #                 ext += 1
+        #         ext_frac = float(ext / (len(nbrs) + 1e-6))
+        # else:
+        #     ext_frac = 0.0
 
+        # ------------------------
+        # NEW: Bridge fraction (undirected)
+        # ------------------------
+        if nbrs:
+            bridge_incident = 0
+            for nb in nbrs:
+                e = (node, nb)
+                er = (nb, node)
+                if e in bridge_edges or er in bridge_edges:
+                    bridge_incident += 1
+            bridge_frac = float(bridge_incident / (len(nbrs) + 1e-6))
+        else:
+            bridge_frac = 0.0
+
+        # ------------------------
+        # NEW: SCC features (directed)
+        # ------------------------
+        sid = scc_id.get(node, None)
+        if sid is not None:
+            scc_size = float(scc_sizes.get(sid, 1))
+            is_trivial_scc = float(scc_size == 1)
+        else:
+            scc_size = 1.0
+            is_trivial_scc = 1.0
+
+        #### 
+        ego = set(nbrs) | {node}
+
+        cut_edges = 0
+        seen = set()
+        for u in ego:
+            for v in neighbors_undirected(G, u):
+                e = tuple(sorted((u, v)))
+                if e in seen:
+                    continue
+                seen.add(e)
+                if v not in ego:
+                    cut_edges += 1
+
+        ego_cut_ratio = float(cut_edges / (len(ego) + 1e-6))
+
+        # ------------------------
+        # NEW: Neighbor flow variance (heterogeneity proxy)
+        # ------------------------
+        if nbrs:
+            nbr_flow = [
+                indeg_dict.get(n, 0) - outdeg_dict.get(n, 0)
+                for n in nbrs
+            ]
+            nbr_flow_var = float(np.var(nbr_flow))
+        else:
+            nbr_flow_var = 0.0
         # ------------------------
         # FINAL FEATURE VECTOR (M1 + 3 additions)
         # ------------------------
+        # G.nodes[node]["features"] = [
+        #     float(indeg),
+        #     float(outdeg),
+        #     float(np.log1p(indeg)),
+        #     float(np.log1p(outdeg)),
+
+        #     float(indeg / (outdeg + 1e-6)),   # in/out ratio
+        #     float(deg_imbalance),
+        #     float(flow_asym),
+
+        #     float(is_source),
+        #     float(is_sink),
+
+        #     float(avg_neighbor_degree),
+        #     float(deg_minus_nbr_mean),
+        #     float(deg_over_nbr_mean),
+        #     float(norm_density_contrast),
+
+        #     float(clustering_coeff),
+        #     float(ego_edges_frac),
+
+        #     # ---- NEW (recommended minimal set) ----
+        #     # float(ext_frac), # removed 
+        #     float(twohop_avg_degree),
+        #     float(hop_contrast),
+
+        #     # ---- NEW tiny binary regime flags ----
+        #     float(is_low_in_high_out),
+        #     float(is_high_in_low_out),
+
+        #     # # ---- NEW - feb 1 (global structure features) ----
+        #     float(bridge_frac),
+        #     float(scc_size),
+        #     float(is_trivial_scc),
+        # ]
+
         G.nodes[node]["features"] = [
             float(indeg),
             float(outdeg),
             float(np.log1p(indeg)),
             float(np.log1p(outdeg)),
 
-            float(indeg / (outdeg + 1e-6)),   # in/out ratio
+            float(indeg / (outdeg + 1e-6)),
             float(deg_imbalance),
             float(flow_asym),
 
@@ -186,14 +293,20 @@ def process_single_gml(input_gml, output_gml):
             float(clustering_coeff),
             float(ego_edges_frac),
 
-            # ---- NEW (recommended minimal set) ----
-            float(ext_frac),
+            # ---- NEW (partition-free boundary cues) ----
+            float(ego_cut_ratio),
             float(twohop_avg_degree),
             float(hop_contrast),
+            float(nbr_flow_var),
 
-            # ---- NEW tiny binary regime flags ----
+            # ---- regime flags ----
             float(is_low_in_high_out),
             float(is_high_in_low_out),
+
+            # ---- global structure ----
+            float(bridge_frac),
+            float(scc_size),
+            float(is_trivial_scc),
         ]
 
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
@@ -205,11 +318,11 @@ def process_single_gml(input_gml, output_gml):
 ############################################################
 
 # ROOT_RAW = "graphs/raw_v2/raw"
-# ROOT_OUT = "graphs/processed_jan30_m1"
+# ROOT_OUT = "graphs/processed_feb1_m1_new"
 
 
 ROOT_RAW = "new_graphs_crypto/raw/raw"
-ROOT_OUT = "new_graphs_crypto/processed_jan30_m1"
+ROOT_OUT = "new_graphs_crypto/processed_feb1_m1_new"
 
 
 processed_dirs = {}

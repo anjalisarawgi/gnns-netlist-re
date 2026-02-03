@@ -1,5 +1,5 @@
 {
-  "aes_128_combined_m1": 0.52,
-  "aes_key_expand_128_combined_m1": 0.68,
-  "aes_cipher_top_combined_m1": 0.73
+  "aes_128_combined_m1": 0.06999999999999999,
+  "aes_key_expand_128_combined_m1": 0.79,
+  "aes_cipher_top_combined_m1": 0.74
 }

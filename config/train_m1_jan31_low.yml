@@ -368,7 +368,7 @@ test_gml:
 
 
 epochs: 1000
-walk_length: 30
+walk_length: 20
 perc_batchsize: 0.01
 set_gradient_clipping: true
 normalize_class_weights: true

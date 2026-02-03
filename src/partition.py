@@ -93,6 +93,14 @@ parser.add_argument("--set_gradient_clipping", action="store_true", help="do you
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
 parser.add_argument("--decision_threshold", type=float, default = None)
+parser.add_argument(
+    "--training_mode",
+    type=str,
+    choices=["fullgraph", "graphsaint"],
+    default="graphsaint",
+    help="Train on full graph or sampled subgraphs"
+)
+
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -207,6 +215,8 @@ def load_single_gml(gml_path, remove_edges = False):
         if not isinstance(feat, (list, tuple, np.ndarray)):
             raise ValueError(f"Node {node} has invalid features")
         # features.append(feat[:-1])
+        # feat = feat[:15] + feat[16:] # skip feature at index 15
+        # feat = feat[:-3] # skip last 3 features
         features.append(feat)
     
         boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
@@ -249,8 +259,8 @@ def load_single_gml(gml_path, remove_edges = False):
     indices = list(range(num_nodes))
     random.shuffle(indices)
 
-    # train_cutoff = int(0.90 * num_nodes) # ***
-    # val_cutoff = train_cutoff + int(0.05 * num_nodes)
+    # train_cutoff = int(0.80 * num_nodes) # ***
+    # val_cutoff = train_cutoff + int(0.10 * num_nodes)
     
     # train_mask = torch.zeros(num_nodes, dtype=torch.bool)
     # val_mask = torch.zeros(num_nodes, dtype=torch.bool)
@@ -310,6 +320,39 @@ def focal_loss(logits, targets, gamma=2.0, alpha = 0.25):
     at = torch.where(targets ==1, alpha, 1 - alpha)
     return at * ((1 - pt) ** gamma) * ce
     
+def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weights=None):
+    model.train()
+    optimizer.zero_grad()
+
+    out = model(data.x, data.edge_index)
+
+    if args.loss_type == "focal":
+        loss_per_node = focal_loss(out, data.y)
+    elif args.loss_type == "ce_weighted":
+        loss_per_node = F.cross_entropy(
+            out, data.y,
+            weight=class_weights.to(out.device),
+            reduction="none"
+        )
+    elif args.loss_type == "ce_soft":
+        loss_per_node = F.cross_entropy(
+            out, data.y,
+            weight=soft_class_weights.to(out.device),
+            reduction="none"
+        )
+    else:
+        loss_per_node = F.cross_entropy(out, data.y, reduction="none")
+
+    # train_mask lets you keep future flexibility
+    loss = loss_per_node[data.train_mask].mean()
+
+    loss.backward()
+
+    if args.set_gradient_clipping:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+
+    optimizer.step()
+    return loss.item()
 
 def train(model, loader, optimizer, class_weights=None, soft_class_weights=None):
     model.train()
@@ -647,8 +690,8 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         weights = weights / np.mean(weights)
         class_weights = torch.tensor(weights, dtype=torch.float)
 
-        # ---- SOFTENING ----
-        alpha = 0.7   # <--- THIS is the knob
+        # softening
+        alpha = 0.8
         soft_weights = weights ** alpha
         soft_weights = soft_weights / np.mean(soft_weights)
         soft_class_weights = torch.tensor(soft_weights, dtype=torch.float)
@@ -661,7 +704,25 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         epoch_start = time.perf_counter()
 
         train_start = time.perf_counter()
-        loss, epoch_nodes = train(model, train_loader, optimizer, class_weights=class_weights if args.loss_type== "ce_weighted" else None, soft_class_weights=soft_class_weights if args.loss_type=="ce_soft" else None)
+
+        if args.training_mode == "graphsaint":
+            loss, epoch_nodes = train(
+                model,
+                train_loader,
+                optimizer,
+                class_weights=class_weights if args.loss_type == "ce_weighted" else None,
+                soft_class_weights=soft_class_weights if args.loss_type == "ce_soft" else None,
+            )
+        else:
+            loss = train_fullgraph(
+                model,
+                train_data,
+                optimizer,
+                class_weights=class_weights,
+                soft_class_weights=soft_class_weights
+            )
+
+        # loss, epoch_nodes = train(model, train_loader, optimizer, class_weights=class_weights if args.loss_type== "ce_weighted" else None, soft_class_weights=soft_class_weights if args.loss_type=="ce_soft" else None)
         train_time = time.perf_counter() - train_start
 
         # eval_start = time.perf_counter()
@@ -691,7 +752,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         wandb.log(log_dict)
         # scheduler.step()
 
-        if epoch % 100 == 0 :
+        if epoch % 10 == 0 :
             # ###########
             # ## train side of eval
             # ###########
@@ -785,6 +846,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
                 "time/val_eval_sec": time.perf_counter() - eval_start,
             })
 
+            
 
     ### Save model
     run_dir =  os.path.join("models", wandb.run.name)
@@ -950,6 +1012,8 @@ if __name__ == "__main__":
             num_steps = args.num_steps, 
             sample_coverage = args.sample_coverage
         )
+    else: 
+        training_data_loader = None
     # elif args.sampling_method ==  "graphsaint":
     #     data_loader = GraphSAINTSampler(
     #         combined_data, 

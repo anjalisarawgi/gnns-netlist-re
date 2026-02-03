@@ -367,7 +367,7 @@ test_gml:
  - "new_graphs_crypto/processed_m1/aes_core/nangate/aes_cipher_top_combined_m1.gml"
 
 
-epochs: 2000
+epochs: 1000
 walk_length: 20
 perc_batchsize: 0.01
 set_gradient_clipping: true
@@ -376,3 +376,4 @@ reduction_method_cel: "mean"
 lr: 0.003
 loss_type : "ce_soft" # ce_soft # ce_weighted # focal
 sample_coverage : 50
+training_mode: "fullgraph"
