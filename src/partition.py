@@ -348,8 +348,9 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
 
     loss.backward()
 
+
     if args.set_gradient_clipping:
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
 
     optimizer.step()
     return loss.item()
@@ -425,7 +426,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
         loss.backward()
         
         if args.set_gradient_clipping: 
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
             # print("[INFO] Using gradient clipping")
 
         optimizer.step()
@@ -752,7 +753,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         wandb.log(log_dict)
         # scheduler.step()
 
-        if epoch % 10 == 0 :
+        if epoch % 100 == 0 :
             # ###########
             # ## train side of eval
             # ###########
