@@ -5,102 +5,65 @@ import networkx as nx
 from collections import deque
 import re
 
-def parse_cell_name(label_copy):
-    """
-    Returns a dict of semantic gate features from label_copy.
-    """
-    feats = {
-        "is_INPUT": 0.0,
-       "is_OUTPUT": 0.0,
- 
-        "is_AND": 0.0,
-        "is_OR": 0.0,
-        "is_XOR": 0.0,
-        "is_INV": 0.0,
-        "is_BUF": 0.0,
-        "is_MUX": 0.0,
-        "is_SEQ": 0.0,
-        "is_ff": 0.0,
-        "is_OTHER": 0.0,
-        "input_count": -1.0,
-        "is_arith": 0.0,
-    }
+import torch
 
-    if not label_copy:
-        feats["is_OTHER"] = 1.0
-        return feats
+GATE_TYPES = [
+    "INPUT", "OUTPUT",
+    "AND", "OR", "NAND", "NOR", "XOR", "XNOR",
+    "INV", "AOI", "OAI", "MUX", "DFF",
+    "UNKNOWN"
+]
+
+gate2id = {g: i for i, g in enumerate(GATE_TYPES)}
+
+def parse_gate_from_label(label_copy: str):
+    if label_copy is None:
+        return "UNKNOWN"
 
     name = label_copy.strip("'").upper()
 
-
-    # ---- Primary IO ----
+    # explicit first
     if "INPUT" in name:
-        feats["is_INPUT"] = 1.0
-        feats["input_count"] = 0.0
-        return feats
-
+        return "INPUT"
     if "OUTPUT" in name:
-        feats["is_OUTPUT"] = 1.0
-        feats["input_count"] = 1.0
-        return feats
+        return "OUTPUT"
 
-    # --- Sequential ---
-    if "DFF" in name or "FF" in name:
-        feats["is_SEQ"] = 1.0
-        feats["is_ff"] = 1.0
-        feats["input_count"] = 1.0
-        return feats
+    # logic gates by prefix
+    for g in GATE_TYPES:
+        if g not in ("INPUT", "OUTPUT", "UNKNOWN") and name.startswith(g):
+            return g
 
-    if "LATCH" in name:
-        feats["is_SEQ"] = 1.0
-        feats["input_count"] = 1.0
-        return feats
-
-    # --- Gate families ---
-    # --- Composite first ---
-    if "XNOR" in name:
-        feats["is_XOR"] = 1.0
-        feats["is_INV"] = 1.0
-        feats["is_arith"] = 1.0
-    elif "XOR" in name:
-        feats["is_XOR"] = 1.0
-        feats["is_arith"] = 1.0
-    elif "NAND" in name:
-        feats["is_AND"] = 1.0
-        feats["is_INV"] = 1.0
-    elif "NOR" in name:
-        feats["is_OR"] = 1.0
-        feats["is_INV"] = 1.0
-    elif "AND" in name:
-        feats["is_AND"] = 1.0
-    elif "OR" in name:
-        feats["is_OR"] = 1.0
-
-    if "INV" in name:
-        feats["is_INV"] = 1.0
-    if "BUF" in name:
-        feats["is_BUF"] = 1.0
-    if "MUX" in name or "MX" in name:
-        feats["is_MUX"] = 1.0
-        feats["is_arith"] = 1.0
-
-    # --- Input count (best-effort) ---
-    if feats["is_XOR"] or feats["is_AND"] or feats["is_OR"]:
-        m = re.search(r'(\d)', name)
-        if m:
-            feats["input_count"] = float(m.group(1))
+    return "UNKNOWN"
 
 
-    # fallback
-    if sum(feats[k] for k in ["is_AND","is_OR","is_XOR","is_INV","is_BUF","is_MUX","is_SEQ"]) == 0:
-        feats["is_OTHER"] = 1.0
 
-    for k in feats:
-        if k != "input_count":
-            feats[k] = float(1.0 if feats[k] else 0.0)
+def encode_gate(gate_type: str):
+    gate_onehot = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
 
-    return feats
+    if gate_type in gate2id:
+        gate_onehot[gate2id[gate_type]] = 1.0
+    else:
+        gate_onehot[gate2id["UNKNOWN"]] = 1.0
 
+    return gate_onehot
+
+
+def count_1hop_gate_types(node, G_und, G_dir):
+    """
+    Returns a vector of length |GATE_TYPES|
+    where each entry counts 1-hop neighbors of that gate type.
+    """
+    counts = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
+
+    for nb in G_und.neighbors(node):
+        nb_data = G_dir.nodes[nb]
+        nb_label = nb_data.get("label_copy", "")
+        nb_gate = parse_gate_from_label(nb_label)
+
+        idx = gate2id.get(nb_gate, gate2id["UNKNOWN"])
+        counts[idx] += 1.0
+
+    return counts
 
 def is_graph_connected(G):
     if G.is_directed():
@@ -255,39 +218,34 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         # forward reach count within 3 hops (directed)
         f_reach = float(_forward_reach_within_k(G_dir, node, k=reach_k))
 
-        cell_feats = parse_cell_name(G_dir.nodes[node].get("label_copy", ""))
 
-        if indeg.get(node, 0) == 0 and outdeg.get(node, 0) > 0:
-            cell_feats["is_INPUT"] = 1.0
+        node_data = G_dir.nodes[node]
+        label_copy = node_data.get("label_copy", "")
 
-        if indeg.get(node, 0) > 0 and outdeg.get(node, 0) == 0:
-            cell_feats["is_OUTPUT"] = 1.0
+        # gate_type = parse_gate_from_label(label_copy)
+        # gate_feats = encode_gate(gate_type)
+        gate_type = parse_gate_from_label(label_copy)
 
+        # one-hot of THIS node
+        gate_onehot = encode_gate(gate_type)
 
-        G_dir.nodes[node]["features"] = [
+        # 1-hop neighbor gate-type counts
+        gate_1hop_counts = count_1hop_gate_types(node, G_und, G_dir)
+
+        # combined gate encoding
+        gate_feats = torch.cat([gate_onehot, gate_1hop_counts])
+
+        # structural / graph features
+        struct_feats = torch.tensor([
             in_d, out_d, fan_ratio,
             in_mean, in_std,
             out_mean, out_std,
             float(ego_density),
             kcore, pager, d_io, f_reach,
+        ], dtype=torch.float32)
 
-            ### input outpue below: 
-            # cell_feats["is_INPUT"],
-            # cell_feats["is_OUTPUT"],
-            ### other gates below: 
-            cell_feats["is_AND"],
-            cell_feats["is_OR"],
-            cell_feats["is_XOR"],
-            cell_feats["is_INV"],
-            cell_feats["is_BUF"],
-            cell_feats["is_MUX"],
-            cell_feats["is_SEQ"],
-            cell_feats["is_ff"],
-            cell_feats["is_OTHER"],
-            cell_feats["input_count"],
-            cell_feats["is_arith"],
-        ]
-
+        x = torch.cat([gate_feats, struct_feats])
+        G_dir.nodes[node]["features"] = x.tolist()
 
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
     nx.write_gml(G_dir, output_gml)
@@ -295,9 +253,9 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
 
 
 ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHot"
+ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd"
 # ROOT_RAW = "new_graphs_crypto/raw/raw"
-# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHot"
+# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd"
 
 processed_dirs = {}
 usable_graphs = []

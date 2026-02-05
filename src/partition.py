@@ -664,6 +664,15 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
     optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=200,   gamma=0.5 )       # halve the LR)
 
+    # ---- coverage tracking ----
+    ever_seen_nodes = set()
+    num_nodes = train_data.num_nodes
+
+    boundary_nodes = set(
+        torch.where(train_data.y == 1)[0].cpu().tolist()
+    )
+    num_boundary = len(boundary_nodes)
+
 
     # warmup_epochs = 50 
     # warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -714,6 +723,40 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
                 class_weights=class_weights if args.loss_type == "ce_weighted" else None,
                 soft_class_weights=soft_class_weights if args.loss_type == "ce_soft" else None,
             )
+            # ---- coverage stats ----
+            epoch_seen = len(epoch_nodes)
+            ever_seen_nodes.update(epoch_nodes)
+            cumulative_seen = len(ever_seen_nodes)
+
+            epoch_coverage = epoch_seen / num_nodes
+            cumulative_coverage = cumulative_seen / num_nodes
+
+            epoch_boundary_seen = len(epoch_nodes & boundary_nodes)
+            cumulative_boundary_seen = len(ever_seen_nodes & boundary_nodes)
+            boundary_coverage = (
+                cumulative_boundary_seen / num_boundary if num_boundary > 0 else 0.0
+            )
+
+            print(
+                f"[COVERAGE] epoch={epoch:03d} | "
+                f"epoch_seen={epoch_seen}/{num_nodes} ({epoch_coverage:.3f}) | "
+                f"cumulative_seen={cumulative_seen}/{num_nodes} ({cumulative_coverage:.3f})"
+            )
+
+            print(
+                f"[BOUNDARY] epoch={epoch:03d} | "
+                f"epoch_seen={epoch_boundary_seen}/{num_boundary} | "
+                f"cumulative_seen={cumulative_boundary_seen}/{num_boundary} "
+                f"({boundary_coverage:.3f})"
+            )
+
+            # wandb.log({
+            #     "coverage/epoch_ratio": epoch_coverage,
+            #     "coverage/cumulative_ratio": cumulative_coverage,
+            #     "coverage_boundary/cumulative_ratio": boundary_coverage,
+            #     "epoch": epoch,
+            # })
+
         else:
             loss = train_fullgraph(
                 model,
