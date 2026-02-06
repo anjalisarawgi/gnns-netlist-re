@@ -7,12 +7,7 @@ import re
 
 import torch
 
-GATE_TYPES = [
-    "INPUT", "OUTPUT",
-    "AND", "OR", "NAND", "NOR", "XOR", "XNOR",
-    "INV", "AOI", "OAI", "MUX", "DFF",
-    "UNKNOWN"
-]
+GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
 
 gate2id = {g: i for i, g in enumerate(GATE_TYPES)}
 
@@ -22,13 +17,13 @@ def parse_gate_from_label(label_copy: str):
 
     name = label_copy.strip("'").upper()
 
-    # explicit first
+    # check if input / output gate
     if "INPUT" in name:
         return "INPUT"
     if "OUTPUT" in name:
         return "OUTPUT"
 
-    # logic gates by prefix
+    # if not then one hot for other gate names
     for g in GATE_TYPES:
         if g not in ("INPUT", "OUTPUT", "UNKNOWN") and name.startswith(g):
             return g
@@ -139,30 +134,23 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     print("Processing:", input_gml)
 
     G = nx.read_gml(input_gml)
-    # Ensure directed view if possible
     if not G.is_directed():
         G_dir = G.to_directed()
     else:
         G_dir = G
 
-    # Undirected approximation for some metrics
     G_und = G_dir.to_undirected()
-
-    # Precompute degrees
     indeg = dict(G_dir.in_degree())
     outdeg = dict(G_dir.out_degree())
     deg_und = dict(G_und.degree())
 
 
-    # k-core number (undirected)
     try:
         core_num = nx.core_number(G_und)
     except Exception:
-        # fallback: all zeros if core_number fails
         core_num = {n: 0 for n in G_dir.nodes()}
 
-    # PageRank (directed)
-    # For large graphs, this can still be okay; if it becomes heavy, we can switch to approximate PR.
+    # disable if it itakes ery long
     try:
         pr = nx.pagerank(G_dir, alpha=0.85, max_iter=200, tol=1e-06)
     except Exception:
@@ -177,7 +165,6 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         except Exception:
             pass
 
-    # Multi-source BFS distances to IO (undirected)
     if len(io_nodes) > 0:
         dist_to_io = _multi_source_bfs_undirected(G_und, io_nodes)
     else:
@@ -186,53 +173,30 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     for node in G_dir.nodes():
         in_d = float(indeg.get(node, 0))
         out_d = float(outdeg.get(node, 0))
-
-        
-
-        # fan-in/fan-out ratio (smoothed)
         fan_ratio = float((in_d + 1.0) / (out_d + 1.0))
-
-        # neighbor degree stats
         in_neigh = list(G_dir.predecessors(node))
         out_neigh = list(G_dir.successors(node))
-
         in_neigh_deg = [deg_und.get(u, 0) for u in in_neigh]
         out_neigh_deg = [deg_und.get(u, 0) for u in out_neigh]
-
         in_mean, in_std = _safe_mean_std(in_neigh_deg)
         out_mean, out_std = _safe_mean_std(out_neigh_deg)
 
-        # 2-hop ego density (undirected)
+        # other features
         ego_nodes = _ego_nodes_khop_undirected(G_und, node, k=ego_k)
         ego_density = _ego_density_undirected(G_und, ego_nodes)
-
-        # k-core
         kcore = float(core_num.get(node, 0))
-
-        # pagerank
         pager = float(pr.get(node, 0.0))
-
-        # distance to IO (min hops). If unreachable or no IO, set -1
         d_io = float(dist_to_io.get(node, -1))
-
-        # forward reach count within 3 hops (directed)
         f_reach = float(_forward_reach_within_k(G_dir, node, k=reach_k))
 
 
         node_data = G_dir.nodes[node]
         label_copy = node_data.get("label_copy", "")
 
-        # gate_type = parse_gate_from_label(label_copy)
-        # gate_feats = encode_gate(gate_type)
+        # one hot encoding section ---:::::::
         gate_type = parse_gate_from_label(label_copy)
-
-        # one-hot of THIS node
         gate_onehot = encode_gate(gate_type)
-
-        # 1-hop neighbor gate-type counts
         gate_1hop_counts = count_1hop_gate_types(node, G_und, G_dir)
-
-        # combined gate encoding
         gate_feats = torch.cat([gate_onehot, gate_1hop_counts])
 
         # structural / graph features
@@ -310,7 +274,7 @@ for design in os.listdir(ROOT_RAW):
             except Exception as e:
                 print(f"[CRASH] {input_gml}: {e}")
 
-# save lists
+
 os.makedirs(ROOT_OUT, exist_ok=True)
 
 with open(os.path.join(ROOT_OUT, "usable_graphs.json"), "w") as f:
@@ -322,7 +286,7 @@ with open(os.path.join(ROOT_OUT, "unusable_graphs_connectivity.json"), "w") as f
 with open(os.path.join(ROOT_OUT, "unusable_graphs_no_boundary.json"), "w") as f:
     json.dump(unusable_graphs_no_boundary, f, indent=4)
 
-print("\n=== SUMMARY ===")
-print("Usable graphs                 :", len(usable_graphs))
-print("Unusable (not connected)      :", len(unusable_graphs_connectivity))
+
+print("Usable graphs:", len(usable_graphs))
+print("Unusable (not connected) :", len(unusable_graphs_connectivity))
 print("Unusable (no boundary labels) :", len(unusable_graphs_no_boundary))

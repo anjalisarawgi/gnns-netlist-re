@@ -389,6 +389,6 @@ set_gradient_clipping: true
 normalize_class_weights: true
 reduction_method_cel: "mean"
 lr: 0.003
-loss_type : "ce_soft" #ce_weighted
+loss_type : "ce_weighted" #ce_weighted
 sample_coverage : 50
 training_mode: "fullgraph"

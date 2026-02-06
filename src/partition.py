@@ -796,7 +796,7 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
         wandb.log(log_dict)
         # scheduler.step()
 
-        if epoch % 100 == 0 :
+        if epoch % 10 == 0 :
             # ###########
             # ## train side of eval
             # ###########
