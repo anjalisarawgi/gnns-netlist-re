@@ -94,13 +94,18 @@ parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"
 parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
 parser.add_argument("--decision_threshold", type=float, default = None)
 parser.add_argument(
-    "--training_mode",
-    type=str,
-    choices=["fullgraph", "graphsaint"],
-    default="graphsaint",
-    help="Train on full graph or sampled subgraphs"
-)
+    "--training_mode",type=str, choices=["fullgraph", "graphsaint"],  default="graphsaint",    help="Train on full graph or sampled subgraphs")
 
+# features 
+parser.add_argument("--use_partition_features", action="store_true", help="if you want to concatenate partition_features to node features")
+parser.add_argument("--use_graph_features", action="store_true", help="if you want to concatenate partition_features to node features")
+parser.add_argument(
+    "--fullgraph_mode",
+    type=str,
+    choices=["merged", "per_design"],
+    default="merged",
+    help="How to train in fullgraph mode"
+)
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -132,7 +137,10 @@ elif args.sampling_method == "khop":
 else:
     sampling_suffix = args.sampling_method
 
-run_name = f"{args.perc_batchsize}perc_{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_for_{test_name}"
+if args.training_mode == "fullgraph":
+    run_name = f"fullgraph_{args.fullgraph_mode}_{args.loss_type}_{args.epochs}ep_for_{test_name}"
+else:
+    run_name = f"{args.perc_batchsize}perc_{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_for_{test_name}"
 
 
 wandb.init(project="gnn-parition-detection", name=run_name)
@@ -199,6 +207,7 @@ def merge_data(gml_1, gml_2):
 # a) x = node features (matrix)
 # b) y = node labels 
 # c) edge_index = edges (2xE tensor)
+
 def load_single_gml(gml_path, remove_edges = False):
     print("[INFO] Calling gml from path:", gml_path)
     
@@ -208,9 +217,29 @@ def load_single_gml(gml_path, remove_edges = False):
     features = []
     labels = []
 
+    base_feat_dim = None
+    after_partition_dim = None
+    after_graph_dim = None
     for node in nodes:
         attr = G.nodes[node] # attr?
         feat = attr.get("features", [])
+        if base_feat_dim is None:
+            base_feat_dim = len(feat)
+
+        if args.use_partition_features:     
+            partition_feat = attr.get("partition_features", [0.0, 0.0])
+            # partition_feat_twoHop = partition_feat[1]
+            feat = list(feat) +list(partition_feat)
+            # feat = list(feat) + [float(partition_feat_twoHop)]
+            if after_partition_dim is None:
+                after_partition_dim = len(feat)
+
+        if args.use_graph_features:
+            graph_feat = attr.get("graph_features", [0.0, 0.0])
+            feat = list(feat) +list(graph_feat)
+            if after_graph_dim is None:
+                after_graph_dim = len(feat)
+
 
         if not isinstance(feat, (list, tuple, np.ndarray)):
             raise ValueError(f"Node {node} has invalid features")
@@ -312,6 +341,17 @@ def load_single_gml(gml_path, remove_edges = False):
         val_mask = val_mask,
         test_mask = test_mask
     )
+
+    print("[FEATURE DIM CHECK]")
+    print("  base features dim           :", base_feat_dim)
+
+    if args.use_partition_features:
+        print("  after partition features   :", after_partition_dim)
+
+    if args.use_graph_features:
+        print("  after graph features       :", after_graph_dim)
+
+    print("  final feature dim (tensor) :", data.x.shape[1])
     return data, id2label
 
 def focal_loss(logits, targets, gamma=2.0, alpha = 0.25):
@@ -319,6 +359,45 @@ def focal_loss(logits, targets, gamma=2.0, alpha = 0.25):
     pt = torch.exp(-ce)
     at = torch.where(targets ==1, alpha, 1 - alpha)
     return at * ((1 - pt) ** gamma) * ce
+    
+def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft_class_weights=None):
+    model.train()
+    optimizer.zero_grad()
+
+    per_graph_losses = []
+
+    for g in graphs:
+        out = model(g.x, g.edge_index)
+
+        if args.loss_type == "focal":
+            loss_per_node = focal_loss(out, g.y)
+        elif args.loss_type == "ce_weighted":
+            loss_per_node = F.cross_entropy(
+                out, g.y,
+                weight=class_weights.to(out.device),
+                reduction="none"
+            )
+        elif args.loss_type == "ce_soft":
+            loss_per_node = F.cross_entropy(
+                out, g.y,
+                weight=soft_class_weights.to(out.device),
+                reduction="none"
+            )
+        else:
+            loss_per_node = F.cross_entropy(out, g.y, reduction="none")
+
+        # IMPORTANT: mean over nodes of THIS graph
+        per_graph_losses.append(loss_per_node.mean())
+
+    # IMPORTANT: mean over graphs
+    loss = torch.stack(per_graph_losses).mean()
+    loss.backward()
+
+    if args.set_gradient_clipping:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+
+    optimizer.step()
+    return float(loss.item())
     
 def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weights=None):
     model.train()
@@ -576,6 +655,7 @@ def evaluate_test(data, model):
     }
 
 
+
 def predict_with_threshold(out, threshold):
     probs = torch.softmax(out, dim=1)
     return (probs[:, 1] >= threshold).long()
@@ -640,7 +720,7 @@ def find_best_threshold(probs, labels, thresholds=None):
 
 ##### training  and eval functions:
 
-def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
+def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
 
 
     # setting the model
@@ -686,29 +766,40 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
     soft_class_weights = None
 
     if args.loss_type in ["ce_weighted", "ce_soft"]:
-        print("[INFO] Computing class weights")
+        print("[INFO] Computing per-design averaged class weights")
 
-        train_labels = train_data.y.cpu().numpy()
-        classes = np.unique(train_labels)
+        per_graph_weights = []
 
-        weights = compute_class_weight(
-            class_weight="balanced",
-            classes=classes,
-            y=train_labels
-        )
+        for g in train_graphs:
+            y = g.y.cpu().numpy()
+            classes = np.unique(y)
 
-        weights = weights / np.mean(weights)
+            # safety: skip degenerate graphs
+            if len(classes) < 2:
+                continue
+
+            w = compute_class_weight(
+                class_weight="balanced",
+                classes=classes,
+                y=y
+            )
+            w = w / np.mean(w)   # normalize per graph
+            per_graph_weights.append(w)
+
+        # average across designs
+        weights = np.mean(np.stack(per_graph_weights), axis=0)
         class_weights = torch.tensor(weights, dtype=torch.float)
 
-        # softening
+        # soften (same as before)
         alpha = 0.8
         soft_weights = weights ** alpha
         soft_weights = soft_weights / np.mean(soft_weights)
         soft_class_weights = torch.tensor(soft_weights, dtype=torch.float)
 
-        print("[INFO] CE weights      :", class_weights.tolist())
-        print("[INFO] Soft CE weights :", soft_class_weights.tolist())
-
+        print("[INFO] CE weights (design-avg)     :", class_weights.tolist())
+        print("[INFO] Soft CE weights (design-avg):", soft_class_weights.tolist())
+    
+        
     #### main training loop now 
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
@@ -757,14 +848,43 @@ def run_training(train_data, train_loader, in_dim, out_dim, id2name=None, model_
             #     "epoch": epoch,
             # })
 
-        else:
-            loss = train_fullgraph(
-                model,
-                train_data,
-                optimizer,
-                class_weights=class_weights,
-                soft_class_weights=soft_class_weights
-            )
+        # else:
+        #     # loss = train_fullgraph(
+        #     #     model,
+        #     #     train_data,
+        #     #     optimizer,
+        #     #     class_weights=class_weights,
+        #     #     soft_class_weights=soft_class_weights
+        #     # )
+
+        #     loss = train_equal_design_weight(
+        #             model,
+        #             train_graphs,
+        #             optimizer,
+        #             class_weights=class_weights,
+        #             soft_class_weights=soft_class_weights
+        #         )
+        elif args.training_mode == "fullgraph":
+            if args.fullgraph_mode == "merged":
+                loss = train_fullgraph(
+                    model,
+                    train_data,
+                    optimizer,
+                    class_weights=class_weights if args.loss_type == "ce_weighted" else None,
+                    soft_class_weights=soft_class_weights if args.loss_type == "ce_soft" else None,
+                )
+
+            elif args.fullgraph_mode == "per_design":
+                loss = train_equal_design_weight(
+                    model,
+                    train_graphs,
+                    optimizer,
+                    class_weights=class_weights,
+                    soft_class_weights=soft_class_weights
+                )
+
+            else:
+                raise ValueError(f"Unknown fullgraph_mode: {args.fullgraph_mode}")
 
         # loss, epoch_nodes = train(model, train_loader, optimizer, class_weights=class_weights if args.loss_type== "ce_weighted" else None, soft_class_weights=soft_class_weights if args.loss_type=="ce_soft" else None)
         train_time = time.perf_counter() - train_start
@@ -1002,7 +1122,8 @@ if __name__ == "__main__":
         scaler.fit_transform(combined_data.x.cpu().numpy()),
         dtype=torch.float32
     )
-
+    for g in train_graphs:
+        g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
     # we use the train sclaer to transform val and test
     for path, g in val_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
@@ -1035,29 +1156,31 @@ if __name__ == "__main__":
 
     ### samplers 
     # (a) graph saint
-    if args.sampling_method ==  "graphsaint_rw":
-        training_data_loader = GraphSAINTRandomWalkSampler(
-            combined_data, 
-            batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
-            walk_length = args.walk_length, 
-            sample_coverage = args.sample_coverage
-        )
-    elif args.sampling_method ==  "graphsaint_edge":
-        training_data_loader = GraphSAINTEdgeSampler(
-            combined_data, 
-            batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
-            num_steps = args.num_steps, 
-            sample_coverage = args.sample_coverage
-        )
-    elif args.sampling_method ==  "graphsaint_node":
-        training_data_loader = GraphSAINTNodeSampler(
-            combined_data, 
-            batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
-            num_steps = args.num_steps, 
-            sample_coverage = args.sample_coverage
-        )
-    else: 
-        training_data_loader = None
+    training_data_loader = None
+    if args.training_mode  == "graphsaint":
+        if args.sampling_method ==  "graphsaint_rw":
+            training_data_loader = GraphSAINTRandomWalkSampler(
+                combined_data, 
+                batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
+                walk_length = args.walk_length, 
+                sample_coverage = args.sample_coverage
+            )
+        elif args.sampling_method ==  "graphsaint_edge":
+            training_data_loader = GraphSAINTEdgeSampler(
+                combined_data, 
+                batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
+                num_steps = args.num_steps, 
+                sample_coverage = args.sample_coverage
+            )
+        elif args.sampling_method ==  "graphsaint_node":
+            training_data_loader = GraphSAINTNodeSampler(
+                combined_data, 
+                batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
+                num_steps = args.num_steps, 
+                sample_coverage = args.sample_coverage
+            )
+        else: 
+            raise ValueError(f"Unsupported sampling_method: {args.sampling_method}")
     # elif args.sampling_method ==  "graphsaint":
     #     data_loader = GraphSAINTSampler(
     #         combined_data, 
@@ -1070,14 +1193,25 @@ if __name__ == "__main__":
 
 
     ## calling the model 
+    # model = run_training(
+    #     train_data=combined_data,
+    #     train_loader=training_data_loader,
+    #     in_dim=combined_data.num_features,
+    #     out_dim=2,
+    #     id2name=id2label,
+    #     model_name=args.model,
+    #     use_weighted_loss=False,
+    #     val_graphs=val_graphs,
+    #     test_graphs=test_graphs,
+    # )
     model = run_training(
+        train_graphs=train_graphs,
         train_data=combined_data,
         train_loader=training_data_loader,
         in_dim=combined_data.num_features,
         out_dim=2,
         id2name=id2label,
         model_name=args.model,
-        use_weighted_loss=False,
         val_graphs=val_graphs,
         test_graphs=test_graphs,
     )

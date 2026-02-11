@@ -130,6 +130,72 @@ def _forward_reach_within_k(G_dir, start, k=3):
                 q.append((nb, d + 1))
     return len(visited) - 1
 
+def _backward_reach_within_k(G_dir, start, k=3):
+    visited = {start}
+    q = deque([(start, 0)])
+    while q:
+        v, d = q.popleft()
+        if d == k:
+            continue
+        for nb in G_dir.predecessors(v):
+            if nb not in visited:
+                visited.add(nb)
+                q.append((nb, d + 1))
+    return len(visited) - 1
+
+def _mean_neighbor_ego_density(G_und, node, k=2):
+    densities = []
+    for nb in G_und.neighbors(node):
+        nb_ego = _ego_nodes_khop_undirected(G_und, nb, k=k)
+        densities.append(_ego_density_undirected(G_und, nb_ego))
+    if len(densities) == 0:
+        return 0.0
+    return float(np.mean(densities))
+
+def _clean_partition(p):
+    if p is None:
+        return None
+    return str(p).strip("'")
+
+def fraction_same_partition_1hop(node, G_und, G_dir):
+    p0 = _clean_partition(G_dir.nodes[node].get("partition"))
+    if p0 is None:
+        return 0.0
+
+    neighs = list(G_und.neighbors(node))
+    if len(neighs) == 0:
+        return 0.0
+
+    same = 0
+    for nb in neighs:
+        p_nb = _clean_partition(G_dir.nodes[nb].get("partition"))
+        if p_nb == p0:
+            same += 1
+
+    return same / len(neighs)
+
+
+def fraction_same_partition_2hop(node, G_und, G_dir):
+    p0 = _clean_partition(G_dir.nodes[node].get("partition"))
+    if p0 is None:
+        return 0.0
+
+    # reuse your ego function
+    nodes_2hop = _ego_nodes_khop_undirected(G_und, node, k=2)
+    nodes_2hop.discard(node)
+
+    if len(nodes_2hop) == 0:
+        return 0.0
+
+    same = 0
+    for nb in nodes_2hop:
+        p_nb = _clean_partition(G_dir.nodes[nb].get("partition"))
+        if p_nb == p0:
+            same += 1
+
+    return same / len(nodes_2hop)
+
+
 def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     print("Processing:", input_gml)
 
@@ -170,6 +236,30 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     else:
         dist_to_io = {}
 
+    # global features
+    num_nodes = G_dir.number_of_nodes()
+    num_edges = G_dir.number_of_edges()
+    graph_density = nx.density(G_und)
+
+    log_nodes = np.log1p(num_nodes)
+    log_edges = np.log1p(num_edges)
+
+    deg_values = np.array(list(deg_und.values()), dtype=np.float32)
+    deg_mean = deg_values.mean()
+    deg_std = deg_values.std()
+    deg_cv = deg_std / (deg_mean + 1e-6)
+
+    in_degs = np.array([d for _, d in G_dir.in_degree()], dtype=np.float32)
+    out_degs = np.array([d for _, d in G_dir.out_degree()], dtype=np.float32)
+    global_flow_asym = (
+        in_degs.mean() - out_degs.mean()
+    ) / (in_degs.mean() + out_degs.mean() + 1e-6)
+
+    core_vals = np.array(list(core_num.values()), dtype=np.float32)
+    max_core = core_vals.max()
+    mean_core = core_vals.mean()
+
+
     for node in G_dir.nodes():
         in_d = float(indeg.get(node, 0))
         out_d = float(outdeg.get(node, 0))
@@ -182,12 +272,20 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         out_mean, out_std = _safe_mean_std(out_neigh_deg)
 
         # other features
+        # ego_nodes = _ego_nodes_khop_undirected(G_und, node, k=ego_k)
+        # ego_density = _ego_density_undirected(G_und, ego_nodes)
         ego_nodes = _ego_nodes_khop_undirected(G_und, node, k=ego_k)
         ego_density = _ego_density_undirected(G_und, ego_nodes)
+        # ego_density_nb_mean = _mean_neighbor_ego_density(G_und, node, k=ego_k)
+        # ego_density_contrast = ego_density - ego_density_nb_mean
+
         kcore = float(core_num.get(node, 0))
         pager = float(pr.get(node, 0.0))
         d_io = float(dist_to_io.get(node, -1))
+
         f_reach = float(_forward_reach_within_k(G_dir, node, k=reach_k))
+        b_reach = float(_backward_reach_within_k(G_dir, node, k=reach_k))
+        reach_asym = (f_reach - b_reach) / (f_reach + b_reach + 1.0)
 
 
         node_data = G_dir.nodes[node]
@@ -199,17 +297,43 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         gate_1hop_counts = count_1hop_gate_types(node, G_und, G_dir)
         gate_feats = torch.cat([gate_onehot, gate_1hop_counts])
 
+        neighbor_degs = [deg_und.get(nb, 0) for nb in G_und.neighbors(node)]
+        deg_contrast = deg_und.get(node, 0) - (np.mean(neighbor_degs) if neighbor_degs else 0.0)
+
         # structural / graph features
         struct_feats = torch.tensor([
             in_d, out_d, fan_ratio,
             in_mean, in_std,
             out_mean, out_std,
             float(ego_density),
-            kcore, pager, d_io, f_reach,
+            kcore, pager, d_io, f_reach, b_reach, reach_asym, deg_contrast,
         ], dtype=torch.float32)
 
         x = torch.cat([gate_feats, struct_feats])
         G_dir.nodes[node]["features"] = x.tolist()
+
+        # partition features 
+        frac_same_p1 = fraction_same_partition_1hop(node, G_und, G_dir)
+        frac_same_p2 = fraction_same_partition_2hop(node, G_und, G_dir)
+
+        G_dir.nodes[node]["partition_features"] = [
+            float(frac_same_p1),
+            float(frac_same_p2),
+        ]
+
+        # graph features
+        graph_features = torch.tensor([
+            log_nodes,
+            log_edges,
+            graph_density,
+            deg_cv,
+            global_flow_asym,
+            max_core,
+            mean_core,
+        ], dtype=torch.float32)
+
+        G_dir.nodes[node]["graph_features"] = graph_features.tolist()
+
 
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
     nx.write_gml(G_dir, output_gml)
@@ -217,9 +341,9 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
 
 
 ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd"
+ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10"
 # ROOT_RAW = "new_graphs_crypto/raw/raw"
-# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd"
+# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10"
 
 processed_dirs = {}
 usable_graphs = []
