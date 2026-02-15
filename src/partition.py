@@ -632,6 +632,27 @@ def multi_source_bfs(G, sources):
     return visited
 
 
+def compute_region_iou(G, true_boundary_set, pred_boundary_set, k_hop):
+        if len(pred_boundary_set) == 0:
+            return 0.0
+
+        # distance from all nodes to nearest TRUE boundary
+        dist_true = multi_source_bfs(G, list(true_boundary_set))
+        true_region = set(n for n, d in dist_true.items() if d <= k_hop)
+
+        # distance from all nodes to nearest PREDICTED boundary
+        dist_pred = multi_source_bfs(G, list(pred_boundary_set))
+        pred_region = set(n for n, d in dist_pred.items() if d <= k_hop)
+
+        intersection = len(true_region & pred_region)
+        union = len(true_region | pred_region)
+
+        if union == 0:
+            return 0.0
+
+        return intersection / union
+
+
 # test file acc only
 @torch.no_grad()
 def evaluate_test(data, model):
@@ -702,6 +723,7 @@ def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, pro
     G = nx.Graph()
     edge_index = data.edge_index.cpu().numpy()
     edges = list(zip(edge_index[0], edge_index[1]))
+    G.add_nodes_from(range(data.num_nodes)) # not sure
     G.add_edges_from(edges)
 
     # a) Q1 - distance to the nearest boundary
@@ -731,6 +753,10 @@ def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, pro
     boundary_coverage_thresh_2 = boundary_covered(thresh_set, 2) # q2 - 2 hops
     boundary_coverage_thresh_1 = boundary_covered(thresh_set, 1) # q2 - 1 hop
     boundary_coverage_thresh_0 = boundary_covered(thresh_set, 0)
+
+    # iou 
+    region_iou_k1 = compute_region_iou(G, true_boundary, thresh_set, k_hop=1)
+    region_iou_k2 = compute_region_iou(G, true_boundary, thresh_set, k_hop=2)
 
 
     #a) Q1 - distance to the nearest boundary
@@ -762,6 +788,8 @@ def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, pro
         "boundary_coverage_thresh_0": boundary_coverage_thresh_0,
         "boundary_coverage_thresh_1": boundary_coverage_thresh_1,
         "boundary_coverage_thresh_2": boundary_coverage_thresh_2,
+        "region_iou_k1": region_iou_k1,
+        "region_iou_k2": region_iou_k2,
 
     }
 
@@ -1127,6 +1155,8 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                         f"mean_dist_thresh={region_metrics['mean_dist_thresh']:.4f}, "
                         f"pct_thresh_within_1={region_metrics['pct_thresh_within_1']:.4f}, "
                         f"pct_thresh_within_2={region_metrics['pct_thresh_within_2']:.4f}, "
+                        f"region_iou_k1={region_metrics['region_iou_k1']:.4f}, "
+                        f"region_iou_k2={region_metrics['region_iou_k2']:.4f}, "
                     )
                 else: 
                     print(f"[REGION] {name} | Skipped (no boundary nodes)")
