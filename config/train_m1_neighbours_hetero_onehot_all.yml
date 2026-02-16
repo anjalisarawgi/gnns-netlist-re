@@ -394,4 +394,4 @@ sample_coverage : 50
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
 use_partition_features: true
-# use_graph_features: true
+use_graph_features: true
