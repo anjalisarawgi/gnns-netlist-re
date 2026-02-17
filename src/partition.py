@@ -174,7 +174,32 @@ def normalize_features(features):
     features_tensor = torch.tensor(features, dtype=torch.float)
     return features_tensor
 
-    
+
+
+from collections import deque
+
+##### [analysis block  ] #####
+# creating function to find - nearest boundary nodes: i.e.
+# eg how many steps / hops away is the nearest boudnary from a node
+# we can consider shortest path to reach = number of hops
+def multi_source_bfs(G, sources):
+    visited ={} # storing distances
+    queue = deque() # the nodes we still need to explore 
+
+    for s in sources:
+        visited[s] = 0 
+        queue.append(s)
+
+    while queue:
+        node = queue.popleft() # if starting from node C , we remvoe c
+        for nbr in G.neighbors(node):
+            if nbr not in visited:
+                visited[nbr] = visited[node] + 1
+                queue.append(nbr)
+        
+    return visited
+
+
 #### merge_data
 def merge_data(gml_1, gml_2):
     # note here we make offsets so we dont have overlapping edge indexes 
@@ -528,7 +553,75 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
     return average_loss, epoch_nodes
 
 
+@torch.no_grad()
+def save_boundary_coverage_gml(original_gml_path, data, model, output_gml_path, threshold=0.5):
+    model.eval()
+    out = model(data.x, data.edge_index)
+    probs_tensor = torch.softmax(out, dim=1)
 
+    probs = probs_tensor[:, 1].cpu().numpy()
+    preds = (probs >= threshold).astype(int)
+    y_true = data.y.cpu().numpy()
+
+    pred_boundary_set = set(np.where(preds == 1)[0].tolist())
+
+    # load original gml
+    G = nx.read_gml(original_gml_path, label="id")
+
+    # build nx graph in pyg index space
+    H = nx.Graph()
+    edge_index = data.edge_index.cpu().numpy()
+    H.add_nodes_from(range(data.num_nodes))
+    H.add_edges_from(list(zip(edge_index[0], edge_index[1])))
+
+    # distance from predicted boundaries
+    dist_to_pred = multi_source_bfs(H, list(pred_boundary_set))
+
+    # coverage labels
+    coverage_0 = {}
+    coverage_1 = {}
+    coverage_2 = {}
+
+    for i in range(data.num_nodes):
+        d = dist_to_pred.get(i, float("inf"))
+        coverage_0[i] = int(d <= 0)
+        coverage_1[i] = int(d <= 1)
+        coverage_2[i] = int(d <= 2)
+
+    # map GML node ids -> PyG indices
+    node_map = {node: idx for idx, node in enumerate(G.nodes())}
+
+    for node in G.nodes():
+        idx = node_map[node]
+
+        true_val = int(y_true[idx])
+        pred_val = int(preds[idx])
+
+        correct = int(true_val == pred_val)
+
+        # classification type
+        if true_val == 1 and pred_val == 1:
+            error_type = "TP"
+        elif true_val == 0 and pred_val == 0:
+            error_type = "TN"
+        elif true_val == 0 and pred_val == 1:
+            error_type = "FP"
+        else:
+            error_type = "FN"
+
+        G.nodes[node]["true_label"] = true_val
+        G.nodes[node]["pred_label"] = pred_val
+        G.nodes[node]["pred_prob"] = float(probs[idx])
+
+        G.nodes[node]["correct"] = correct
+        G.nodes[node]["error_type"] = error_type
+
+        G.nodes[node]["boundary_coverage_0hop"] = coverage_0.get(idx, 0)
+        G.nodes[node]["boundary_coverage_1hop"] = coverage_1.get(idx, 0)
+        G.nodes[node]["boundary_coverage_2hop"] = coverage_2.get(idx, 0)
+
+    nx.write_gml(G, output_gml_path)
+    print(f"[INFO] Saved enriched boundary coverage GML to: {output_gml_path}")
 
 @torch.no_grad()
 def evaluate_train_acc(model, data, mask):
@@ -607,29 +700,6 @@ def eval_class_acc(data, model, mask, id2name=None):
         acc_per_class[label_name] = acc
 
     return acc_per_class
-
-from collections import deque
-
-##### [analysis block  ] #####
-# creating function to find - nearest boundary nodes: i.e.
-# eg how many steps / hops away is the nearest boudnary from a node
-# we can consider shortest path to reach = number of hops
-def multi_source_bfs(G, sources):
-    visited ={} # storing distances
-    queue = deque() # the nodes we still need to explore 
-
-    for s in sources:
-        visited[s] = 0 
-        queue.append(s)
-
-    while queue:
-        node = queue.popleft() # if starting from node C , we remvoe c
-        for nbr in G.neighbors(node):
-            if nbr not in visited:
-                visited[nbr] = visited[node] + 1
-                queue.append(nbr)
-        
-    return visited
 
 
 def compute_region_iou(G, true_boundary_set, pred_boundary_set, k_hop):
@@ -1420,13 +1490,14 @@ if __name__ == "__main__":
 
     test_metrics = defaultdict(list)
 
+    args.decision_threshold = None
     for path, g in test_graphs:
         # n = evaluate_test(g, model)
         # name = os.path.splitext(os.path.basename(path))[0]
 
         name = os.path.splitext(os.path.basename(path))[0]
-        t = design_thresholds.get(name, 0.5)
-        args.decision_threshold = t
+        # t = design_thresholds.get(name, 0.5)
+        # args.decision_threshold = t
         n = evaluate_test(g, model)
 
         # print(
@@ -1435,7 +1506,7 @@ if __name__ == "__main__":
         #     f"Acc={n['total_acc']:.4f}, b1={n['boundary_1_acc']:.4f}, b0={n['boundary_0_acc']:.4f}"
         # )
         print(
-            f"[TEST] {name} (t={t:.3f}) | "
+            f"[TEST] {name} | "
             f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
             f"Acc={n['total_acc']:.4f}"
         )
@@ -1492,15 +1563,18 @@ if __name__ == "__main__":
     })
 
     # saving the results in gml 
-    output_dir = "results/aes_to_testml"
-    os.makedirs(output_dir, exist_ok=True)
+    base_output_dir = os.path.join("results", wandb.run.name)
+    predictions_dir = os.path.join(base_output_dir, "predictions")
+    coverage_dir = os.path.join(base_output_dir, "coverage")
+    os.makedirs(predictions_dir, exist_ok=True)
+    os.makedirs(coverage_dir, exist_ok=True)
 
     output_labels = {0: "not_boundary", 1: "boundary"}
     print("[INFO] Output Labels:", output_labels)
 
     for path, g in test_graphs:
         test_graph_name = os.path.splitext(os.path.basename(path))[0]
-        output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
+        output_path = os.path.join(predictions_dir, f"{test_graph_name}_predictions.gml")
         print("[INFO] Saving predictions to:", output_path)
 
         save_predictions_to_gml(
@@ -1509,4 +1583,16 @@ if __name__ == "__main__":
             model=model,
             id2name=output_labels,
             output_gml_path=output_path
+        )
+
+        coverage_output_path = os.path.join(
+            coverage_dir,
+            f"{test_graph_name}_boundary_analysis.gml"
+        )
+
+        save_boundary_coverage_gml(
+            original_gml_path=path,
+            data=g,
+            model=model,
+            output_gml_path=coverage_output_path
         )
