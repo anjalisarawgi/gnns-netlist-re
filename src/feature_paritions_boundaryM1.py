@@ -336,14 +336,51 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
 
 
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
+
+
+    # ------------------------
+    # EDGE FEATURES
+    # ------------------------
+
+    for u, v in G_dir.edges():
+
+        deg_u = float(deg_und.get(u, 0))
+        deg_v = float(deg_und.get(v, 0))
+
+        outdeg_u = float(outdeg.get(u, 0))
+        indeg_v = float(indeg.get(v, 0))
+
+        d_io_u = float(dist_to_io.get(u, -1))
+        d_io_v = float(dist_to_io.get(v, -1))
+
+        # reach asym already computed per node
+        f_reach_u = float(_forward_reach_within_k(G_dir, u, k=reach_k))
+        b_reach_u = float(_backward_reach_within_k(G_dir, u, k=reach_k))
+        reach_asym_u = (f_reach_u - b_reach_u) / (f_reach_u + b_reach_u + 1.0)
+
+        f_reach_v = float(_forward_reach_within_k(G_dir, v, k=reach_k))
+        b_reach_v = float(_backward_reach_within_k(G_dir, v, k=reach_k))
+        reach_asym_v = (f_reach_v - b_reach_v) / (f_reach_v + b_reach_v + 1.0)
+
+        edge_feat = [
+            deg_u - deg_v,                        # Δ degree
+            np.log1p(outdeg_u),                   # source fanout
+            np.log1p(indeg_v),                    # target fanin
+            # d_io_u - d_io_v,                      # Δ IO distance
+            reach_asym_u - reach_asym_v,          # Δ reach asym
+        ]
+
+        G_dir.edges[u, v]["edge_features"] = edge_feat
+
+
     nx.write_gml(G_dir, output_gml)
     print(f"[INFO] Saved processed GML → {output_gml}")
 
 
-ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10"
-# ROOT_RAW = "new_graphs_crypto/raw/raw"
-# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10"
+# ROOT_RAW = "graphs/raw_v2/raw"
+# ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10_wEdgeFeatures"
+ROOT_RAW = "new_graphs_crypto/raw/raw"
+ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10_wEdgeFeatures"
 
 processed_dirs = {}
 usable_graphs = []

@@ -1,39 +1,3 @@
-# # import yaml
-
-# # INPUT_YAML  = "config/train_new_graphs_crypto_v4.yml"          # your original YAML
-# # OUTPUT_YAML = "config/train_new_graphs_crypto_v4.yml"  # filtered YAML
-
-# # with open(INPUT_YAML, "r") as f:
-# #     cfg = yaml.safe_load(f)
-
-# # def keep_only(paths, tag):
-# #     if paths is None:
-# #         return paths
-# #     return [p for p in paths if tag in p]
-
-# # # filter rules
-# # cfg["train_gml"] = keep_only(cfg.get("train_gml"), "_m2.gml")
-# # cfg["val_gml"]   = keep_only(cfg.get("val_gml"), "_m1.gml")
-# # cfg["test_gml"]  = keep_only(cfg.get("test_gml"), "_m1.gml")
-
-# # with open(OUTPUT_YAML, "w") as f:
-# #     yaml.safe_dump(cfg, f, sort_keys=False)
-
-# # print("Saved filtered config to:", OUTPUT_YAML)
-# # print("Train graphs:", len(cfg["train_gml"]))
-# # print("Val graphs:", len(cfg.get("val_gml", [])))
-# # print("Test graphs:", len(cfg.get("test_gml", [])))
-
-
-# import json
-
-# with open("graphs/processed_jan27_m1/usable_graphs.json", "r") as f:
-#     files = json.load(f)
-
-# filtered = [p for p in files if p.endswith("_m1.gml")]
-
-# with open("graphs/processed_jan27_m1/usable_graphs_m1.json", "w") as f:
-#     json.dump(filtered, f, indent=2)
 import torch
 import joblib
 import numpy as np
@@ -49,16 +13,9 @@ from gnn.gcn import GCN
 from gnn.graphTransformer import GraphTransformer
 from sklearn.metrics import f1_score, precision_score, recall_score
 
-# ------------------------------------------------------------
-# SETTINGS
-# ------------------------------------------------------------
-TARGET_RATIO = 0.15   # adjust if needed
+TARGET_RATIO = 0.08
 FIXED_THRESHOLD = 0.5
 
-
-# ------------------------------------------------------------
-# Load graph
-# ------------------------------------------------------------
 def load_single_gml(gml_path):
     G = nx.read_gml(gml_path, label="id")
 
@@ -69,7 +26,8 @@ def load_single_gml(gml_path):
         attr = G.nodes[node]
         feat = attr.get("features", [])
         partition_feat = attr.get("partition_features", [0.0, 0.0])
-        feat = list(feat) + list(partition_feat)
+        # feat = list(feat) + list(partition_feat)
+        feat = list(feat) 
         features.append(feat)
 
         boundary_value = attr.get("boundary", 0)
@@ -92,9 +50,6 @@ def load_single_gml(gml_path):
     return Data(x=features, edge_index=edge_index, edge_attr=edge_attr, y=labels)
 
 
-# ------------------------------------------------------------
-# Load model
-# ------------------------------------------------------------
 def load_model(model_path, metadata_path):
     with open(metadata_path) as f:
         meta = json.load(f)
@@ -124,9 +79,6 @@ def get_probs(model, data):
     return torch.softmax(out, dim=1)[:, 1].cpu().numpy()
 
 
-# ------------------------------------------------------------
-# Decision rules
-# ------------------------------------------------------------
 def predict_fixed(probs, threshold):
     return (probs >= threshold).astype(int)
 
@@ -153,26 +105,23 @@ def best_f1_oracle(probs, labels):
     return best_f1, best_t
 
 
-# ------------------------------------------------------------
-# MAIN
-# ------------------------------------------------------------
 if __name__ == "__main__":
 
-    model_dir = "models/wPartitions/fullgraph_per_design_ce_soft_500ep_for_aes_128_combined_m1+aes_inv_cipher_top_combined_m1+more"
+    model_dir = "models/woPartitions/fullgraph_per_design_ce_soft_500ep_for_aes_128_combined_m1+aes_inv_cipher_top_combined_m1+more"
     model_path = os.path.join(model_dir, "model.pt")
     metadata_path = os.path.join(model_dir, "metadata.json")
     scaler_path = os.path.join(model_dir, "scaler.pkl")
 
     test_graphs = [
-        "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml",
+        # "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml",
         # "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml",
         # "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_key_expand_128_combined_m1.gml",
         # "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha1-master/osu035/sha1_core_combined_m1.gml",
-        "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/des_latest/gscl45nm/des_combined_m1.gml",
+        # "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/des_latest/gscl45nm/des_combined_m1.gml",
         # "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml",
         # "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml",
-        # "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml",
-        # "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/mips32r1_latest/gscl45nm/ALU_combined_m1.gml",
+        "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml",
+        "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/mips32r1_latest/gscl45nm/ALU_combined_m1.gml",
     ]
 
     model = load_model(model_path, metadata_path)

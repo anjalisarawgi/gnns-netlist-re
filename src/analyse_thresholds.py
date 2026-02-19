@@ -4,7 +4,7 @@ import numpy as np
 import networkx as nx
 import json
 import os
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score, average_precision_score
 from torch_geometric.data import Data
 from gnn.gat import gat
 from gnn.graphSAGE import graphSAGE
@@ -12,13 +12,9 @@ from gnn.gcn import GCN
 from gnn.graphTransformer import GraphTransformer
 from collections import Counter
 import random
+import matplotlib.pyplot as plt
 
-def load_single_gml(
-    gml_path,
-    remove_edges=False,
-    use_partition_features=False,
-    use_graph_features=False
-):
+def load_single_gml( gml_path,remove_edges=False,use_partition_features=False,use_graph_features=False):
     print("[INFO] Calling gml from path:", gml_path)
     
     G = nx.read_gml(gml_path, label = "id") 
@@ -147,22 +143,14 @@ def load_model(model_path, metadata_path):
     with open(metadata_path, "r") as f:
         meta = json.load(f)
 
-    model_type = meta["model_type"]
     in_dim = meta["final_feature_dim"]
-
-    if model_type == "gat":
-        model = gat(in_channels=in_dim, hidden_channels=256, out_channels=2)
-    elif model_type == "graphsage":
-        model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=2)
-    elif model_type == "gcn":
-        model = GCN(in_channels=in_dim, hidden_channels=256, out_channels=2)
-    elif model_type == "graphTransformer":
-        model = GraphTransformer(in_channels=in_dim, hidden_channels=256, out_channels=2)
-
+    
+    model = gat(in_channels=in_dim, hidden_channels=256, out_channels=2)
     model.load_state_dict(torch.load(model_path))
     model.eval()
     return model
 
+# function for getting the probability
 @torch.no_grad()
 def get_probs(model, data):
     out = model(data.x, data.edge_index, data.edge_attr)
@@ -170,11 +158,13 @@ def get_probs(model, data):
     labels = data.y.cpu().numpy()
     return probs, labels
 
+
+# thresholding sweep 
 def sweep_thresholds(probs, labels):
     thresholds = np.linspace(0.01, 0.99, 99)
+    true_ratio = float(labels.mean())
 
-    results = []
-
+    results=[]
     for t in thresholds:
         preds = (probs >= t).astype(int)
 
@@ -182,28 +172,82 @@ def sweep_thresholds(probs, labels):
         precision = precision_score(labels, preds, zero_division=0)
         recall = recall_score(labels, preds, zero_division=0)
 
-        predicted_ratio = preds.mean()
-        true_ratio = labels.mean()
+        predicted_ratio = float(preds.mean())
 
         results.append({
-            "threshold": float(t),
-            "f1": float(f1),
+            "threshold": float(t), 
+            "f1": float(f1), 
             "precision": float(precision),
-            "recall": float(recall),
-            "predicted_ratio": float(predicted_ratio),
-            "true_ratio": float(true_ratio),
+            "recall": float(recall), 
+            "predicted_ratio": predicted_ratio, 
+            "true_ratio": true_ratio
         })
 
     return results
 
+def compute_auc_metrics(probs, labels):
+    roc_auc = roc_auc_score(labels, probs)
+    pr_auc = average_precision_score(labels, probs)
+    return float(roc_auc), float(pr_auc)
+        
+def plots(threshold_dir, plot_dir):
+    json_files = [f for f in os.listdir(threshold_dir) if f.endswith(".json")]
 
+    for file in json_files:
+        graph_name = os.path.splitext(file)[0]
+        path = os.path.join(threshold_dir, file)
 
+        with open(path, "r") as f:
+            results = json.load(f)
+
+        thresholds = [r["threshold"] for r in results]
+        f1 = [r["f1"] for r in results]
+        precision = [r["precision"] for r in results]
+        recall = [r["recall"] for r in results]
+        pred_ratio = [r["predicted_ratio"] for r in results]
+        true_ratio = [r["true_ratio"] for r in results]
+
+        # predicted_ratio / vs true ratio
+        plt.figure()
+        plt.plot(thresholds, pred_ratio, label="Predicted Ratio")
+        plt.axhline(y=true_ratio[0], linestyle="--", label="True Ratio")
+        plt.xlabel("Threshold")
+        plt.ylabel("Ratio")
+        plt.title(f"{graph_name} - Predicted Boundary Ratio")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(plot_dir, f"{graph_name}_ratio.png"))
+        plt.close()
+
+        # F1 / prec/ recall
+        plt.figure()
+        plt.plot(thresholds, f1, label="F1")
+        plt.plot(thresholds, precision, label="Precision")
+        plt.plot(thresholds, recall, label="Recall")
+        plt.xlabel("Threshold")
+        plt.ylabel("Score")
+        plt.title(f"{graph_name} - Metrics vs Threshold")
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(plot_dir, f"{graph_name}_metrics.png"))
+        plt.close()
+
+        print(f"Saved plots for {graph_name}")
+
+def plot_auc_roc_info(best_thresh_dictionary, threshold_dir):
+    sorted_items = sorted(best_thresh_dictionary.items(), key=lambda x:x[1]["threshold"])
+
+    design_names = [item[0] for item in sorted_items]
+    roc_values = [item[1]["roc_auc"] for item in sorted_items]
+    plt.figure(figsize=(12,6))
+    plt.barh(design_names, roc_values)
+    plt.xlabel("ROC-AUC values")
+    plt.title("roc_auc by design (asc)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(threshold_dir, "roc_auc.png"))
+
+    
 if __name__ == "__main__":
-
-    model_dir = "models/wPartitions/fullgraph_per_design_ce_soft_500ep_for_aes_128_combined_m1+aes_inv_cipher_top_combined_m1+more"
-    model_path = os.path.join(model_dir, "model.pt")
-    metadata_path = os.path.join(model_dir, "metadata.json")
-    scaler_path = os.path.join(model_dir, "scaler.pkl")
 
     test_graphs = [
         "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml",
@@ -217,15 +261,22 @@ if __name__ == "__main__":
         "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/mips32r1_latest/gscl45nm/ALU_combined_m1.gml",
     ]
 
-    os.makedirs("thresholds", exist_ok=True)
-
-    # loading model and scaler to normalize
+    
+    # loading model and scaler 
+    model_dir = "models/woPartitions/fullgraph_per_design_ce_soft_500ep_for_aes_128_combined_m1+aes_inv_cipher_top_combined_m1+more"
+    model_path = os.path.join(model_dir, "model.pt")
+    metadata_path = os.path.join(model_dir, "metadata.json")
     model = load_model(model_path, metadata_path)
+    
+    scaler_path = os.path.join(model_dir, "scaler.pkl") # loading scaler to normalize the features
     scaler = joblib.load(scaler_path)
+
+
+
     all_best_thresholds = {}
     for gml_path in test_graphs:
         print("Processing:", gml_path)
-        data, _ = load_single_gml(gml_path,remove_edges=False, use_partition_features=True,  use_graph_features=False)
+        data, _ = load_single_gml(gml_path,remove_edges=False, use_partition_features=False,  use_graph_features=False)
         data.x = torch.tensor(scaler.transform(data.x.cpu().numpy()),dtype=torch.float32)
 
         probs, labels = get_probs(model, data)
@@ -233,7 +284,7 @@ if __name__ == "__main__":
         parts = os.path.splitext(gml_path)[0].split(os.sep)
         graph_name = "__".join(parts[-3:])  
 
-        # beest results
+        # beest results (at highest f1 score)
         best_result = max(results, key=lambda x: x["f1"])
         all_best_thresholds[graph_name] = {
             "gml_path": gml_path,
@@ -244,16 +295,50 @@ if __name__ == "__main__":
             "predicted_ratio": best_result["predicted_ratio"],
             "true_ratio": best_result["true_ratio"],
         }
-                
-        save_path = os.path.join("thresholds", f"{graph_name}.json")
+        threshold_dir ="thresholds/woPartitions"
+        plots_dir = "thresholds/woPartitions/plots"
+        best_threshold_dir = "thresholds/woPartitions/best"
+        os.makedirs(threshold_dir, exist_ok=True)
+        os.makedirs(plots_dir, exist_ok=True)
+        os.makedirs(best_threshold_dir, exist_ok=True)
+        save_path = os.path.join(threshold_dir, f"{graph_name}.json")
 
+        # saving all graph thresholds
         with open(save_path, "w") as f:
             json.dump(results, f, indent=2)
 
-        print("Saved:", save_path)
 
-    best_summary_path = os.path.join("thresholds", "best_thresholds_summary.json")
+        ###### 
+        # roc auc 
+        roc_auc, pr_auc = compute_auc_metrics(probs, labels)
+        all_best_thresholds[graph_name]["roc_auc"]= roc_auc
+        print("[RESULT] ROC_AUC:", roc_auc)
+        print("[RESULT] PR_AUC:", pr_auc)
+
+
+    # saving best restuls
+    best_summary_path = os.path.join(best_threshold_dir, "best_thresholds_summary.json")
     with open(best_summary_path, "w") as f:
         json.dump(all_best_thresholds, f, indent=2)
 
-    print("Saved global best-threshold summary:", best_summary_path)
+    # plot best threshold
+    ## sorting in ascending order 
+    sorted_items = sorted(all_best_thresholds.items(), key=lambda x:x[1]["threshold"])
+    design_names = [item[0] for item in sorted_items]
+    thresholds = [item[1]["threshold"] for item in sorted_items]
+    
+    plt.figure(figsize=(12,6))
+    plt.barh(design_names, thresholds)
+    plt.xlabel("Best Thresholds")
+    plt.title("Best thresholds by design (asc)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(threshold_dir, "best_threshold_graph.png"))
+
+
+    ### plotting 
+    plots(threshold_dir, plots_dir)
+
+    #### pltting auc_roc 
+    plot_auc_roc_info(all_best_thresholds, threshold_dir)
+    
+    print("Done")

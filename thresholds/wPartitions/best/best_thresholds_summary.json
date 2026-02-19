@@ -6,7 +6,8 @@
     "precision": 0.618666913491687,
     "recall": 0.8736112926414847,
     "predicted_ratio": 0.2832809473397857,
-    "true_ratio": 0.20061158872133383
+    "true_ratio": 0.20061158872133383,
+    "roc_auc": 0.9198707852700537
   },
   "aes_core__gscl45nm__aes_inv_cipher_top_combined_m1": {
     "gml_path": "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml",
@@ -15,7 +16,8 @@
     "precision": 0.7878411910669976,
     "recall": 0.4094132817537073,
     "predicted_ratio": 0.02602266490168857,
-    "true_ratio": 0.05007587253414264
+    "true_ratio": 0.05007587253414264,
+    "roc_auc": 0.9583997811959375
   },
   "aes_core__nangate__aes_key_expand_128_combined_m1": {
     "gml_path": "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_key_expand_128_combined_m1.gml",
@@ -24,7 +26,8 @@
     "precision": 0.7789855072463768,
     "recall": 0.8174904942965779,
     "predicted_ratio": 0.08712121212121213,
-    "true_ratio": 0.08301767676767677
+    "true_ratio": 0.08301767676767677,
+    "roc_auc": 0.9770292468079815
   },
   "sha1-master__osu035__sha1_core_combined_m1": {
     "gml_path": "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha1-master/osu035/sha1_core_combined_m1.gml",
@@ -33,7 +36,8 @@
     "precision": 0.9380378657487092,
     "recall": 0.9963436928702011,
     "predicted_ratio": 0.06712882726747545,
-    "true_ratio": 0.06320046216060081
+    "true_ratio": 0.06320046216060081,
+    "roc_auc": 0.9995792631287491
   },
   "des_latest__gscl45nm__des_combined_m1": {
     "gml_path": "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/des_latest/gscl45nm/des_combined_m1.gml",
@@ -42,7 +46,8 @@
     "precision": 0.7196969696969697,
     "recall": 0.8137044967880086,
     "predicted_ratio": 0.17397034596375618,
-    "true_ratio": 0.15387149917627677
+    "true_ratio": 0.15387149917627677,
+    "roc_auc": 0.9516341798581788
   },
   "aes-encryption_latest__osu035__aes_key_expand_128_combined_m1": {
     "gml_path": "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml",
@@ -51,7 +56,8 @@
     "precision": 0.4635036496350365,
     "recall": 0.815845824411135,
     "predicted_ratio": 0.10154416306361952,
-    "true_ratio": 0.057689932056825204
+    "true_ratio": 0.057689932056825204,
+    "roc_auc": 0.9606959146343518
   },
   "aes-encryption_latest__osu035__aes_cipher_top_combined_m1": {
     "gml_path": "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml",
@@ -60,7 +66,8 @@
     "precision": 0.7635410599883518,
     "recall": 0.8127712337259765,
     "predicted_ratio": 0.09123515502537262,
-    "true_ratio": 0.0857089720768352
+    "true_ratio": 0.0857089720768352,
+    "roc_auc": 0.9855134971214777
   },
   "trigonometric_functions_in_double_fpu_latest__gscl45nm__top_combined_m1": {
     "gml_path": "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml",
@@ -69,7 +76,8 @@
     "precision": 0.6573498964803313,
     "recall": 0.6225490196078431,
     "predicted_ratio": 0.07857491459248414,
-    "true_ratio": 0.08296730112249878
+    "true_ratio": 0.08296730112249878,
+    "roc_auc": 0.8909258505601992
   },
   "mips32r1_latest__gscl45nm__ALU_combined_m1": {
     "gml_path": "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/mips32r1_latest/gscl45nm/ALU_combined_m1.gml",
@@ -78,6 +86,7 @@
     "precision": 0.815702479338843,
     "recall": 0.8190871369294606,
     "predicted_ratio": 0.08392869529028231,
-    "true_ratio": 0.08358188249982659
+    "true_ratio": 0.08358188249982659,
+    "roc_auc": 0.9740774135923209
   }
 }
