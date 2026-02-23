@@ -11,7 +11,7 @@ from collections import defaultdict, Counter
 from torch_geometric.data import Data
 from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
-from gnn.gat import gat, GAT_E
+from gnn.gat import gat, MLP
 from gnn.graphTransformer import GraphTransformer 
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn.functional as F
@@ -26,9 +26,9 @@ import yaml
 from sklearn.preprocessing import StandardScaler
 import csv
 from functools import reduce
-import joblib
+from pathlib import Path
 
-
+from sklearn.ensemble import RandomForestClassifier
 import sys
 import os
 from datetime import datetime
@@ -68,7 +68,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "GAT_E"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -175,55 +175,30 @@ def normalize_features(features):
     features_tensor = torch.tensor(features, dtype=torch.float)
     return features_tensor
 
-
-
-from collections import deque
-
-##### [analysis block  ] #####
-# creating function to find - nearest boundary nodes: i.e.
-# eg how many steps / hops away is the nearest boudnary from a node
-# we can consider shortest path to reach = number of hops
-def multi_source_bfs(G, sources):
-    visited ={} # storing distances
-    queue = deque() # the nodes we still need to explore 
-
-    for s in sources:
-        visited[s] = 0 
-        queue.append(s)
-
-    while queue:
-        node = queue.popleft() # if starting from node C , we remvoe c
-        for nbr in G.neighbors(node):
-            if nbr not in visited:
-                visited[nbr] = visited[node] + 1
-                queue.append(nbr)
-        
-    return visited
-
-
+    
 #### merge_data
 def merge_data(gml_1, gml_2):
+    # note here we make offsets so we dont have overlapping edge indexes 
     offset = gml_1.num_nodes
+    gml_2_edgeIndex = gml_2.edge_index + offset
 
-    gml_2_edge_index = gml_2.edge_index + offset
-
+    # concat 
     x = torch.cat([gml_1.x, gml_2.x], dim=0)
-    edge_index = torch.cat([gml_1.edge_index, gml_2_edge_index], dim=1)
-    edge_attr = torch.cat([gml_1.edge_attr, gml_2.edge_attr], dim=0)
+    edge_index = torch.cat([gml_1.edge_index, gml_2_edgeIndex], dim=1)
     y = torch.cat([gml_1.y, gml_2.y], dim=0)
 
-    train_mask = torch.cat([gml_1.train_mask, gml_2.train_mask], dim=0)
-    val_mask   = torch.cat([gml_1.val_mask, gml_2.val_mask], dim=0)
-    test_mask  = torch.cat([gml_1.test_mask, gml_2.test_mask], dim=0)
+    train_mask = torch.cat([gml_1.train_mask, gml_2.train_mask], dim = 0)
+    val_mask = torch.cat([gml_1.val_mask, gml_2.val_mask], dim = 0)
+    test_mask = torch.cat([gml_1.test_mask, gml_2.test_mask], dim = 0)
 
+    # data obj
     merged_data = Data(
-        x=x,
+        x = x, 
         edge_index=edge_index,
-        edge_attr=edge_attr,
-        y=y,
-        train_mask=train_mask,
-        val_mask=val_mask,
-        test_mask=test_mask
+        y = y, 
+        train_mask = train_mask, 
+        val_mask = val_mask, 
+        test_mask = test_mask
     )
 
     return merged_data
@@ -310,21 +285,6 @@ def load_single_gml(gml_path, remove_edges = False):
     edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous() 
 
-    # ---- EDGE FEATURES ----
-    edge_attrs = []
-    for src, dst in G.edges():
-        attr = G[src][dst]
-        e_feat = attr.get("edge_features", [0.0, 0.0, 0.0, 0.0])
-        if not isinstance(e_feat, (list, tuple, np.ndarray)):
-            raise ValueError(f"Edge ({src},{dst}) has invalid edge_features")
-        edge_attrs.append(e_feat)
-
-    edge_attr = torch.tensor(edge_attrs, dtype=torch.float32)
-    print("\n[DEBUG] FIRST EDGE TENSOR VERSION")
-    print("edge_attr[0]:", edge_attr[0])
-    print("edge_attr shape:", edge_attr.shape)
-    print("=================================\n")
-
     # splits --- train / test / val s
     num_nodes = len(nodes)
     indices = list(range(num_nodes))
@@ -375,22 +335,13 @@ def load_single_gml(gml_path, remove_edges = False):
     # )
 
     features = torch.as_tensor(np.array(features, dtype=np.float32), dtype=torch.float32)
-    # data = Data(
-    #     x = features,
-    #     edge_index = edge_index,
-    #     y = labels,
-    #     train_mask = train_mask,
-    #     val_mask = val_mask,
-    #     test_mask = test_mask
-    # )
     data = Data(
-        x=features,
-        edge_index=edge_index,
-        edge_attr=edge_attr,   # NEW
-        y=labels,
-        train_mask=train_mask,
-        val_mask=val_mask,
-        test_mask=test_mask
+        x = features,
+        edge_index = edge_index,
+        y = labels,
+        train_mask = train_mask,
+        val_mask = val_mask,
+        test_mask = test_mask
     )
 
     print("[FEATURE DIM CHECK]")
@@ -403,21 +354,6 @@ def load_single_gml(gml_path, remove_edges = False):
         print("  after graph features       :", after_graph_dim)
 
     print("  final feature dim (tensor) :", data.x.shape[1])
-
-    print("edge_index shape:", data.edge_index.shape)
-    print("edge_attr  shape:", data.edge_attr.shape)
-
-    assert data.edge_index.shape[1] == data.edge_attr.shape[0], \
-        f"Mismatch: {data.edge_index.shape[1]} edges but {data.edge_attr.shape[0]} edge features"
-
-    assert data.edge_index.max().item() < data.num_nodes, \
-        "Edge index contains node id >= num_nodes"
-
-    assert data.edge_index.min().item() >= 0, \
-        "Edge index contains negative node ids"
-
-    print("[EDGE CHECK] Passed ✔")
-
     return data, id2label
 
 def focal_loss(logits, targets, gamma=2.0, alpha = 0.25):
@@ -433,7 +369,7 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
     per_graph_losses = []
 
     for g in graphs:
-        out = model(g.x, g.edge_index, g.edge_attr)
+        out = model(g.x, g.edge_index)
 
         if args.loss_type == "focal":
             loss_per_node = focal_loss(out, g.y)
@@ -469,7 +405,7 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
     model.train()
     optimizer.zero_grad()
 
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
 
     if args.loss_type == "focal":
         loss_per_node = focal_loss(out, data.y)
@@ -524,7 +460,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
         # d) batch.y = node labels
         optimizer.zero_grad()
 
-        out = model(batch.x, batch.edge_index, batch.edge_attr) # here the out.shape = [Num_nodes_in_batch, num_classes]
+        out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
 
         # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
         # loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
@@ -593,80 +529,12 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
     return average_loss, epoch_nodes
 
 
-@torch.no_grad()
-def save_boundary_coverage_gml(original_gml_path, data, model, output_gml_path, threshold=0.5):
-    model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
-    probs_tensor = torch.softmax(out, dim=1)
 
-    probs = probs_tensor[:, 1].cpu().numpy()
-    preds = (probs >= threshold).astype(int)
-    y_true = data.y.cpu().numpy()
-
-    pred_boundary_set = set(np.where(preds == 1)[0].tolist())
-
-    # load original gml
-    G = nx.read_gml(original_gml_path, label="id")
-
-    # build nx graph in pyg index space
-    H = nx.Graph()
-    edge_index = data.edge_index.cpu().numpy()
-    H.add_nodes_from(range(data.num_nodes))
-    H.add_edges_from(list(zip(edge_index[0], edge_index[1])))
-
-    # distance from predicted boundaries
-    dist_to_pred = multi_source_bfs(H, list(pred_boundary_set))
-
-    # coverage labels
-    coverage_0 = {}
-    coverage_1 = {}
-    coverage_2 = {}
-
-    for i in range(data.num_nodes):
-        d = dist_to_pred.get(i, float("inf"))
-        coverage_0[i] = int(d <= 0)
-        coverage_1[i] = int(d <= 1)
-        coverage_2[i] = int(d <= 2)
-
-    # map GML node ids -> PyG indices
-    node_map = {node: idx for idx, node in enumerate(G.nodes())}
-
-    for node in G.nodes():
-        idx = node_map[node]
-
-        true_val = int(y_true[idx])
-        pred_val = int(preds[idx])
-
-        correct = int(true_val == pred_val)
-
-        # classification type
-        if true_val == 1 and pred_val == 1:
-            error_type = "TP"
-        elif true_val == 0 and pred_val == 0:
-            error_type = "TN"
-        elif true_val == 0 and pred_val == 1:
-            error_type = "FP"
-        else:
-            error_type = "FN"
-
-        G.nodes[node]["true_label"] = true_val
-        G.nodes[node]["pred_label"] = pred_val
-        G.nodes[node]["pred_prob"] = float(probs[idx])
-
-        G.nodes[node]["correct"] = correct
-        G.nodes[node]["error_type"] = error_type
-
-        G.nodes[node]["boundary_coverage_0hop"] = coverage_0.get(idx, 0)
-        G.nodes[node]["boundary_coverage_1hop"] = coverage_1.get(idx, 0)
-        G.nodes[node]["boundary_coverage_2hop"] = coverage_2.get(idx, 0)
-
-    nx.write_gml(G, output_gml_path)
-    print(f"[INFO] Saved enriched boundary coverage GML to: {output_gml_path}")
 
 @torch.no_grad()
 def evaluate_train_acc(model, data, mask):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     if args.decision_threshold is not None:
         probs = torch.softmax(out, dim=1)
         pred = (probs[:, 1] >= args.decision_threshold).long()
@@ -684,7 +552,7 @@ def evaluate_train_acc(model, data, mask):
 @torch.no_grad()
 def evaluate_train_fpr(data, model, mask):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
 
     # another moving part: ???
     # pred = out.argmax(dim=1) 
@@ -714,7 +582,7 @@ def evaluate_train_fpr(data, model, mask):
 @torch.no_grad()
 def eval_class_acc(data, model, mask, id2name=None):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     # pred = out.argmax(dim=1)
     if args.decision_threshold is not None:
         probs = torch.softmax(out, dim=1)
@@ -740,6 +608,29 @@ def eval_class_acc(data, model, mask, id2name=None):
         acc_per_class[label_name] = acc
 
     return acc_per_class
+
+from collections import deque
+
+##### [analysis block  ] #####
+# creating function to find - nearest boundary nodes: i.e.
+# eg how many steps / hops away is the nearest boudnary from a node
+# we can consider shortest path to reach = number of hops
+def multi_source_bfs(G, sources):
+    visited ={} # storing distances
+    queue = deque() # the nodes we still need to explore 
+
+    for s in sources:
+        visited[s] = 0 
+        queue.append(s)
+
+    while queue:
+        node = queue.popleft() # if starting from node C , we remvoe c
+        for nbr in G.neighbors(node):
+            if nbr not in visited:
+                visited[nbr] = visited[node] + 1
+                queue.append(nbr)
+        
+    return visited
 
 
 def compute_region_iou(G, true_boundary_set, pred_boundary_set, k_hop):
@@ -767,7 +658,7 @@ def compute_region_iou(G, true_boundary_set, pred_boundary_set, k_hop):
 @torch.no_grad()
 def evaluate_test(data, model):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     
     # another moving part: ???
     # pred = out.argmax(dim=1) 
@@ -812,7 +703,7 @@ def evaluate_test(data, model):
 @torch.no_grad()
 def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, prob_mass=0.5):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy() # callingsoftmax predictions
 
     # labels
@@ -912,7 +803,7 @@ def predict_with_threshold(out, threshold):
 @torch.no_grad()
 def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     # loss = F.cross_entropy(out, data.y, reduction="mean")
     # loss = focal_loss(out, data.y, gamma=2.0).mean()
     if args.loss_type == "focal":
@@ -942,7 +833,7 @@ def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
 @torch.no_grad()
 def compute_density_stats(model, data):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
     y_true = data.y.cpu().numpy()
     
@@ -960,7 +851,7 @@ def compute_density_stats(model, data):
 @torch.no_grad()
 def get_probs_and_labels(model, data):
     model.eval()
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
     labels = data.y.cpu().numpy()
     return probs, labels
@@ -997,15 +888,15 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim) 
         # model = torch.compile(model) # ???
         print("[INFO] using gat model")
-    elif model_name == "GAT_E":
-        model = GAT_E(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, edge_dim = 4)
-        print("[INFO] using GAT_E model")
     elif model_name == "gcn":
         model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using GCN model")
     elif model_name == "graphTransformer":
         model = GraphTransformer(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using GraphTransformer model")
+    elif model_name =="mlp":
+        model = MLP(in_dim, 256, out_dim)
+        print("[INFO] using MLP model")
 
 
     ##### training parameters 
@@ -1060,7 +951,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         class_weights = torch.tensor(weights, dtype=torch.float)
 
         # soften (same as before)
-        alpha = 0.7
+        alpha = 0.8
         soft_weights = weights ** alpha
         soft_weights = soft_weights / np.mean(soft_weights)
         soft_class_weights = torch.tensor(soft_weights, dtype=torch.float)
@@ -1306,35 +1197,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     os.makedirs(run_dir, exist_ok=True)
     model_path = f"{run_dir}/model.pt"
     torch.save(model.state_dict(), model_path)
-
-    #### 
-    print("\n[VERIFY] Reloading model for sanity check...")
-    if args.model == "graphsage":
-        model_reloaded = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-    elif args.model == "gat":
-        model_reloaded = gat(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-    elif args.model == "GAT_E":
-        model_reloaded = GAT_E(in_channels=in_dim, hidden_channels=256, out_channels=out_dim, edge_dim=4)
-    elif args.model == "gcn":
-        model_reloaded = GCN(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-    elif args.model == "graphTransformer":
-        model_reloaded = GraphTransformer(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-
-    # Load weights
-    model_reloaded.load_state_dict(torch.load(model_path))
-    model_reloaded.eval()
-
-    print("[VERIFY] Model reloaded successfully.")
-
-    if len(test_graphs) > 0:
-        test_path, test_graph = test_graphs[0]
-        original_metrics = evaluate_test(test_graph, model)
-        reloaded_metrics = evaluate_test(test_graph, model_reloaded)
-
-        print("[VERIFY] Original F1:", original_metrics["f1"])
-        print("[VERIFY] Reloaded F1:", reloaded_metrics["f1"])
-    ####
-    
     print("[INFO] Saved model to:", model_path)
 
     # saving some meta data for logging
@@ -1349,33 +1211,11 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         "epochs": args.epochs,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
-    metadata.update({
-        "final_feature_dim": train_data.num_features,
-        "use_partition_features": args.use_partition_features,
-        "use_graph_features": args.use_graph_features,
-        "edge_dim": train_data.edge_attr.shape[1] if train_data.edge_attr is not None else None
-    })
-
-    # saving scaler
-    scaler_path = f"{run_dir}/scaler.pkl"
-    joblib.dump(scaler, scaler_path)
-    print("[INFO] Saved scaler to:", scaler_path)
-    metadata["scaler_file"] = scaler_path
-    if class_weights is not None:
-        metadata["class_weights"] = class_weights.tolist()
-
-    if soft_class_weights is not None:
-        metadata["soft_class_weights"] = soft_class_weights.tolist()
-
     json_path = f"{run_dir}/metadata.json"
     with open(json_path, "w") as f:
         json.dump(metadata, f, indent=4)
 
     print("[INFO] Saved metadata to:", json_path)
-
-
-
-
 
     return model
 
@@ -1462,8 +1302,6 @@ if __name__ == "__main__":
         scaler.fit_transform(combined_data.x.cpu().numpy()),
         dtype=torch.float32
     )
-
-
     for g in train_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
     # we use the train sclaer to transform val and test
@@ -1546,6 +1384,37 @@ if __name__ == "__main__":
     #     val_graphs=val_graphs,
     #     test_graphs=test_graphs,
     # )
+
+    #### implementing random forest
+    print("[INFO] Running Random Forest baseline:::::")
+    X_train = []
+    y_train = []
+
+    for g in train_graphs:
+        X_train.append(g.x.cpu().numpy())
+        y_train.append(g.y.cpu().numpy())
+
+    X_train = np.vstack(X_train)
+    y_train = np.concatenate(y_train)
+
+    rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight="balanced", n_jobs=20, random_state=42)
+    rf.fit(X_train, y_train)
+    print("[INFO] RF training complete.")
+
+    for path, g in val_graphs:
+        p = Path(path)
+        name = "/".join(p.parts[-3:])
+        X_val = g.x.cpu().numpy()
+        y_val = g.y.cpu().numpy()
+
+        y_pred = rf.predict(X_val)
+
+        f1 = f1_score(y_val, y_pred, zero_division=0)
+        precision = precision_score(y_val, y_pred, zero_division=0)
+        recall = recall_score(y_val, y_pred, zero_division=0)
+        print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}")
+        
+
     model = run_training(
         train_graphs=train_graphs,
         train_data=combined_data,
@@ -1586,23 +1455,13 @@ if __name__ == "__main__":
 
     test_metrics = defaultdict(list)
 
-    # saving the results in gml 
-    base_output_dir = os.path.join("results", wandb.run.name)
-    predictions_dir = os.path.join(base_output_dir, "predictions")
-    coverage_dir = os.path.join(base_output_dir, "coverage")
-    os.makedirs(predictions_dir, exist_ok=True)
-    os.makedirs(coverage_dir, exist_ok=True)
-
-
-    args.decision_threshold = None
-    region_summary = {}
     for path, g in test_graphs:
         # n = evaluate_test(g, model)
         # name = os.path.splitext(os.path.basename(path))[0]
 
         name = os.path.splitext(os.path.basename(path))[0]
-        # t = design_thresholds.get(name, 0.5)
-        # args.decision_threshold = t
+        t = design_thresholds.get(name, 0.5)
+        args.decision_threshold = t
         n = evaluate_test(g, model)
 
         # print(
@@ -1611,7 +1470,7 @@ if __name__ == "__main__":
         #     f"Acc={n['total_acc']:.4f}, b1={n['boundary_1_acc']:.4f}, b0={n['boundary_0_acc']:.4f}"
         # )
         print(
-            f"[TEST] {name} | "
+            f"[TEST] {name} (t={t:.3f}) | "
             f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
             f"Acc={n['total_acc']:.4f}"
         )
@@ -1629,8 +1488,6 @@ if __name__ == "__main__":
         })
 
         region_metrics = evaluate_region_metrics(g, model, k_percent=2.0, r=2)
-        region_summary[name] = region_metrics
-        
         if region_metrics:
             print(
                 f"[REGION] {name} | "
@@ -1647,10 +1504,6 @@ if __name__ == "__main__":
             )
         else:
             print(f"[REGION] {name} | skipped (no boundary nodes)")
-        
-    region_summary_path = os.path.join(base_output_dir, "region_summary.json")
-    with open(region_summary_path, "w") as f:
-        json.dump(region_summary, f, indent=2)
 
 
     test_macro = {k: float(np.mean(v)) for k, v in test_metrics.items()} if len(test_graphs) else {}
@@ -1673,13 +1526,16 @@ if __name__ == "__main__":
         "test_macro/not_boundary_acc": test_macro.get("boundary_0_acc", 0.0),
     })
 
+    # saving the results in gml 
+    output_dir = "results/aes_to_testml"
+    os.makedirs(output_dir, exist_ok=True)
 
     output_labels = {0: "not_boundary", 1: "boundary"}
     print("[INFO] Output Labels:", output_labels)
 
     for path, g in test_graphs:
         test_graph_name = os.path.splitext(os.path.basename(path))[0]
-        output_path = os.path.join(predictions_dir, f"{test_graph_name}_predictions.gml")
+        output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
         print("[INFO] Saving predictions to:", output_path)
 
         save_predictions_to_gml(
@@ -1688,16 +1544,4 @@ if __name__ == "__main__":
             model=model,
             id2name=output_labels,
             output_gml_path=output_path
-        )
-
-        coverage_output_path = os.path.join(
-            coverage_dir,
-            f"{test_graph_name}_boundary_analysis.gml"
-        )
-
-        save_boundary_coverage_gml(
-            original_gml_path=path,
-            data=g,
-            model=model,
-            output_gml_path=coverage_output_path
         )

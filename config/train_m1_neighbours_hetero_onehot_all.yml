@@ -382,6 +382,20 @@ test_gml:
 
 
 
+# epochs: 500
+# # walk_length: 20
+# # perc_batchsize: 0.01
+# set_gradient_clipping: true
+# normalize_class_weights: true
+# reduction_method_cel: "mean"
+# lr: 0.003
+# loss_type : "ce_soft" #ce_weighted
+# sample_coverage : 50
+# training_mode: "fullgraph"
+# fullgraph_mode: "per_design"
+# use_partition_features: true
+# use_graph_features: true
+
 epochs: 500
 # walk_length: 20
 # perc_batchsize: 0.01
@@ -393,5 +407,5 @@ loss_type : "ce_soft" #ce_weighted
 sample_coverage : 50
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
-use_partition_features: true
-use_graph_features: true
+# use_partition_features: true
+# use_graph_features: true

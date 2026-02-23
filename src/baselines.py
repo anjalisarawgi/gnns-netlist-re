@@ -134,7 +134,7 @@ def logistic_regression_baseline(X_train, y_train, X_test, y_test):
 
 
 def random_forest_baseline(X_train, y_train, X_test, y_test):
-    clf = RandomForestClassifier(n_estimators=500, class_weight="balanced", random_state=42, n_jobs=-1)
+    clf = RandomForestClassifier(n_estimators=100, class_weight="balanced", random_state=42, n_jobs=-1)
     clf.fit(X_train, y_train)
 
     preds = clf.predict(X_test)
@@ -152,7 +152,7 @@ def random_forest_baseline(X_train, y_train, X_test, y_test):
         "recall": recall_score(y_test, preds, zero_division=0),
         "roc_auc": roc_auc,
     }
-    
+
 
 def xgboost_baseline(X_train, y_train, X_test, y_test, seed=42):
     if not _HAS_XGB:
@@ -247,6 +247,8 @@ def main():
                         help="Run only heuristic baselines (no training data needed)")
     parser.add_argument("--use_partition_features", action="store_true",
                         help="Include partition features (same flag as your main.py)")
+    parser.add_argument("--shuffle_labels", action="store_true",
+                    help="Shuffle training labels for sanity check")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -288,6 +290,9 @@ def main():
         methods = ["Random", "Degree", "InDegree"]
         print("[INFO] Mode: Heuristics only")
         X_train_scaled, y_train_all, scaler = None, None, None
+        if args.shuffle_labels:
+            print("[SANITY CHECK] Shuffling training labels...")
+            y_train_all = np.random.permutation(y_train_all)
     else:
         methods = ["Random", "Degree", "InDegree", "LogReg", "RandomForest", "XGBoost"]
         print(f"[INFO] Mode: All baselines | Training designs: {len(train_gmls)}")
@@ -307,6 +312,9 @@ def main():
 
         X_train_all = np.vstack(X_trains)
         y_train_all = np.concatenate(y_trains)
+        if args.shuffle_labels:
+            print("[SANITY CHECK] Shuffling training labels for ML baselines...")
+            y_train_all = np.random.permutation(y_train_all)
         print(f"\n[INFO] Total training nodes   : {len(y_train_all)}")
         print(f"[INFO] Training boundary ratio : {(y_train_all==1).mean():.4f}")
 

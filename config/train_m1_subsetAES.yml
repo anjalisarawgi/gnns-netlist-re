@@ -1,0 +1,97 @@
+sampling_method: graphsaint_rw
+model: gat
+
+
+train_gml:
+#  - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_sbox_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_sbox_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_inv_sbox_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_sbox_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/osu035/aes_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/osu035/aes_inv_sbox_combined_m1.gml"
+
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/osu035/aes_key_expand_128_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/gscl45nm/aes_rcon_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/gscl45nm/aes_sbox_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/gscl45nm/gcm_aes_v0_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/nangate/aes_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/nangate/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/nangate/aes_rcon_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/nangate/aes_sbox_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/osu035/aes_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/osu035/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/osu035/aes_rcon_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/osu035/aes_sbox_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gcm-aes_latest/osu035/gcm_aes_v0_combined_m1.gml"
+
+ - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-master/gscl45nm/aes_core_combined_m1.gml"
+ - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
+ -  "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-master/osu035/aes_core_combined_m1.gml"
+ - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-master/osu035/aes_decipher_block_combined_m1.gml"
+
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/gscl45nm/aes_sbox_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/nangate/aes_cipher_top_combined_m1.gml"
+ - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/nangate/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/nangate/aes_sbox_combined_m1.gml"
+#  - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml"
+#  - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_sbox_combined_m1.gml"
+
+ - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/apbtoaes128_latest/nangate/aes_core_combined_m1.gml"
+ - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/apbtoaes128_latest/gscl45nm/aes_core_combined_m1.gml"
+ - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/apbtoaes128_latest/osu035/aes_core_combined_m1.gml"
+
+
+
+val_gml: 
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml" # a fully new design generalization
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml" # aes_core cross lib
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_key_expand_128_combined_m1.gml" # aes_core cross lib
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha1-master/osu035/sha1_core_combined_m1.gml" # sha1 core
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/des_latest/gscl45nm/des_combined_m1.gml" # des - cross library gen
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml" # aes-encryption - never trained
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml" # aes-encryption - never trained
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml" # completely new design - also non crypto 
+- "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/mips32r1_latest/gscl45nm/ALU_combined_m1.gml" # completely new design - also non crypto 
+
+
+
+test_gml: 
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml" # a fully new design generalization
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml" # aes_core cross lib
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_key_expand_128_combined_m1.gml" # aes_core cross lib
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha1-master/osu035/sha1_core_combined_m1.gml" # sha1 core
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/des_latest/gscl45nm/des_combined_m1.gml" # des - cross library gen
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml" # aes-encryption - never trained
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml" # aes-encryption - never trained
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml" # completely new design - also non crypto 
+- "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/mips32r1_latest/gscl45nm/ALU_combined_m1.gml" # completely new design - also non crypto 
+
+
+
+epochs: 200
+# walk_length: 20
+# perc_batchsize: 0.01
+set_gradient_clipping: true
+normalize_class_weights: true
+reduction_method_cel: "mean"
+lr: 0.003
+loss_type : "ce_soft" #ce_weighted
+sample_coverage : 50
+training_mode: "fullgraph"
+fullgraph_mode: "per_design"
+# use_partition_features: true
+# use_graph_features: trues
