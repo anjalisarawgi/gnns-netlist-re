@@ -1,10 +1,13 @@
 {
-  "aes_128_combined_m1": 0.01,
-  "aes_inv_cipher_top_combined_m1": 0.9,
-  "aes_key_expand_128_combined_m1": 0.5700000000000001,
-  "sha1_core_combined_m1": 0.9600000000000001,
-  "des_combined_m1": 0.23,
-  "aes_cipher_top_combined_m1": 0.62,
-  "top_combined_m1": 0.9,
-  "ALU_combined_m1": 0.06999999999999999
+  "aes_128_combined_m1": 0.02,
+  "aes_inv_cipher_top_combined_m1": 0.79,
+  "aes_key_expand_128_combined_m1": 0.64,
+  "sha1_core_combined_m1": 0.9400000000000001,
+  "sha256_core_combined_m1": 0.5800000000000001,
+  "des_combined_m1": 0.91,
+  "aes_cipher_top_combined_m1": 0.8400000000000001,
+  "top_combined_m1": 0.09,
+  "ALU_combined_m1": 0.74,
+  "gost89_ecb_decrypt_combined_m1": 0.8,
+  "gost89_pipelined_ecb_encrypt_combined_m1": 0.75
 }

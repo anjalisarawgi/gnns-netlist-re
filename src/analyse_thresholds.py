@@ -6,18 +6,47 @@ import json
 import os
 from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score, average_precision_score
 from torch_geometric.data import Data
-from gnn.gat import gat
 from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.graphTransformer import GraphTransformer
 from collections import Counter
 import random
 import matplotlib.pyplot as plt
+import torch.nn.functional as F 
+from torch_geometric.nn import GATConv
+import torch.nn as nn
+
+class gat(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels):
+        super().__init__()
+        self.conv1 = GATConv(in_channels, hidden_channels)
+        self.conv2 = GATConv(hidden_channels, hidden_channels)
+        self.conv3 = GATConv(hidden_channels, hidden_channels)
+        self.conv4 = GATConv(hidden_channels, out_channels)
+
+    def forward(self, x, edge_index):
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
+
+        x = self.conv2(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
+
+        x = self.conv3(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
+
+        x = self.conv4(x, edge_index)
+        return x #F.log_softmax(x, dim=1)
+
+
+
 
 def load_single_gml( gml_path,remove_edges=False,use_partition_features=False,use_graph_features=False):
     print("[INFO] Calling gml from path:", gml_path)
     
-    G = nx.read_gml(gml_path, label = "id") 
+    G = nx.read_gml(gml_path) 
     nodes = list(G.nodes()) # list of node ids
 
     features = []
@@ -80,21 +109,7 @@ def load_single_gml( gml_path,remove_edges=False,use_partition_features=False,us
     edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous() 
 
-    # edge features
-    edge_attrs = []
-    for src, dst in G.edges():
-        attr = G[src][dst]
-        e_feat = attr.get("edge_features", [0.0, 0.0, 0.0, 0.0])
-        if not isinstance(e_feat, (list, tuple, np.ndarray)):
-            raise ValueError(f"Edge ({src},{dst}) has invalid edge_features")
-        edge_attrs.append(e_feat)
-
-    edge_attr = torch.tensor(edge_attrs, dtype=torch.float32)
-    # print("\n[DEBUG] FIRST EDGE TENSOR VERSION")
-    # print("edge_attr[0]:", edge_attr[0])
-    # print("edge_attr shape:", edge_attr.shape)
-    # print("=================================\n")
-
+   
     # splits --- train / test / val s
     num_nodes = len(nodes)
     indices = list(range(num_nodes))
@@ -129,7 +144,6 @@ def load_single_gml( gml_path,remove_edges=False,use_partition_features=False,us
     data = Data(
         x=features,
         edge_index=edge_index,
-        edge_attr=edge_attr,  
         y=labels,
         train_mask=train_mask,
         val_mask=val_mask,
@@ -153,7 +167,7 @@ def load_model(model_path, metadata_path):
 # function for getting the probability
 @torch.no_grad()
 def get_probs(model, data):
-    out = model(data.x, data.edge_index, data.edge_attr)
+    out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
     labels = data.y.cpu().numpy()
     return probs, labels
@@ -186,10 +200,20 @@ def sweep_thresholds(probs, labels):
     return results
 
 def compute_auc_metrics(probs, labels):
-    roc_auc = roc_auc_score(labels, probs)
-    pr_auc = average_precision_score(labels, probs)
-    return float(roc_auc), float(pr_auc)
-        
+    labels = np.asarray(labels).astype(int)
+    probs = np.asarray(probs).astype(float)
+
+    # If only one class exists, ROC-AUC is undefined
+    if labels.min() == labels.max():
+        roc_auc = float("nan")
+        # PR-AUC baseline is still interpretable, but AP may also be weird; sklearn returns a value.
+        pr_auc = float(average_precision_score(labels, probs))
+        return roc_auc, pr_auc
+
+    roc_auc = float(roc_auc_score(labels, probs))
+    pr_auc  = float(average_precision_score(labels, probs))
+    return roc_auc, pr_auc
+
 def plots(threshold_dir, plot_dir):
     json_files = [f for f in os.listdir(threshold_dir) if f.endswith(".json")]
 
@@ -245,6 +269,19 @@ def plot_auc_roc_info(best_thresh_dictionary, threshold_dir):
     plt.title("roc_auc by design (asc)")
     plt.tight_layout()
     plt.savefig(os.path.join(threshold_dir, "roc_auc.png"))
+
+def plot_pr_auc_info(best_thresh_dictionary, threshold_dir):
+    sorted_items = sorted(best_thresh_dictionary.items(), key=lambda x: x[1].get("pr_auc", float("nan")))
+
+    design_names = [item[0] for item in sorted_items]
+    pr_values = [item[1].get("pr_auc", float("nan")) for item in sorted_items]
+
+    plt.figure(figsize=(12,6))
+    plt.barh(design_names, pr_values)
+    plt.xlabel("PR-AUC values")
+    plt.title("pr_auc by design (asc)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(threshold_dir, "pr_auc.png"))
 
     
 if __name__ == "__main__":
@@ -312,6 +349,7 @@ if __name__ == "__main__":
         # roc auc 
         roc_auc, pr_auc = compute_auc_metrics(probs, labels)
         all_best_thresholds[graph_name]["roc_auc"]= roc_auc
+        all_best_thresholds[graph_name]["pr_auc"]  = pr_auc
         print("[RESULT] ROC_AUC:", roc_auc)
         print("[RESULT] PR_AUC:", pr_auc)
 
@@ -340,5 +378,6 @@ if __name__ == "__main__":
 
     #### pltting auc_roc 
     plot_auc_roc_info(all_best_thresholds, threshold_dir)
+    plot_pr_auc_info(all_best_thresholds, threshold_dir)
     
     print("Done")

@@ -11,7 +11,7 @@ from collections import defaultdict, Counter
 from torch_geometric.data import Data
 from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
-from gnn.gat import gat, MLP
+from gnn.gat import gat, MLP, gatv2
 from gnn.graphTransformer import GraphTransformer 
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn.functional as F
@@ -27,7 +27,7 @@ from sklearn.preprocessing import StandardScaler
 import csv
 from functools import reduce
 from pathlib import Path
-
+from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.ensemble import RandomForestClassifier
 import sys
 import os
@@ -58,11 +58,11 @@ sys.stderr = Tee(sys.__stderr__, log_file)
 
 
 # could increase to 24 -- 
-torch.set_num_threads(20)        # for math mult (pytorch)    
+torch.set_num_threads(10)        # for math mult (pytorch)    
 torch.set_num_interop_threads(2)     # pytorch - helper threads
-os.environ["OMP_NUM_THREADS"] = "20" # max 20 cores (pytorch)
-os.environ["MKL_NUM_THREADS"] = "20" # max 20 cores (intel math libr)
-os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
+os.environ["OMP_NUM_THREADS"] = "10" # max 20 cores (pytorch)
+os.environ["MKL_NUM_THREADS"] = "10" # max 20 cores (intel math libr)
+os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 # --- optimization - 
 
 parser = argparse.ArgumentParser()
@@ -107,6 +107,10 @@ parser.add_argument(
     default="merged",
     help="How to train in fullgraph mode"
 )
+## test block
+parser.add_argument("--use_lib_id", action="store_true", help="append library one-hot to node features")
+parser.add_argument("--use_design_id", action="store_true", help="append design one-hot to node features (leaky if testing unseen designs!)")
+##### test block end
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -160,6 +164,27 @@ wandb.config.update({"loss_type": args.loss_type})
 set_seed(42)
 
 
+##### test block for graph encoding:
+from pathlib import Path
+
+def parse_lib_design(gml_path: str):
+    p = Path(gml_path)
+    design_family = p.parts[-3]
+    lib = p.parts[-2]
+    return design_family, lib
+
+train_families, train_libs = [], []
+for p in args.train_gml:
+    fam, lib = parse_lib_design(p)
+    train_families.append(fam)
+    train_libs.append(lib)
+
+family2id = {f: i for i, f in enumerate(sorted(set(train_families)))}
+lib2id    = {l: i for i, l in enumerate(sorted(set(train_libs)))}
+
+print("[DOMAIN] lib2id:", lib2id)
+print("[DOMAIN] family2id size:", len(family2id))
+##########
 ############################################################
 
 ################
@@ -175,7 +200,13 @@ def normalize_features(features):
     features_tensor = torch.tensor(features, dtype=torch.float)
     return features_tensor
 
-    
+def pr_auc_from_probs(y_true, y_prob):
+    y_true = np.asarray(y_true).astype(int)
+    y_prob = np.asarray(y_prob).astype(float)
+    if y_true.min() == y_true.max():
+        return float("nan")
+    return float(average_precision_score(y_true, y_prob))
+
 #### merge_data
 def merge_data(gml_1, gml_2):
     # note here we make offsets so we dont have overlapping edge indexes 
@@ -212,7 +243,7 @@ def merge_data(gml_1, gml_2):
 def load_single_gml(gml_path, remove_edges = False):
     print("[INFO] Calling gml from path:", gml_path)
     
-    G = nx.read_gml(gml_path, label = "id") 
+    G = nx.read_gml(gml_path) 
     nodes = list(G.nodes()) # list of node ids
 
     features = []
@@ -224,6 +255,9 @@ def load_single_gml(gml_path, remove_edges = False):
     for node in nodes:
         attr = G.nodes[node] # attr?
         feat = attr.get("features", [])
+        feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio 
+        # feat = feat[28:31] #### indeg, outdeg, fanin
+        # feat = feat[0:28] ####  (14ohe) + (14ohe) 
         if base_feat_dim is None:
             base_feat_dim = len(feat)
 
@@ -248,6 +282,24 @@ def load_single_gml(gml_path, remove_edges = False):
         # features.append(feat[:-1])
         # feat = feat[:15] + feat[16:] # skip feature at index 15
         # feat = feat[:-3] # skip last 3 features
+
+        #### text block
+        fam, lib = parse_lib_design(gml_path)
+
+        if args.use_lib_id:
+            lib_oh = np.zeros(len(lib2id), dtype=np.float32)
+            if lib in lib2id:
+                lib_oh[lib2id[lib]] = 1.0
+            feat = list(feat) + lib_oh.tolist()
+
+        if args.use_design_id:
+            # I’d recommend using design_family here, NOT instance, to reduce leakage.
+            fam_oh = np.zeros(len(family2id) + 1, dtype=np.float32)  # +1 unknown
+            idx = family2id.get(fam, len(family2id))
+            fam_oh[idx] = 1.0
+            feat = list(feat) + fam_oh.tolist()
+        #### text block end
+
         features.append(feat)
     
         boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
@@ -897,6 +949,9 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name =="mlp":
         model = MLP(in_dim, 256, out_dim)
         print("[INFO] using MLP model")
+    elif model_name =="gatv2":
+        model = gatv2(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using gatv2")
 
 
     ##### training parameters 
@@ -1101,6 +1156,10 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
             val_losses = []
             for path, g in val_graphs:
                 m = evaluate_test(g, model)
+                probs, labels = get_probs_and_labels(model, g)   # probs = P(y=1)
+                pr_auc = pr_auc_from_probs(labels, probs)
+                val_metrics["pr_auc"].append(pr_auc)
+                
                 val_loss = evaluate_loss(g, model, class_weights, soft_class_weights)
                 name = os.path.splitext(os.path.basename(path))[0]
 
@@ -1108,6 +1167,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                     f"[VAL][Epoch {epoch:03d}] {name} | "
                     f"Val Loss={val_loss:.4f}, "
                     f"F1={m['f1']:.4f}, P={m['precision']:.4f}, R={m['recall']:.4f}, "
+                    f"PR-AUC={pr_auc:.4f}, "
                     f"Acc={m['total_acc']:.4f}, b1={m['boundary_1_acc']:.4f}, b0={m['boundary_0_acc']:.4f}"
                 )
 
@@ -1119,6 +1179,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 wandb.log({
                     "epoch": epoch,
                     f"val_pgraph/{name}/f1": m["f1"],
+                    f"val_pgraph/{name}/pr_auc": pr_auc,
                     f"val_pgraph/{name}/loss": val_loss,
                     f"val_pgraph/{name}/precision": m["precision"],
                     f"val_pgraph/{name}/recall": m["recall"],
@@ -1173,6 +1234,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 f"F1={val_macro.get('f1', 0.0):.4f}, "
                 f"P={val_macro.get('precision', 0.0):.4f}, "
                 f"R={val_macro.get('recall', 0.0):.4f}, "
+                f"PR-AUC={val_macro.get('pr_auc', 0.0):.4f}, "
                 f"Acc={val_macro.get('total_acc', 0.0):.4f}, "
                 f"b1={val_macro.get('boundary_1_acc', 0.0):.4f}, "
                 f"b0={val_macro.get('boundary_0_acc', 0.0):.4f}"
@@ -1408,13 +1470,16 @@ if __name__ == "__main__":
         y_val = g.y.cpu().numpy()
 
         y_pred = rf.predict(X_val)
+        y_prob = rf.predict_proba(X_val)[:, 1]
+        pr_auc = pr_auc_from_probs(y_val, y_prob)
 
         f1 = f1_score(y_val, y_pred, zero_division=0)
         precision = precision_score(y_val, y_pred, zero_division=0)
         recall = recall_score(y_val, y_pred, zero_division=0)
-        print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}")
-        
 
+        print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
+
+        
     model = run_training(
         train_graphs=train_graphs,
         train_data=combined_data,
