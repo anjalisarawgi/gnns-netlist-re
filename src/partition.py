@@ -1155,13 +1155,15 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
             val_metrics = defaultdict(list)  # collects lists of per-graph metrics
             val_losses = []
             for path, g in val_graphs:
+                name = os.path.splitext(os.path.basename(path))[0]
                 m = evaluate_test(g, model)
                 probs, labels = get_probs_and_labels(model, g)   # probs = P(y=1)
+                print(f"[SANITY] {name} | Mean prob boundary=1: {probs[labels==1].mean():.4f} | Mean prob boundary=0: {probs[labels==0].mean():.4f}")
                 pr_auc = pr_auc_from_probs(labels, probs)
                 val_metrics["pr_auc"].append(pr_auc)
                 
                 val_loss = evaluate_loss(g, model, class_weights, soft_class_weights)
-                name = os.path.splitext(os.path.basename(path))[0]
+                
 
                 print(
                     f"[VAL][Epoch {epoch:03d}] {name} | "
