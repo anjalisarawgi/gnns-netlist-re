@@ -2,7 +2,7 @@ import torch
 import os
 from torch_geometric.loader import GraphSAINTSampler, GraphSAINTRandomWalkSampler, GraphSAINTNodeSampler,GraphSAINTEdgeSampler
 from main import save_predictions_to_gml
-from utils.set_seed import set_seed
+# from utils.set_seed import set_seed
 import wandb
 import random
 import networkx as nx
@@ -12,7 +12,9 @@ from torch_geometric.data import Data
 from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
+from gnn.gin import GIN
 from gnn.graphTransformer import GraphTransformer 
+from gnn.new_gnn import DirectedGAT, HierarchicalGAT
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -32,6 +34,16 @@ from sklearn.ensemble import RandomForestClassifier
 import sys
 import os
 from datetime import datetime
+import joblib
+
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(seed)
 
 class Tee(object):
     def __init__(self, *files):
@@ -68,7 +80,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -255,9 +267,10 @@ def load_single_gml(gml_path, remove_edges = False):
     for node in nodes:
         attr = G.nodes[node] # attr?
         feat = attr.get("features", [])
-        feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio 
+        # feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio 
         # feat = feat[28:31] #### indeg, outdeg, fanin
         # feat = feat[0:28] ####  (14ohe) + (14ohe) 
+        # feat = feat[:-2]
         if base_feat_dim is None:
             base_feat_dim = len(feat)
 
@@ -926,6 +939,22 @@ def find_best_threshold(probs, labels, thresholds=None):
 
 
 ### threholding end
+NUM_CATEGORICAL = 14
+class SelectiveScaler:
+    def __init__(self, n_categorical):
+        self.n_cat = n_categorical
+        self.scaler = StandardScaler()
+
+    def fit_transform(self, X):
+        X = X.copy()
+        X[:, self.n_cat:] = self.scaler.fit_transform(X[:, self.n_cat:])
+        return X
+
+    def transform(self, X):
+        X = X.copy()
+        X[:, self.n_cat:] = self.scaler.transform(X[:, self.n_cat:])
+        return X
+
 
 ##### training  and eval functions:
 
@@ -952,6 +981,15 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name =="gatv2":
         model = gatv2(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using gatv2")
+    elif model_name =="gin":
+        model = GIN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using gatv2")
+    elif model_name == 'dGNN':
+        model = DirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using DirectedGAT")
+    elif model_name == 'hGNN':
+        model = HierarchicalGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        print("[INFO] using HierarchicalGAT")
 
 
     ##### training parameters 
@@ -1013,8 +1051,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
         print("[INFO] CE weights (design-avg)     :", class_weights.tolist())
         print("[INFO] Soft CE weights (design-avg):", soft_class_weights.tolist())
-    
-        
     #### main training loop now 
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
@@ -1314,6 +1350,8 @@ if __name__ == "__main__":
 
         train_graphs.append(graph_data)
     
+    
+    
     # debug statements 
     print("----- [DEBUG] -----")
     print(graph_data)
@@ -1356,12 +1394,33 @@ if __name__ == "__main__":
         test_graphs.append((gml_path, g))
 
 
-
     ### merges / combines -- using reduce 
     combined_data = reduce(merge_data, train_graphs)
 
+    ### saving also the unscaled features 
+
+    # train unscaled
+    X_train_raw = []
+    y_train_raw = []
+    for g in train_graphs:
+        X_train_raw.append(g.x.cpu().numpy())
+        y_train_raw.append(g.y.cpu().numpy())
+    X_train_raw = np.vstack(X_train_raw)
+    y_train_raw = np.concatenate(y_train_raw)
+
+    # val unscaled
+    val_raw = []
+    for path, g in val_graphs:
+        val_raw.append((path, g.x.cpu().numpy(), g.y.cpu().numpy()))
+        
+    # test unscaled
+    test_raw = []
+    for path, g in test_graphs:
+        test_raw.append((path, g.x.cpu().numpy(), g.y.cpu().numpy()))
+
+
     # train has the scaler and its fit here
-    scaler = StandardScaler()
+    scaler = SelectiveScaler(NUM_CATEGORICAL)
     combined_data.x = torch.tensor(
         scaler.fit_transform(combined_data.x.cpu().numpy()),
         dtype=torch.float32
@@ -1451,37 +1510,186 @@ if __name__ == "__main__":
 
     #### implementing random forest
     print("[INFO] Running Random Forest baseline:::::")
-    X_train = []
-    y_train = []
+    # X_train = []
+    # y_train = []
 
-    for g in train_graphs:
-        X_train.append(g.x.cpu().numpy())
-        y_train.append(g.y.cpu().numpy())
+    # for g in train_graphs:
+    #     X_train.append(g.x.cpu().numpy())
+    #     y_train.append(g.y.cpu().numpy())
 
-    X_train = np.vstack(X_train)
-    y_train = np.concatenate(y_train)
+    # X_train = np.vstack(X_train)
+    # y_train = np.concatenate(y_train)
 
-    rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight="balanced", n_jobs=20, random_state=42)
-    rf.fit(X_train, y_train)
-    print("[INFO] RF training complete.")
+    # rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight="balanced", n_jobs=10, random_state=42)
+    # rf.fit(X_train_raw, y_train_raw)
+    # print("[INFO] RF training complete.")
 
-    for path, g in val_graphs:
+    # ## saving random forest model 
+    # rf_run_dir = os.path.join("models", wandb.run.name)
+    # os.makedirs(rf_run_dir, exist_ok=True)
+    # rf_model_path = os.path.join(rf_run_dir, "rf_model_march3allCrypto.joblib")
+    # joblib.dump(rf, rf_model_path)
+    # print("[INFO] Saved model for RF to:", rf_model_path)
+
+    # eval on validation (scaled) 
+    # for path, X_val in val_raw:
+    #     p = Path(path)
+    #     name = "/".join(p.parts[-3:])
+    #     X_val = g.x.cpu().numpy()
+    #     y_val = g.y.cpu().numpy()
+
+    #     y_pred = rf.predict(X_val)
+    #     y_prob = rf.predict_proba(X_val)[:, 1]
+    #     pr_auc = pr_auc_from_probs(y_val, y_prob)
+
+    #     f1 = f1_score(y_val, y_pred, zero_division=0)
+    #     precision = precision_score(y_val, y_pred, zero_division=0)
+    #     recall = recall_score(y_val, y_pred, zero_division=0)
+
+    #     print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
+
+    ####### 
+    # eval on validation (unscaled)
+    ####### 
+    # print("[INFO] Saving RF predictions on val graphs:")
+    # rf_output_dir = "results/rf_predictions"
+    # os.makedirs(rf_output_dir, exist_ok=True)
+
+    # for path, X_val_raw, y_val in val_raw:
+    #     val_graph_name = os.path.splitext(os.path.basename(path))[0]
+    #     p = Path(path)
+    #     name = "/".join(p.parts[-3:])
+
+    #     y_pred = rf.predict(X_val_raw)
+    #     y_prob = rf.predict_proba(X_val_raw)[:, 1]
+    #     pr_auc = pr_auc_from_probs(y_val, y_prob)
+
+    #     f1 = f1_score(y_val, y_pred, zero_division=0)
+    #     precision = precision_score(y_val, y_pred, zero_division=0)
+    #     recall = recall_score(y_val, y_pred, zero_division=0)
+
+    #     print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
+
+    #     G = nx.read_gml(path)
+    #     id2label_rf = {0: "not_boundary", 1: "boundary"}
+    #     for i, node in enumerate(G.nodes()):
+    #         G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
+    #         G.nodes[node]["predicted_prob"]  = float(y_prob[i])
+
+    #     output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_predictions.gml")
+    #     nx.write_gml(G, output_path)
+    #     print(f"[RF] Saved predictions to: {output_path}")
+    
+
+    import pandas as pd  # ADD THIS near your imports (top of file)
+
+    print("[INFO] Running Random Forest baseline (all features)")
+
+    rf_output_dir = "results/rf_predictions"
+    os.makedirs(rf_output_dir, exist_ok=True)
+
+    rf = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=None,
+        class_weight="balanced",
+        n_jobs=10,
+        random_state=42
+    )
+    rf.fit(X_train_raw, y_train_raw)
+    print("[INFO] RF training complete (all features).")
+
+    # ---- Evaluate RF (all features) on VAL and save preds ----
+    print("[INFO] Saving RF(all) predictions on val graphs:")
+    for path, X_val_raw, y_val in val_raw:
         p = Path(path)
         name = "/".join(p.parts[-3:])
-        X_val = g.x.cpu().numpy()
-        y_val = g.y.cpu().numpy()
+        val_graph_name = os.path.splitext(os.path.basename(path))[0]
 
-        y_pred = rf.predict(X_val)
-        y_prob = rf.predict_proba(X_val)[:, 1]
+        y_pred = rf.predict(X_val_raw)
+        y_prob = rf.predict_proba(X_val_raw)[:, 1]
         pr_auc = pr_auc_from_probs(y_val, y_prob)
 
         f1 = f1_score(y_val, y_pred, zero_division=0)
         precision = precision_score(y_val, y_pred, zero_division=0)
         recall = recall_score(y_val, y_pred, zero_division=0)
 
-        print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
+        print(f"[RF-ALL][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
 
-        
+        # G = nx.read_gml(path)
+        # id2label_rf = {0: "not_boundary", 1: "boundary"}
+        # for i, node in enumerate(G.nodes()):
+        #     G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
+        #     G.nodes[node]["predicted_prob"]  = float(y_prob[i])
+
+        # output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_all.gml")
+        # nx.write_gml(G, output_path)
+
+    # ---- Feature selection from RF(all) ----
+    print("[INFO] Computing feature importances for selection")
+    importances = rf.feature_importances_
+    feature_ids = np.arange(len(importances))
+
+    feature_importance_df = (
+        pd.DataFrame({"feature_id": feature_ids, "importance": importances})
+        .sort_values("importance", ascending=False)
+    )
+
+    TOP_K = 10
+    top_features = feature_importance_df["feature_id"].values[:TOP_K]
+    print("[INFO] Selected feature indices (top-k):", top_features.tolist())
+    print("\nTop feature importances:")
+    print(feature_importance_df.head(20))
+
+    # Reduce train set for RF-selected
+    X_train_selected = X_train_raw[:, top_features]
+
+    # ---- Train RF(selected) ----
+    print("[INFO] Training RF with selected features")
+    rf_selected = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=None,
+        class_weight="balanced",
+        n_jobs=10,
+        random_state=42
+    )
+    rf_selected.fit(X_train_selected, y_train_raw)
+    print("[INFO] RF training complete (selected features).")
+
+    # ---- Evaluate RF(selected) on VAL and save preds ----
+    print("[INFO] Saving RF(selected) predictions on val graphs:")
+    for path, X_val_raw, y_val in val_raw:
+        p = Path(path)
+        name = "/".join(p.parts[-3:])
+        val_graph_name = os.path.splitext(os.path.basename(path))[0]
+
+        X_val_selected = X_val_raw[:, top_features]
+
+        y_pred = rf_selected.predict(X_val_selected)
+        y_prob = rf_selected.predict_proba(X_val_selected)[:, 1]
+        pr_auc = pr_auc_from_probs(y_val, y_prob)
+
+        f1 = f1_score(y_val, y_pred, zero_division=0)
+        precision = precision_score(y_val, y_pred, zero_division=0)
+        recall = recall_score(y_val, y_pred, zero_division=0)
+
+        print(f"[RF-TOP{TOP_K}][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
+
+        G = nx.read_gml(path)
+        id2label_rf = {0: "not_boundary", 1: "boundary"}
+        for i, node in enumerate(G.nodes()):
+            G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
+            G.nodes[node]["predicted_prob"]  = float(y_prob[i])
+
+        output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_top{TOP_K}.gml")
+        nx.write_gml(G, output_path)
+
+    # ---- Save both RF models ----
+    rf_run_dir = os.path.join("models", wandb.run.name)
+    os.makedirs(rf_run_dir, exist_ok=True)
+    joblib.dump(rf, os.path.join(rf_run_dir, "rf_all.joblib"))
+    joblib.dump(rf_selected, os.path.join(rf_run_dir, f"rf_top{TOP_K}.joblib"))
+    feature_importance_df.to_csv(os.path.join(rf_run_dir, "rf_feature_importance.csv"), index=False)
+    
     model = run_training(
         train_graphs=train_graphs,
         train_data=combined_data,

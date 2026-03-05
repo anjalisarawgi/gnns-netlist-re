@@ -196,6 +196,32 @@ def fraction_same_partition_2hop(node, G_und, G_dir):
     return same / len(nodes_2hop)
 
 
+def get_bundle_features(node, G_und):
+    """
+    Checks if 'node' has neighbors that are structurally identical to it.
+    """
+    my_deg = G_und.degree(node)
+    siblings = list(G_und.neighbors(node))
+    
+    # How many of my neighbors have the same degree as me?
+    # In a bus, parallel bits often have the same degree profile.
+    same_deg_count = sum(1 for nb in siblings if G_und.degree(nb) == my_deg)
+    
+    # Jaccard Coefficient: Do I and my neighbors share the same 'next' gates?
+    # This finds the "8-to-8" funnel.
+    overlaps = []
+    for nb in siblings:
+        preds_node = set(G_und.neighbors(node))
+        preds_nb = set(G_und.neighbors(nb))
+        if not preds_node or not preds_nb:
+            continue
+        intersection = len(preds_node.intersection(preds_nb))
+        union = len(preds_node.union(preds_nb))
+        overlaps.append(intersection / union)
+    
+    avg_overlap = np.mean(overlaps) if overlaps else 0.0
+    return same_deg_count, avg_overlap
+
 def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     print("Processing:", input_gml)
 
@@ -259,6 +285,25 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     max_core = core_vals.max()
     mean_core = core_vals.mean()
 
+    # ── WL structural fingerprints ──────────────────────────────────────────
+    # Use the undirected graph; label nodes by their gate type so the hash
+    # is gate-aware (two nodes with the same topology but different gate types
+    # will get different hashes).
+    node_wl_labels = {
+        n: parse_gate_from_label(G_dir.nodes[n].get("label_copy", ""))
+        for n in G_dir.nodes()
+    }
+    for _ in range(ego_k):          # ego_k rounds ≈ ego_k-hop neighbourhood
+        new_labels = {}
+        for n in G_und.nodes():
+            neigh_labels = sorted(node_wl_labels[nb] for nb in G_und.neighbors(n))
+            new_labels[n] = hash((node_wl_labels[n], tuple(neigh_labels)))
+        node_wl_labels = new_labels
+
+    # Pre-count how many nodes share each hash (= bus/bundle width)
+    from collections import Counter
+    wl_count = Counter(node_wl_labels.values())
+    # ────────────────────────────────────────────────────────────────────────
 
     for node in G_dir.nodes():
         in_d = float(indeg.get(node, 0))
@@ -301,16 +346,42 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         deg_contrast = deg_und.get(node, 0) - (np.mean(neighbor_degs) if neighbor_degs else 0.0)
 
         # structural / graph features
-        struct_feats = torch.tensor([
-            in_d, out_d, fan_ratio, 
-            in_mean, in_std, 
-            out_mean, out_std, 
-            float(ego_density),
-            kcore, pager, d_io,
-            f_reach, b_reach, reach_asym, deg_contrast, 
+        # struct_feats = torch.tensor([
+        #     in_d, out_d, fan_ratio,
+        #     in_mean, in_std,
+        #     out_mean, out_std,
+        #     float(ego_density),
+        #     kcore, pager, d_io, f_reach, b_reach, reach_asym, deg_contrast,
+        # ], dtype=torch.float32)
+
+        # x = torch.cat([gate_feats, struct_feats])
+        # ── Bundle / sibling-similarity features ────────────────────────────
+        same_deg_count, avg_neighbor_overlap = get_bundle_features(node, G_und)
+        bundle_feats = torch.tensor([
+            float(same_deg_count),          # how many 1-hop neighbours share my degree
+            float(avg_neighbor_overlap),    # avg Jaccard of neighbour-sets (twin signal)
         ], dtype=torch.float32)
 
-        x = torch.cat([gate_feats, struct_feats])
+        # ── WL structural fingerprint features ──────────────────────────────
+        my_hash   = node_wl_labels[node]
+        bus_width = float(wl_count[my_hash])   # how many nodes are my "structural twin"
+        # Normalise hash to [0, 1] so it's a stable float feature
+        node_fingerprint = float(my_hash & 0xFFFFFFFF) / float(0xFFFFFFFF)
+        wl_feats = torch.tensor([
+            node_fingerprint,   # structural identity token
+            bus_width,          # bus/bundle width estimate
+            np.log1p(bus_width) # log-scale version (helps with wide buses)
+        ], dtype=torch.float32)
+
+        struct_feats = torch.tensor([
+            in_d, out_d, fan_ratio,
+            in_mean, in_std,
+            out_mean, out_std,
+            float(ego_density),
+            kcore, pager, d_io, f_reach, b_reach
+        ], dtype=torch.float32)
+
+        x = torch.cat([gate_feats, struct_feats, bundle_feats, wl_feats])
         G_dir.nodes[node]["features"] = x.tolist()
 
         # partition features 
@@ -339,36 +410,35 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
 
 
-    # ------------------------
-    # EDGE FEATURES
-    # ------------------------
-
+    # # ------------------------
+    # # EDGE FEATURES FOR GINE
+    # # ------------------------
     for u, v in G_dir.edges():
+        # 1. Gate Logic Symmetry (The "Bundle" Signal)
+        gate_u = parse_gate_from_label(G_dir.nodes[u].get("label_copy", ""))
+        gate_v = parse_gate_from_label(G_dir.nodes[v].get("label_copy", ""))
+        is_same_gate_type = 1.0 if gate_u == gate_v else 0.0
 
+        # 2. Structural Symmetry (The "Twin" Signal)
+        # Using the WL-hash you already calculated
+        is_twin = 1.0 if node_wl_labels[u] == node_wl_labels[v] else 0.0
+
+        # 3. Connectivity Delta (The "Flow" Signal)
         deg_u = float(deg_und.get(u, 0))
         deg_v = float(deg_und.get(v, 0))
+        delta_deg = deg_u - deg_v
 
-        outdeg_u = float(outdeg.get(u, 0))
-        indeg_v = float(indeg.get(v, 0))
-
-        d_io_u = float(dist_to_io.get(u, -1))
-        d_io_v = float(dist_to_io.get(v, -1))
-
-        # reach asym already computed per node
-        f_reach_u = float(_forward_reach_within_k(G_dir, u, k=reach_k))
-        b_reach_u = float(_backward_reach_within_k(G_dir, u, k=reach_k))
-        reach_asym_u = (f_reach_u - b_reach_u) / (f_reach_u + b_reach_u + 1.0)
-
-        f_reach_v = float(_forward_reach_within_k(G_dir, v, k=reach_k))
-        b_reach_v = float(_backward_reach_within_k(G_dir, v, k=reach_k))
-        reach_asym_v = (f_reach_v - b_reach_v) / (f_reach_v + b_reach_v + 1.0)
+        # 4. Neighborhood Overlap (The "Ribbon" Signal)
+        neigh_u = set(G_und.neighbors(u))
+        neigh_v = set(G_und.neighbors(v))
+        shared_count = float(len(neigh_u.intersection(neigh_v)))
 
         edge_feat = [
-            deg_u - deg_v,                        # Δ degree
-            np.log1p(outdeg_u),                   # source fanout
-            np.log1p(indeg_v),                    # target fanin
-            # d_io_u - d_io_v,                      # Δ IO distance
-            reach_asym_u - reach_asym_v,          # Δ reach asym
+            is_same_gate_type,    # Does logic type persist?
+            is_twin,              # Does structural shape persist?
+            delta_deg,            # Is there a density change (bottleneck)?
+            shared_count,         # Are they tightly coupled?
+            np.log1p(shared_count) # Scaled coupling for stability
         ]
 
         G_dir.edges[u, v]["edge_features"] = edge_feat
@@ -378,10 +448,10 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     print(f"[INFO] Saved processed GML → {output_gml}")
 
 
-# ROOT_RAW = "graphs/raw_v2/raw"
-# ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10_wEdgeFeatures"
-ROOT_RAW = "new_graphs_crypto/raw/raw"
-ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10_wEdgeFeatures"
+ROOT_RAW = "graphs/raw_v2/raw"
+ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_march2Edge"
+# ROOT_RAW = "new_graphs_crypto/raw/raw"
+# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_march2Edge"
 
 processed_dirs = {}
 usable_graphs = []

@@ -1,6 +1,3 @@
-sampling_method: graphsaint_rw
-model: hGNN
-
 
 train_gml:
 #  - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
@@ -114,7 +111,6 @@ train_gml:
 
 
 val_gml: 
-- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml" # a fully new design generalization
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml" # aes_core cross lib
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_key_expand_128_combined_m1.gml" # aes_core cross lib
 - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha1-master/osu035/sha1_core_combined_m1.gml" # sha1 core
@@ -127,10 +123,11 @@ val_gml:
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml" # a fully new design generalization
+
 
 
 test_gml: 
-- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml" # a fully new design generalization
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml" # aes_core cross lib
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/nangate/aes_key_expand_128_combined_m1.gml" # aes_core cross lib
 - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha1-master/osu035/sha1_core_combined_m1.gml" # sha1 core
@@ -143,22 +140,4 @@ test_gml:
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
 - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
-
-
-
-
-epochs: 300
-# walk_length: 20
-# perc_batchsize: 0.01
-set_gradient_clipping: true
-normalize_class_weights: true
-reduction_method_cel: "mean"
-lr: 0.001
-loss_type : "ce_soft" #ce_weighted #ce_soft
-sample_coverage : 50
-training_mode: "fullgraph"
-fullgraph_mode: "per_design"
-# use_lib_id: true
-# use_design_id: true
-# use_partition_features: true
-# use_graph_features: true
+- "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/tiny_aes_latest/osu035/aes_128_combined_m1.gml" # a fully new design generalization

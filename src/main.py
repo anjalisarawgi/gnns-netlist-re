@@ -9,8 +9,8 @@ from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat
 # from gml_to_pyg import convert_gml_to_pyg
-from utils.set_seed import set_seed
-from utils.logging import setup_logging
+# from utils.set_seed import set_seed
+# from utils.logging import setup_logging
 import networkx as nx
 from tqdm import tqdm
 import torch.nn.functional as F
@@ -27,8 +27,44 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from torch_geometric.loader import GraphSAINTEdgeSampler
 
 
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+
 subcircuit_map = defaultdict(set) 
 
+import sys
+import os
+from datetime import datetime
+
+def setup_logging(log_dir="logs"):
+    os.makedirs(log_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = os.path.join(log_dir, f"run_{timestamp}.log")
+    
+    class Tee(object):
+        def __init__(self, *files):
+            self.files = files
+        def write(self, obj):
+            for f in self.files:
+                f.write(obj)
+                f.flush()
+        def flush(self):
+            for f in self.files:
+                f.flush()
+        def isatty(self):
+            return False
+
+    logfile = open(log_path, "w")
+    sys.stdout = Tee(sys.stdout, logfile)
+    sys.stderr = Tee(sys.stderr, logfile)  # also capture errors
+    print(f"Logging to: {log_path}")
 
 def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False, positive_class=None, remove_edges=False):
     print("calling gnn from path:", gml_path)
