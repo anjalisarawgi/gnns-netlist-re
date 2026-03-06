@@ -1,5 +1,5 @@
 sampling_method: graphsaint_rw
-model: hGNN
+model: gatv2
 
 
 train_gml:

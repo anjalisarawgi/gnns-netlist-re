@@ -14,7 +14,7 @@ from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
 from gnn.gin import GIN
 from gnn.graphTransformer import GraphTransformer 
-from gnn.new_gnn import DirectedGAT, HierarchicalGAT
+from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -80,7 +80,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -990,6 +990,9 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name == 'hGNN':
         model = HierarchicalGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using HierarchicalGAT")
+    elif model_name == 'hdGNN':
+        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using HierarchicalDirectedGAT")
 
 
     ##### training parameters 
@@ -1674,21 +1677,21 @@ if __name__ == "__main__":
 
         print(f"[RF-TOP{TOP_K}][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
 
-        G = nx.read_gml(path)
-        id2label_rf = {0: "not_boundary", 1: "boundary"}
-        for i, node in enumerate(G.nodes()):
-            G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
-            G.nodes[node]["predicted_prob"]  = float(y_prob[i])
+        # G = nx.read_gml(path)
+        # id2label_rf = {0: "not_boundary", 1: "boundary"}
+        # for i, node in enumerate(G.nodes()):
+        #     G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
+        #     G.nodes[node]["predicted_prob"]  = float(y_prob[i])
 
-        output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_top{TOP_K}.gml")
-        nx.write_gml(G, output_path)
+        # output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_top{TOP_K}.gml")
+        # nx.write_gml(G, output_path)
 
-    # ---- Save both RF models ----
-    rf_run_dir = os.path.join("models", wandb.run.name)
-    os.makedirs(rf_run_dir, exist_ok=True)
-    joblib.dump(rf, os.path.join(rf_run_dir, "rf_all.joblib"))
-    joblib.dump(rf_selected, os.path.join(rf_run_dir, f"rf_top{TOP_K}.joblib"))
-    feature_importance_df.to_csv(os.path.join(rf_run_dir, "rf_feature_importance.csv"), index=False)
+    # # ---- Save both RF models ----
+    # rf_run_dir = os.path.join("models", wandb.run.name)
+    # os.makedirs(rf_run_dir, exist_ok=True)
+    # joblib.dump(rf, os.path.join(rf_run_dir, "rf_all.joblib"))
+    # joblib.dump(rf_selected, os.path.join(rf_run_dir, f"rf_top{TOP_K}.joblib"))
+    # feature_importance_df.to_csv(os.path.join(rf_run_dir, "rf_feature_importance.csv"), index=False)
     
     model = run_training(
         train_graphs=train_graphs,

@@ -66,17 +66,17 @@ class gatv2(nn.Module):
     def forward(self, x, edge_index):
         # Layer 1
         x = self.conv1(x, edge_index)
-        x = F.relu(x)
+        x = F.elu(x)
         x = F.dropout(x, p=0.1, training=self.training)
 
         # Layer 2
         x = self.conv2(x, edge_index)
-        x = F.relu(x)
+        x = F.elu(x)
         x = F.dropout(x, p=0.1, training=self.training)
 
         # Layer 3
         x = self.conv3(x, edge_index)
-        x = F.relu(x)
+        x = F.elu(x)
         x = F.dropout(x, p=0.1, training=self.training)
 
         # Layer 4 (Output)
