@@ -14,7 +14,9 @@ from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
 from gnn.gin import GIN
 from gnn.graphTransformer import GraphTransformer 
-from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
+from gnn.new_gnn import DirectedGAT, HierarchicalGAT
+from gnn.new_gnn_pe import HierarchicalDirectedGAT
+from gnn.new_gnn_paper import BiMPNN, BiGIN, BiMPNN_GT
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -80,7 +82,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN", "BiMPNN", "BiGIN", "BiMPNN_GT"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -991,8 +993,21 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = HierarchicalGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using HierarchicalGAT")
     elif model_name == 'hdGNN':
-        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        # model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, use_pe=True, walk_steps=8)
         print("[INFO] using HierarchicalDirectedGAT")
+
+    elif model_name == 'BiMPNN':
+        model = BiMPNN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using BiMPNN")
+
+    elif model_name == 'BiGIN':
+        model = BiGIN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using BiGIN")
+
+    elif model_name == 'BiMPNN_GT':
+        model = BiMPNN_GT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using BiMPNN_GT")
 
 
     ##### training parameters 
