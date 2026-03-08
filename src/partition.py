@@ -14,9 +14,7 @@ from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
 from gnn.gin import GIN
 from gnn.graphTransformer import GraphTransformer 
-from gnn.new_gnn import DirectedGAT, HierarchicalGAT
-from gnn.new_gnn_pe import HierarchicalDirectedGAT
-from gnn.new_gnn_paper import BiMPNN, BiGIN, BiMPNN_GT
+from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -82,7 +80,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN", "BiMPNN", "BiGIN", "BiMPNN_GT"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN", "BiMPNN", "BiGIN", "BiMPNN_GT", "HierarchicalDirectedGIN", "HierarchicalDirectedGATPE"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -253,6 +251,79 @@ def merge_data(gml_1, gml_2):
 # a) x = node features (matrix)
 # b) y = node labels 
 # c) edge_index = edges (2xE tensor)
+def compute_rwpe(edge_index, num_nodes, steps=8):
+    import scipy.sparse as sp
+    import numpy as np
+
+    src = edge_index[0].numpy()
+    dst = edge_index[1].numpy()
+
+    out_deg = np.bincount(src, minlength=num_nodes).astype(np.float32)
+    out_deg = np.maximum(out_deg, 1)
+
+    # Row-normalized adjacency (transition matrix)
+    vals = 1.0 / out_deg[src]
+    A = sp.csr_matrix((vals, (src, dst)), shape=(num_nodes, num_nodes))
+
+    pe = np.zeros((num_nodes, steps), dtype=np.float32)
+    # We can't do full NxN for large graphs, so approximate diagonal via sparse power
+    # P[i,i] after k steps = (A^k)[i,i]
+    Ak = sp.eye(num_nodes, format='csr')
+    for step in range(steps):
+        Ak = Ak @ A
+        pe[:, step] = np.array(Ak.diagonal()).flatten()
+
+    return torch.from_numpy(pe)
+
+def compute_magnetic_laplacian_pe(edge_index, num_nodes, k=8, q=0.25):
+    """
+    Magnetic Laplacian positional encodings (sparse implementation).
+    Returns real-valued PE with shape [N, 2k].
+    """
+
+    import numpy as np
+    import scipy.sparse as sp
+    from scipy.sparse.linalg import eigsh
+
+    src = edge_index[0].cpu().numpy()
+    dst = edge_index[1].cpu().numpy()
+
+    # Directed adjacency
+    A = sp.coo_matrix(
+        (np.ones(len(src)), (src, dst)),
+        shape=(num_nodes, num_nodes)
+    ).tocsr()
+
+    # Symmetric support
+    A_sym = ((A + A.T) > 0).astype(float)
+
+    # Directed difference
+    S = (A - A.T).astype(float)
+
+    # Magnetic phase
+    phase = np.exp(1j * 2 * np.pi * q * S.data)
+    Phase = sp.csr_matrix((phase, S.indices, S.indptr), shape=S.shape)
+
+    # Magnetic adjacency
+    A_mag = A_sym.astype(np.complex64).multiply(Phase)
+
+    # Degree
+    deg = np.array(A_sym.sum(axis=1)).flatten()
+    D = sp.diags(deg.astype(np.complex64))
+
+    # Magnetic Laplacian
+    L = D - A_mag
+
+    # Eigenvectors
+    eigvals, eigvecs = eigsh(L, k=k+1, which="SM")
+
+    # drop trivial eigenvector
+    eigvecs = eigvecs[:, 1:k+1]
+
+    # convert complex → real features
+    pe = np.concatenate([eigvecs.real, eigvecs.imag], axis=1)
+
+    return torch.tensor(pe, dtype=torch.float32)
 
 def load_single_gml(gml_path, remove_edges = False):
     print("[INFO] Calling gml from path:", gml_path)
@@ -401,7 +472,22 @@ def load_single_gml(gml_path, remove_edges = False):
     #     test_mask = test_mask
     # )
 
+  
     features = torch.as_tensor(np.array(features, dtype=np.float32), dtype=torch.float32)
+
+    # RW positional encoding
+    # rwpe = compute_rwpe(edge_index, num_nodes, steps=8)
+
+    # Magnetic Laplacian positional encoding
+    # mag_pe = compute_magnetic_laplacian_pe(edge_index, num_nodes, k=8)
+
+    # features = torch.cat([features, rwpe], dim=-1)
+
+    # print(f"[PE] RWPE dim: {rwpe.shape[1]}")
+    # print(f"[PE] MagLap PE dim: {mag_pe.shape[1]}")
+    # print(f"[PE] final feature dim: {features.shape[1]}")
+
+
     data = Data(
         x = features,
         edge_index = edge_index,
@@ -993,21 +1079,8 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = HierarchicalGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using HierarchicalGAT")
     elif model_name == 'hdGNN':
-        # model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
-        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, use_pe=True, walk_steps=8)
+        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
         print("[INFO] using HierarchicalDirectedGAT")
-
-    elif model_name == 'BiMPNN':
-        model = BiMPNN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
-        print("[INFO] using BiMPNN")
-
-    elif model_name == 'BiGIN':
-        model = BiGIN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
-        print("[INFO] using BiGIN")
-
-    elif model_name == 'BiMPNN_GT':
-        model = BiMPNN_GT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
-        print("[INFO] using BiMPNN_GT")
 
 
     ##### training parameters 

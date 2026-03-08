@@ -359,12 +359,12 @@ from torch_geometric.nn import GATv2Conv
 class DirectedGATBlock(nn.Module):
     def __init__(self, in_channels, out_channels, dropout=0.1):
         super().__init__()
-        assert out_channels % 8 == 0, "out_channels must be divisible by 8 (2 directions × 4 heads)"
-        per_head = out_channels // 8  # 256//8 = 32
+        assert out_channels % 2 == 0, "out_channels must be divisible by 8 (2 directions × 4 heads)"
+        per_head = out_channels // 2  # 256//8 = 32
 
         # 4 heads × 32 = 128 = C//2 per branch
-        self.conv_fwd = GATv2Conv(in_channels, per_head, heads=4, concat=True, dropout=dropout)
-        self.conv_bwd = GATv2Conv(in_channels, per_head, heads=4, concat=True, dropout=dropout)
+        self.conv_fwd = GATv2Conv(in_channels, per_head, heads=1, concat=True, dropout=dropout)
+        self.conv_bwd = GATv2Conv(in_channels, per_head, heads=1, concat=True, dropout=dropout)
 
     def forward(self, x, edge_index, rev_edge_index):
         x_f = self.conv_fwd(x, edge_index)       # [N, 4×32] = [N, 128]

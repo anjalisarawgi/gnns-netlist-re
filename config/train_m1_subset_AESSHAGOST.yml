@@ -160,5 +160,5 @@ training_mode: "fullgraph"
 fullgraph_mode: "per_design"
 # use_lib_id: true
 # use_design_id: true
-# use_partition_features: true
+use_partition_features: true
 # use_graph_features: true
