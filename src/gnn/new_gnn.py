@@ -359,8 +359,8 @@ from torch_geometric.nn import GATv2Conv
 class DirectedGATBlock(nn.Module):
     def __init__(self, in_channels, out_channels, dropout=0.1):
         super().__init__()
-        assert out_channels % 2 == 0, "out_channels must be divisible by 8 (2 directions × 4 heads)"
-        per_head = out_channels // 2  # 256//8 = 32
+        # assert out_channels % 2 == 0, "out_channels must be divisible by 8 (2 directions × 4 heads)"
+        per_head = out_channels // 1  # 256//8 = 32 ## 2 needed for anjalis way
 
         # 4 heads × 32 = 128 = C//2 per branch
         self.conv_fwd = GATv2Conv(in_channels, per_head, heads=1, concat=True, dropout=dropout)
@@ -369,7 +369,10 @@ class DirectedGATBlock(nn.Module):
     def forward(self, x, edge_index, rev_edge_index):
         x_f = self.conv_fwd(x, edge_index)       # [N, 4×32] = [N, 128]
         x_b = self.conv_bwd(x, rev_edge_index)   # [N, 128]
-        return torch.cat([x_f, x_b], dim=-1)     # [N, 256] = [N, C]  ✓
+        # result = torch.cat([x_f, x_b], dim=-1)     # [N, 256] = [N, C]  ✓ --anjalis way upto now
+        results = x_f + x_b ## DAG papper method 
+        # results = torch.cat([x_f, x_b], dim=-1)  ## abgnn method
+        return results    # [N, 256] = [N, C]  ✓
 
 # ──────────────────────────────────────────────────────────────────────────────
 # HierarchicalDirectedGAT
@@ -445,26 +448,26 @@ class HierarchicalDirectedGAT(nn.Module):
         skip = self.local_skip(x)
 
         h = self.local1(x, edge_index, rev_edge_index)
-        h = F.relu(h)
+        h = F.elu(h)
         h = F.dropout(h, p=self.dropout, training=self.training)
         h = self.local2(h, edge_index, rev_edge_index)
-        h = F.relu(h)
+        h = F.elu(h)
         h_local = h + skip                              # residual  [N, C]
 
         # ── Scale 2: mid (3-4 hops) ───────────────────────────────────────
         m = self.mid1(h_local, edge_index, rev_edge_index)
-        m = F.relu(m)
+        m = F.elu(m)
         m = F.dropout(m, p=self.dropout, training=self.training)
         m = self.mid2(m, edge_index, rev_edge_index)
-        m = F.relu(m)
+        m = F.elu(m)
         h_mid = m + h_local                             # residual  [N, C]
 
         # ── Scale 3: global (5-6 hops) ────────────────────────────────────
         g = self.global1(h_mid, edge_index, rev_edge_index)
-        g = F.relu(g)
+        g = F.elu(g)
         g = F.dropout(g, p=self.dropout, training=self.training)
         g = self.global2(g, edge_index, rev_edge_index)
-        g = F.relu(g)
+        g = F.elu(g)
         h_global = g + h_mid                            # residual  [N, C]
 
         # ── Fusion ────────────────────────────────────────────────────────
@@ -472,3 +475,210 @@ class HierarchicalDirectedGAT(nn.Module):
             torch.cat([h_local, h_mid, h_global], dim=-1)  # [N, 3C]
         )
         return out                                      # [N, out_channels]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Option 2: FlatDirectedGAT (paper's structure)
+# Uniform stack of N layers, depth handles multi-hop naturally
+# ──────────────────────────────────────────────────────────────────────────────
+
+class FlatDirectedGAT(nn.Module):
+    """
+    Flat stack of num_layers identical DirectedGATBlocks.
+    Each layer extends reach by one hop.
+    Only the final layer's representation is used for prediction.
+    """
+
+    def __init__(self, in_channels, hidden_channels, out_channels,
+                 num_layers=6, dropout=0.1):
+        super().__init__()
+        C = hidden_channels
+        self.dropout = dropout
+
+        self.input_proj = nn.Linear(in_channels, C)
+
+        self.layers = nn.ModuleList([
+            DirectedGATBlock(C, C, dropout=dropout)
+            for _ in range(num_layers)
+        ])
+        self.norms = nn.ModuleList([
+            nn.BatchNorm1d(C)
+            for _ in range(num_layers)
+        ])
+
+        self.head = nn.Sequential(
+            nn.Linear(C, C // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(C // 2, out_channels),
+        )
+
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x, edge_index, batch=None):
+        row, col = edge_index
+        rev_edge_index = torch.stack([col, row], dim=0)
+
+        h = F.relu(self.input_proj(x))
+
+        for layer, norm in zip(self.layers, self.norms):
+            h_new = layer(h, edge_index, rev_edge_index)
+            h_new = F.elu(h_new)
+            h_new = F.dropout(h_new, p=self.dropout, training=self.training)
+            h = norm(h_new + h)                       # residual
+
+        return self.head(h)
+
+
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Option 3: AsyncFlatDirectedGAT
+# Same as FlatDirectedGAT but uses async message passing.
+# Requires DAG — precompute topo_levels once per graph and pass in.
+# ──────────────────────────────────────────────────────────────────────────────
+
+class AsyncFlatDirectedGAT(nn.Module):
+    """
+    Async version of FlatDirectedGAT.
+
+    Usage:
+        # precompute once per graph (cache this, don't recompute every forward)
+        topo_levels = get_topo_levels(data.edge_index, data.num_nodes)
+
+        model = AsyncFlatDirectedGAT(in_channels=6, hidden_channels=256, out_channels=2)
+        out = model(data.x, data.edge_index, topo_levels)
+    """
+
+    def __init__(self, in_channels, hidden_channels, out_channels,
+                 num_layers=6, dropout=0.1):
+        super().__init__()
+        C = hidden_channels
+        self.dropout = dropout
+
+        self.input_proj = nn.Linear(in_channels, C)
+        self.layers = nn.ModuleList([AsyncDirectedGATBlock(C, C, dropout=dropout) for _ in range(num_layers)])
+        self.norms = nn.ModuleList([nn.BatchNorm1d(C) for _ in range(num_layers)])
+        self.head = nn.Sequential(
+            nn.Linear(C, C // 2), nn.ReLU(), nn.Dropout(dropout), nn.Linear(C // 2, out_channels)
+        )
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x, edge_index, topo_levels, batch=None):
+        row, col = edge_index
+        rev_edge_index = torch.stack([col, row], dim=0)
+        h = F.relu(self.input_proj(x))
+        for layer, norm in zip(self.layers, self.norms):
+            h_new = layer(h, edge_index, rev_edge_index, topo_levels)
+            h_new = F.elu(h_new)
+            h_new = F.dropout(h_new, p=self.dropout, training=self.training)
+            h = norm(h_new + h)
+        return self.head(h)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Option 4: AsyncHierarchicalDirectedGAT
+# Same 3-scale hierarchical structure but uses async message passing per scale.
+# Requires DAG — precompute topo_levels once per graph and pass in.
+# ──────────────────────────────────────────────────────────────────────────────
+
+class AsyncHierarchicalDirectedGAT(nn.Module):
+    """
+    Async version of HierarchicalDirectedGAT.
+
+    Usage:
+        # precompute once per graph (cache this, don't recompute every forward)
+        topo_levels = get_topo_levels(data.edge_index, data.num_nodes)
+
+        model = AsyncHierarchicalDirectedGAT(in_channels=6, hidden_channels=256, out_channels=2)
+        out = model(data.x, data.edge_index, topo_levels)
+    """
+
+    def __init__(self, in_channels, hidden_channels, out_channels, dropout=0.1):
+        super().__init__()
+        C = hidden_channels
+        self.dropout = dropout
+
+        self.local1 = AsyncDirectedGATBlock(in_channels, C, dropout=dropout)
+        self.local2 = AsyncDirectedGATBlock(C, C, dropout=dropout)
+        self.local_skip = nn.Linear(in_channels, C, bias=False) if in_channels != C else nn.Identity()
+
+        self.mid1 = AsyncDirectedGATBlock(C, C, dropout=dropout)
+        self.mid2 = AsyncDirectedGATBlock(C, C, dropout=dropout)
+
+        self.global1 = AsyncDirectedGATBlock(C, C, dropout=dropout)
+        self.global2 = AsyncDirectedGATBlock(C, C, dropout=dropout)
+
+        self.fusion = nn.Sequential(
+            nn.Linear(3 * C, C),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(C, out_channels),
+        )
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x, edge_index, topo_levels, batch=None):
+        row, col = edge_index
+        rev_edge_index = torch.stack([col, row], dim=0)
+
+        # scale 1
+        skip = self.local_skip(x)
+        h = self.local1(x, edge_index, rev_edge_index, topo_levels)
+        h = F.elu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+        h = self.local2(h, edge_index, rev_edge_index, topo_levels)
+        h = F.elu(h)
+        h_local = h + skip
+
+        # scale 2
+        m = self.mid1(h_local, edge_index, rev_edge_index, topo_levels)
+        m = F.elu(m)
+        m = F.dropout(m, p=self.dropout, training=self.training)
+        m = self.mid2(m, edge_index, rev_edge_index, topo_levels)
+        m = F.elu(m)
+        h_mid = m + h_local
+
+        # scale 3
+        g = self.global1(h_mid, edge_index, rev_edge_index, topo_levels)
+        g = F.elu(g)
+        g = F.dropout(g, p=self.dropout, training=self.training)
+        g = self.global2(g, edge_index, rev_edge_index, topo_levels)
+        g = F.elu(g)
+        h_global = g + h_mid
+
+        return self.fusion(torch.cat([h_local, h_mid, h_global], dim=-1))
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Summary of all 4 models
+# ──────────────────────────────────────────────────────────────────────────────
+#
+#  Model                       Structure      Message passing   Requires DAG
+#  ─────────────────────────────────────────────────────────────────────────
+#  HierarchicalDirectedGAT     hierarchical   sync              no
+#  FlatDirectedGAT             flat stack     sync              no
+#  AsyncFlatDirectedGAT        flat stack     async             YES
+#  AsyncHierarchicalDirectedGAT hierarchical  async             YES
+#
+# ──────────────────────────────────────────────────────────────────────────────

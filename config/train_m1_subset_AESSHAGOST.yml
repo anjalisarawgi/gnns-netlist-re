@@ -1,5 +1,5 @@
 sampling_method: graphsaint_rw
-model: hdGNN
+model: FlatDirectedGAT
 
 
 train_gml:
@@ -62,7 +62,7 @@ train_gml:
 #  - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha1-master/osu035/sha1_core_combined_m1.gml"
 
  - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha256-master/gscl45nm/sha256_stream_combined_m1.gml"
- - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha256-master/gscl45nm/sha256_core_combined_m1.gml"
+#  - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha256-master/gscl45nm/sha256_core_combined_m1.gml"
  - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha256-master/osu035/sha256_stream_combined_m1.gml"
  - "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha256-master/osu035/sha256_core_combined_m1.gml"
  - "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha3_latest/nangate/f_permutation_combined_m1.gml"
@@ -160,5 +160,5 @@ training_mode: "fullgraph"
 fullgraph_mode: "per_design"
 # use_lib_id: true
 # use_design_id: true
-use_partition_features: true
+# use_partition_features: true
 # use_graph_features: true

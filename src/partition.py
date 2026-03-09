@@ -14,8 +14,10 @@ from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
 from gnn.gin import GIN
 from gnn.graphTransformer import GraphTransformer 
-from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
+from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT, FlatDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
+from gnn.abgnn import AsyncDirectedGAT
+from gnn.daggnn import BIGAT
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
 from torch_geometric.utils import subgraph
@@ -80,7 +82,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN", "BiMPNN", "BiGIN", "BiMPNN_GT", "HierarchicalDirectedGIN", "HierarchicalDirectedGATPE"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN", "AsyncDirectedGAT", "FlatDirectedGAT", "BIGAT" ])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -340,7 +342,7 @@ def load_single_gml(gml_path, remove_edges = False):
     for node in nodes:
         attr = G.nodes[node] # attr?
         feat = attr.get("features", [])
-        # feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio 
+        feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio 
         # feat = feat[28:31] #### indeg, outdeg, fanin
         # feat = feat[0:28] ####  (14ohe) + (14ohe) 
         # feat = feat[:-2]
@@ -1081,7 +1083,16 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name == 'hdGNN':
         model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
         print("[INFO] using HierarchicalDirectedGAT")
+    elif model_name =="FlatDirectedGAT":
+        model = FlatDirectedGAT(in_channels = in_dim, hidden_channels = 256,num_layers=6,  out_channels = out_dim, dropout=0.1)
+        print("[INFO] using FlatDirectedGAT")
+    elif model_name =="AsyncDirectedGAT":
+        model = AsyncDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using AsyncDirectedGAT")
 
+    elif model_name =="BIGAT":
+        model = BIGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using BIGAT")
 
     ##### training parameters 
     # base_lr = 0.01 

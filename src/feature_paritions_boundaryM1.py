@@ -195,6 +195,34 @@ def fraction_same_partition_2hop(node, G_und, G_dir):
 
     return same / len(nodes_2hop)
 
+def compute_structural_edge_features(G_dir, edge_index_list):
+    """
+    Generates features for every wire (edge) in the circuit.
+    """
+    edge_attrs = []
+    
+    # Pre-calculate node degrees for speed
+    in_degrees = dict(G_dir.in_degree())
+    out_degrees = dict(G_dir.out_degree())
+    
+    for u, v in edge_index_list:
+        # Feature 1: Fan-out of the source (How many gates does this signal feed?)
+        src_fan_out = float(out_degrees.get(u, 1))
+        
+        # Feature 2: Fan-in of the destination (How many signals feed this gate?)
+        dst_fan_in = float(in_degrees.get(v, 1))
+        
+        # Feature 3: Leverage Ratio (Does a big driver feed a small gate?)
+        leverage = src_fan_out / (dst_fan_in + 1e-6)
+        
+        # Feature 4: Is it a "Feedback" edge? (Heuristic: u has higher index than v)
+        # This can help find loops in sequential logic.
+        is_feedback = 1.0 if str(u) > str(v) else 0.0
+
+        edge_feat = [src_fan_out, dst_fan_in, leverage, is_feedback]
+        edge_attrs.append(edge_feat)
+        
+    return edge_attrs
 
 def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     print("Processing:", input_gml)
