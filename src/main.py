@@ -315,6 +315,13 @@ def run_phase1(args):
             print("  Tip: pass --positive_class as the subcircuit NAME, e.g. --positive_class aes_sbox")
 
     train_loader = [train_data]
+    # batch_size = max(1, int(0.3 * train_data.num_nodes))
+    # train_loader = GraphSAINTRandomWalkSampler(
+    #     train_data,
+    #     batch_size=batch_size,
+    #     walk_length=2,
+    #     shuffle=True,
+    # )
 
     model = run_training(
         train_data,
