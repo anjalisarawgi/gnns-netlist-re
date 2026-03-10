@@ -369,9 +369,8 @@ class DirectedGATBlock(nn.Module):
     def forward(self, x, edge_index, rev_edge_index):
         x_f = self.conv_fwd(x, edge_index)       # [N, 4×32] = [N, 128]
         x_b = self.conv_bwd(x, rev_edge_index)   # [N, 128]
-        # result = torch.cat([x_f, x_b], dim=-1)     # [N, 256] = [N, C]  ✓ --anjalis way upto now
+        # results = torch.cat([x_f, x_b], dim=-1)     # [N, 256] = [N, C]  ✓ --anjalis way upto now + ## abgnn method
         results = x_f + x_b ## DAG papper method 
-        # results = torch.cat([x_f, x_b], dim=-1)  ## abgnn method
         return results    # [N, 256] = [N, C]  ✓
 
 # ──────────────────────────────────────────────────────────────────────────────
