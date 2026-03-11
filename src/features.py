@@ -7,13 +7,13 @@ import numpy as np
 # Libraries
 # ------------------------------------------------------------
 
-# LIBS = ["osu035", "nangate", "gscl45nm"]
-LIBS = ["osu035"]
+LIBS = ["osu035", "nangate", "gscl45nm"]
+# LIBS = ["osu035"]
 
-BASE_RAW = "new_graphs_crypto/raw/raw/tiny_aes_latest"
-BASE_OUT = "new_graphs_crypto/gnn-re-processed/tiny_aes_latest"
+BASE_RAW = "graphs/raw_v2/raw/sha1-master"
+BASE_OUT = "new_graphs_crypto/gnn-re-processed/sha1-master"
 
-FILENAME = "aes_128_combined_m1.gml"
+FILENAME = "sha1_core_combined_m1.gml"
 
 # ------------------------------------------------------------
 # Gate types
@@ -44,13 +44,26 @@ def extract_gate_type(label):
 
 PARTITION_TO_NAME = {
 
-    "@top": "aes_key_expand_128",
-    "top": "aes_key_expand_128",
+    "@top": "sha1_core",
+    "top": "sha1_core",
+
+    "top+w_mem_inst": "sha1_w_mem",
+    # "top+u_CRYPTO_PATH": "CRYPTO_PATH",
+
+    # "@top+u_KEY_SCHED": "KEY_SCHED",  
+    # "top+u_CONTROL": "CONTROL",
+    # "top+u_CRYPTO_PATH+u_RF":"RF",
+    # "top+u_CRYPTO_PATH+u_WF": "WF", 
+    # "top+u_KEY_SCHED": "KEY_SCHED",
+    # "top+u_KEY_SCHED+u_SKG":"SKG",
+    # "top+u_KEY_SCHED+u_WKG": "WKG",
+
+
 
     # "@top+u0": "aes_key_expand_128",
     # "top+u0": "aes_key_expand_128", 
 
-    "top+r0":"aes_rcon",
+    # "top+r0":"aes_rcon",
 
     # "top+u0+u0": "aes_sbox",
     # "top+u0+u1": "aes_sbox",

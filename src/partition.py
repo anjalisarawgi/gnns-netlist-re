@@ -13,8 +13,9 @@ from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
 from gnn.gin import GIN
+from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, RelationalDirectedOnlyGAT, RelationalOnlyGAT, DirectedOnlyGATWithGlobal
 from gnn.graphTransformer import GraphTransformer 
-from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT, FlatDirectedGAT
+from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
 # from gnn.abgnn import AsyncDirectedGAT
 # from gnn.daggnn import BIGAT
@@ -82,7 +83,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "RelationalDirectedOnlyGAT", "RelationalOnlyGAT",  "DirectedOnlyGATGlobal"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -129,6 +130,10 @@ parser.add_argument("--use_design_id", action="store_true", help="append design 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
 
+
+GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
+GATE2ID = {g: i for i, g in enumerate(GATE_TYPES)}
+NUM_GATE_TYPES = len(GATE_TYPES)  # 14
 
 
 # yaml 
@@ -1048,6 +1053,7 @@ class SelectiveScaler:
 
 ##### training  and eval functions:
 
+
 def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
 
 
@@ -1086,7 +1092,39 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name =="FlatDirectedGAT":
         model = FlatDirectedGAT(in_channels = in_dim, hidden_channels = 256,num_layers=6,  out_channels = out_dim, dropout=0.1)
         print("[INFO] using FlatDirectedGAT")
+    elif model_name =="DirectedOnlyGAT":
+        model = DirectedOnlyGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using DirectedOnlyGAT")
+    elif model_name =="HierarchicalOnlyGAT4":
+        model = HierarchicalOnlyGAT4(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        print("[INFO] using HierarchicalOnlyGAT4")
+    elif model_name =="HierarchicalOnlyGAT6":
+        model = HierarchicalOnlyGAT6(in_channels = in_dim, hidden_channels = 256,  out_channels = out_dim, dropout=0.1)
+        print("[INFO] using HierarchicalOnlyGAT6")
+    elif model_name =="HierarchicalDirectedGAT_v2":
+        model = HierarchicalDirectedGAT_v2(in_channels = in_dim, hidden_channels = 256,  out_channels = out_dim, dropout=0.1)
+        print("[INFO] using HierarchicalDirectedGAT_v2")
+    elif model_name == "RelationalDirectedGAT":
+        model = RelationalDirectedOnlyGAT(
+            in_channels=in_dim,
+            hidden_channels=256,
+            out_channels=out_dim,
+            num_relations=14,   # matches NUM_CATEGORICAL
+            dropout=0.1
+        )
+        print("[INFO] using RelationalDirectedOnlyGAT")
+    elif model_name == "RelationalOnlyGAT":
+        model = RelationalOnlyGAT(
+            in_channels=in_dim, hidden_channels=256,
+            out_channels=out_dim, num_relations=NUM_GATE_TYPES, dropout=0.1
+        )
+        print("[INFO] using RelationalOnlyGAT (no bidirectional)")
 
+    elif model_name == "DirectedOnlyGATGlobal":
+        model = DirectedOnlyGATWithGlobal(
+            in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
+        )
+        print("[INFO] using DirectedOnlyGATWithGlobal")
 
     ##### training parameters 
     # base_lr = 0.01 

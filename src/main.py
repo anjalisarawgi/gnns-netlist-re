@@ -121,6 +121,7 @@ def evaluate_binary(model, data, mask):
     f1        = f1_score(y_true, y_pred, zero_division=0)
     precision = precision_score(y_true, y_pred, zero_division=0)
     recall    = recall_score(y_true, y_pred, zero_division=0)
+    print(f"  Predicted positive: {(pred[valid_mask] == 1).sum().item()} / {valid_mask.sum().item()}")
     return f1, precision, recall
 
 

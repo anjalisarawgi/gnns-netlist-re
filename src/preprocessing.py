@@ -297,37 +297,31 @@ def load_aisec_multiple_gmls(gml_paths, label_type="subcircuit", binary_label=Fa
         if positive_class is None:
             raise ValueError("You must provide --positive_class in binary mode.")
 
+        positive_class_id = None
         if isinstance(positive_class, str):
-            if positive_class not in label_map:
-                raise ValueError(
-                    f"Positive class name '{positive_class}' not found in labels.\n"
-                    f"Available labels: {list(label_map.keys())}"
-                )
-            positive_class_id = label_map[positive_class]
+            if positive_class in label_map:
+                positive_class_id = label_map[positive_class]
+            else:
+                print(f"[INFO] Positive class '{positive_class}' not found in this graph — all nodes are negative.")
         else:
             if positive_class in id2label_global:
                 positive_class_id = positive_class
             else:
-                raise ValueError(
-                    f"Positive class ID {positive_class} not found.\n"
-                    f"Available labels by name: {list(label_map.keys())}\n"
-                    f"Tip: pass --positive_class as the subcircuit NAME, e.g. --positive_class aes_sbox"
-                )
+                print(f"[INFO] Positive class ID {positive_class} not found in this graph — all nodes are negative.")
 
-        print(f"Binary classification: Positive class = '{id2label_global[positive_class_id]}' (label ID: {positive_class_id})")
-        labels = torch.where(
-            labels == positive_class_id,
-            torch.tensor(1, dtype=torch.long),
-            torch.tensor(0, dtype=torch.long)
-        )
+        if positive_class_id is not None:
+            print(f"Binary classification: Positive class = '{id2label_global[positive_class_id]}' (label ID: {positive_class_id})")
+            labels = torch.where(
+                labels == positive_class_id,
+                torch.tensor(1, dtype=torch.long),
+                torch.tensor(0, dtype=torch.long)
+            )
+        else:
+            labels = torch.zeros(len(encoded_labels), dtype=torch.long)
+
         id2label_global = {0: "negative", 1: "positive"}
         print("After binarization:", Counter(labels.tolist()))
-
-        if (labels == 1).sum().item() == 0:
-            print("\n[WARNING] No positive examples found!")
-            print(f"  Available subcircuit names: {label_set}")
-            print(f"  Tip: pass --positive_class as the subcircuit NAME, e.g. --positive_class aes_sbox")
-
+        
     if all_edges:
         edge_index = torch.tensor(all_edges, dtype=torch.long).t().contiguous()
     else:
