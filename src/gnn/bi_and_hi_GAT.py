@@ -378,40 +378,29 @@ class RelationalGATBlock(nn.Module):
         return self.conv(x, edge_index, edge_type)
 
 
-class RelationalDirectedGATBlock(nn.Module):
-    """Bidirectional, all relations in two fast RGATConv calls."""
-    def __init__(self, in_channels, out_channels, num_relations=14, dropout=0.1):
-        super().__init__()
-        self.conv_fwd = RGATConv(
-            in_channels, out_channels,
-            num_relations=num_relations,
-            heads=1, concat=True, dropout=dropout
-        )
-        self.conv_bwd = RGATConv(
-            in_channels, out_channels,
-            num_relations=num_relations,
-            heads=1, concat=True, dropout=dropout
-        )
-
-    def forward(self, x, edge_index, rev_edge_index, edge_type, rev_edge_type):
-        return self.conv_fwd(x, edge_index, edge_type) + \
-               self.conv_bwd(x, rev_edge_index, rev_edge_type)
-
-
 class RelationalOnlyGAT(nn.Module):
-    """Relational, forward direction only."""
-    def __init__(self, in_channels, hidden_channels, out_channels, num_relations=14, dropout=0.1):
+    """
+    Ablation: Relational-only (no directed, no hierarchy).
+    6 RelationalGATBlocks stacked flat, with a single input→output residual skip.
+    Uses edge type (gate type) to condition message passing via RGATConv.
+    """
+    def __init__(self, in_channels, hidden_channels, out_channels, num_relations=NUM_GATE_TYPES, dropout=0.1):
         super().__init__()
         C = hidden_channels
         self.dropout = dropout
-        self.num_relations = num_relations
+
         self.skip = nn.Linear(in_channels, C, bias=False) if in_channels != C else nn.Identity()
+
         self.layers = nn.ModuleList([
             RelationalGATBlock(in_channels if i == 0 else C, C, num_relations=num_relations, dropout=dropout)
             for i in range(4)
         ])
+
         self.classifier = nn.Sequential(
-            nn.Linear(C, C), nn.ELU(), nn.Dropout(dropout), nn.Linear(C, out_channels)
+            nn.Linear(C, C),
+            nn.ELU(),
+            nn.Dropout(dropout),
+            nn.Linear(C, out_channels),
         )
         self._init_weights()
 
@@ -422,63 +411,25 @@ class RelationalOnlyGAT(nn.Module):
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 
-    def _get_edge_types(self, x, edge_index):
-        gate_type = x[:, :NUM_GATE_TYPES].argmax(dim=1).clamp(0, NUM_GATE_TYPES - 1)
-        return gate_type[edge_index[0]]
+    def forward(self, x, edge_index, edge_type=None, batch=None):
+        # Extract edge_type from node features if not explicitly provided.
+        # Assumes gate type is encoded as the last feature (integer index).
+        if edge_type is None:
+            # derive relation ID from the *source* node's gate-type index
+            src = edge_index[0]
+            gate_feat = x[src, -1]          # last feature column = gate-type one-hot or index
+            edge_type = gate_feat.long()
+            # clamp to valid range just in case
+            edge_type = edge_type.clamp(0, NUM_GATE_TYPES - 1)
 
-    def forward(self, x, edge_index, batch=None):
         skip = self.skip(x)
-        edge_type = self._get_edge_types(x, edge_index)
+
         h = x
         for i, layer in enumerate(self.layers):
             h = layer(h, edge_index, edge_type)
             h = F.elu(h)
             if i < len(self.layers) - 1:
                 h = F.dropout(h, p=self.dropout, training=self.training)
-        h = h + skip
-        return self.classifier(h)
 
-
-class RelationalDirectedOnlyGAT(nn.Module):
-    """Relational + bidirectional."""
-    def __init__(self, in_channels, hidden_channels, out_channels, num_relations=14, dropout=0.1):
-        super().__init__()
-        C = hidden_channels
-        self.dropout = dropout
-        self.num_relations = num_relations
-        self.skip = nn.Linear(in_channels, C, bias=False) if in_channels != C else nn.Identity()
-        self.layers = nn.ModuleList([
-            RelationalDirectedGATBlock(in_channels if i == 0 else C, C, num_relations=num_relations, dropout=dropout)
-            for i in range(4)
-        ])
-        self.classifier = nn.Sequential(
-            nn.Linear(C, C), nn.ELU(), nn.Dropout(dropout), nn.Linear(C, out_channels)
-        )
-        self._init_weights()
-
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
-
-    def _get_edge_types(self, x, edge_index):
-        gate_type = x[:, :NUM_GATE_TYPES].argmax(dim=1).clamp(0, NUM_GATE_TYPES - 1)
-        fwd_edge_type = gate_type[edge_index[0]]
-        bwd_edge_type = gate_type[edge_index[1]]
-        return fwd_edge_type, bwd_edge_type
-
-    def forward(self, x, edge_index, batch=None):
-        row, col = edge_index
-        rev_edge_index = torch.stack([col, row], dim=0)
-        skip = self.skip(x)
-        fwd_et, bwd_et = self._get_edge_types(x, edge_index)
-        h = x
-        for i, layer in enumerate(self.layers):
-            h = layer(h, edge_index, rev_edge_index, fwd_et, bwd_et)
-            h = F.elu(h)
-            if i < len(self.layers) - 1:
-                h = F.dropout(h, p=self.dropout, training=self.training)
         h = h + skip
         return self.classifier(h)

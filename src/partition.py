@@ -13,7 +13,7 @@ from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
 from gnn.gin import GIN
-from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, RelationalDirectedOnlyGAT, RelationalOnlyGAT, DirectedOnlyGATWithGlobal
+from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, RelationalOnlyGAT, DirectedOnlyGATWithGlobal
 from gnn.graphTransformer import GraphTransformer 
 from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
@@ -83,7 +83,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "RelationalDirectedOnlyGAT", "RelationalOnlyGAT",  "DirectedOnlyGATGlobal"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "RelationalOnlyGAT",  "DirectedOnlyGATWithGlobal"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -1104,15 +1104,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name =="HierarchicalDirectedGAT_v2":
         model = HierarchicalDirectedGAT_v2(in_channels = in_dim, hidden_channels = 256,  out_channels = out_dim, dropout=0.1)
         print("[INFO] using HierarchicalDirectedGAT_v2")
-    elif model_name == "RelationalDirectedGAT":
-        model = RelationalDirectedOnlyGAT(
-            in_channels=in_dim,
-            hidden_channels=256,
-            out_channels=out_dim,
-            num_relations=14,   # matches NUM_CATEGORICAL
-            dropout=0.1
-        )
-        print("[INFO] using RelationalDirectedOnlyGAT")
     elif model_name == "RelationalOnlyGAT":
         model = RelationalOnlyGAT(
             in_channels=in_dim, hidden_channels=256,
@@ -1120,7 +1111,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         )
         print("[INFO] using RelationalOnlyGAT (no bidirectional)")
 
-    elif model_name == "DirectedOnlyGATGlobal":
+    elif model_name == "DirectedOnlyGATWithGlobal":
         model = DirectedOnlyGATWithGlobal(
             in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
         )
