@@ -39,7 +39,7 @@ class DirectedOnlyGAT(nn.Module):
 
         self.layers = nn.ModuleList([
             DirectedGATBlock(in_channels if i == 0 else C, C, dropout=dropout)
-            for i in range(6)
+            for i in range(4)
         ])
 
         self.classifier = nn.Sequential(

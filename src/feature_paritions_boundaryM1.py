@@ -60,6 +60,47 @@ def count_1hop_gate_types(node, G_und, G_dir):
 
     return counts
 
+def count_2hop_gate_types(node, G_und, G_dir):
+    """
+    Returns counts of gate types within 2 hops.
+    """
+    counts = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
+
+    neighbors_1 = set(G_und.neighbors(node))
+
+    neighbors_2 = set()
+    for nb in neighbors_1:
+        neighbors_2.update(G_und.neighbors(nb))
+
+    neighbors = neighbors_1 | neighbors_2
+    neighbors.discard(node)
+
+    for nb in neighbors:
+        nb_data = G_dir.nodes[nb]
+        nb_label = nb_data.get("label_copy", "")
+        nb_gate = parse_gate_from_label(nb_label)
+
+        idx = gate2id.get(nb_gate, gate2id["UNKNOWN"])
+        counts[idx] += 1.0
+
+    return counts
+
+def count_pi_po_connections(node, G_dir):
+    pi_connections = 0
+    po_connections = 0
+
+    for nb in G_dir.predecessors(node):
+        label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
+        if "INPUT" in label:
+            pi_connections += 1
+
+    for nb in G_dir.successors(node):
+        label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
+        if "OUTPUT" in label:
+            po_connections += 1
+
+    return float(pi_connections), float(po_connections)
+
 def is_graph_connected(G):
     if G.is_directed():
         return nx.is_weakly_connected(G)
@@ -323,18 +364,22 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         gate_type = parse_gate_from_label(label_copy)
         gate_onehot = encode_gate(gate_type)
         gate_1hop_counts = count_1hop_gate_types(node, G_und, G_dir)
-        gate_feats = torch.cat([gate_onehot, gate_1hop_counts])
+        gate_2hop_counts = count_2hop_gate_types(node, G_und, G_dir)
+
+        gate_feats = torch.cat([gate_onehot, gate_1hop_counts, gate_2hop_counts]) #### check
 
         neighbor_degs = [deg_und.get(nb, 0) for nb in G_und.neighbors(node)]
         deg_contrast = deg_und.get(node, 0) - (np.mean(neighbor_degs) if neighbor_degs else 0.0)
 
+        pi_conn, po_conn = count_pi_po_connections(node, G_dir)
         # structural / graph features
         struct_feats = torch.tensor([
             in_d, out_d, fan_ratio, 
+            pi_conn, po_conn, d_io, # input output infoa
             in_mean, in_std, 
             out_mean, out_std, 
             float(ego_density),
-            kcore, pager, d_io,
+            kcore, pager, 
             f_reach, b_reach, reach_asym, deg_contrast, 
         ], dtype=torch.float32)
 

@@ -1,5 +1,5 @@
 sampling_method: graphsaint_rw
-model: RelationalOnlyGAT
+model: DirectedOnlyGAT
 
 
 train_gml:

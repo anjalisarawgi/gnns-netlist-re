@@ -13,7 +13,7 @@ from gnn.graphSAGE import graphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2
 from gnn.gin import GIN
-from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, RelationalOnlyGAT, DirectedOnlyGATWithGlobal
+from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, DirectedOnlyGATWithGlobal
 from gnn.graphTransformer import GraphTransformer 
 from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
@@ -38,6 +38,7 @@ import sys
 import os
 from datetime import datetime
 import joblib
+import copy
 
 def set_seed(seed=42):
     random.seed(seed)
@@ -83,7 +84,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "RelationalOnlyGAT",  "DirectedOnlyGATWithGlobal"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -1104,13 +1105,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name =="HierarchicalDirectedGAT_v2":
         model = HierarchicalDirectedGAT_v2(in_channels = in_dim, hidden_channels = 256,  out_channels = out_dim, dropout=0.1)
         print("[INFO] using HierarchicalDirectedGAT_v2")
-    elif model_name == "RelationalOnlyGAT":
-        model = RelationalOnlyGAT(
-            in_channels=in_dim, hidden_channels=256,
-            out_channels=out_dim, num_relations=NUM_GATE_TYPES, dropout=0.1
-        )
-        print("[INFO] using RelationalOnlyGAT (no bidirectional)")
-
     elif model_name == "DirectedOnlyGATWithGlobal":
         model = DirectedOnlyGATWithGlobal(
             in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
@@ -1177,6 +1171,11 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         print("[INFO] CE weights (design-avg)     :", class_weights.tolist())
         print("[INFO] Soft CE weights (design-avg):", soft_class_weights.tolist())
     #### main training loop now 
+    ## block also for early stopping
+    best_val_score = -float("inf")
+    best_model_state = None
+    patience = 3
+    patience_counter = 0
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
 
@@ -1319,7 +1318,26 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 name = os.path.splitext(os.path.basename(path))[0]
                 m = evaluate_test(g, model)
                 probs, labels = get_probs_and_labels(model, g)   # probs = P(y=1)
-                print(f"[SANITY] {name} | Mean prob boundary=1: {probs[labels==1].mean():.4f} | Mean prob boundary=0: {probs[labels==0].mean():.4f}")
+
+
+                # print(f"[SANITY] {name} | Mean prob boundary=1: {probs[labels==1].mean():.4f} | Mean prob boundary=0: {probs[labels==0].mean():.4f}")
+                mean_prob_pos = float(probs[labels == 1].mean()) if np.any(labels == 1) else float("nan")
+                mean_prob_neg = float(probs[labels == 0].mean()) if np.any(labels == 0) else float("nan")
+                prob_gap = mean_prob_pos - mean_prob_neg
+
+                print(
+                    f"[CHECK] {name} | "
+                    f"Mean prob boundary=1: {mean_prob_pos:.4f} | "
+                    f"Mean prob boundary=0: {mean_prob_neg:.4f}"
+                )
+
+                # logging for mean prob metrics
+                wandb.log({
+                    "epoch": epoch,
+                    f"val_prob/{name}/mean_prob_boundary": mean_prob_pos,
+                    f"val_prob/{name}/mean_prob_not_boundary": mean_prob_neg,
+                    f"val_prob/{name}/prob_gap": prob_gap,
+                })
                 pr_auc = pr_auc_from_probs(labels, probs)
                 val_metrics["pr_auc"].append(pr_auc)
                 
@@ -1406,6 +1424,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
             wandb.log({
                 "epoch": epoch,
                 "val_macro/f1": val_macro.get("f1", 0.0),
+                "val_macro/pr_auc": val_macro.get("pr_auc", 0.0),
                 "val_macro/loss": float(np.mean(val_losses)),
                 "val_macro/precision": val_macro.get("precision", 0.0),
                 "val_macro/recall": val_macro.get("recall", 0.0),
@@ -1415,9 +1434,31 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 "time/val_eval_sec": time.perf_counter() - eval_start,
             })
 
+            # ---- EARLY STOPPING ----
+            current_score = val_macro.get("pr_auc", 0.0)
+
+            if current_score > best_val_score + 1e-4:
+                best_val_score = current_score
+                patience_counter = 0
+                # best_model_state = model.state_dict()
+                best_model_state = copy.deepcopy(model.state_dict())
+
+                print(f"[EARLY STOP] New best PR-AUC: {best_val_score:.4f}")
+
+            else:
+                patience_counter += 1
+                print(f"[EARLY STOP] No improvement ({patience_counter}/{patience})")
+
+            if patience_counter >= patience:
+                print(f"[EARLY STOP] Triggered at epoch {epoch}")
+                break
+
             
 
     ### Save model
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        print("[INFO] Loaded best model from early stopping")
     run_dir =  os.path.join("models", wandb.run.name)
     os.makedirs(run_dir, exist_ok=True)
     model_path = f"{run_dir}/model.pt"
