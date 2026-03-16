@@ -21,3 +21,6 @@ logs/
 mwe/tum-*/
 models/
 
+new_graphs_crypto_scp/
+graphs_scp/
+*.joblib

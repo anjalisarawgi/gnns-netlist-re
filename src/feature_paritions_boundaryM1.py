@@ -8,7 +8,8 @@ import re
 import torch
 
 GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
-
+LIBRARIES = ["osu035", "nangate", "gscl45nm"]
+lib2id = {l: i for i, l in enumerate(LIBRARIES)}
 gate2id = {g: i for i, g in enumerate(GATE_TYPES)}
 
 def parse_gate_from_label(label_copy: str):
@@ -42,6 +43,11 @@ def encode_gate(gate_type: str):
 
     return gate_onehot
 
+def encode_library(lib_name):
+    vec = torch.zeros(len(LIBRARIES), dtype=torch.float32)
+    if lib_name in lib2id:
+        vec[lib2id[lib_name]] = 1.0
+    return vec
 
 def count_1hop_gate_types(node, G_und, G_dir):
     """
@@ -62,7 +68,7 @@ def count_1hop_gate_types(node, G_und, G_dir):
 
 def count_2hop_gate_types(node, G_und, G_dir):
     """
-    Returns counts of gate types within 2 hops.
+    Returns counts of gate types exactly 2 hops away.
     """
     counts = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
 
@@ -72,10 +78,11 @@ def count_2hop_gate_types(node, G_und, G_dir):
     for nb in neighbors_1:
         neighbors_2.update(G_und.neighbors(nb))
 
-    neighbors = neighbors_1 | neighbors_2
-    neighbors.discard(node)
+    # remove 1-hop neighbors and the node itself
+    neighbors_2 = neighbors_2 - neighbors_1
+    neighbors_2.discard(node)
 
-    for nb in neighbors:
+    for nb in neighbors_2:
         nb_data = G_dir.nodes[nb]
         nb_label = nb_data.get("label_copy", "")
         nb_gate = parse_gate_from_label(nb_label)
@@ -85,21 +92,21 @@ def count_2hop_gate_types(node, G_und, G_dir):
 
     return counts
 
-def count_pi_po_connections(node, G_dir):
-    pi_connections = 0
-    po_connections = 0
+# def count_pi_po_connections(node, G_dir):
+#     pi_connections = 0
+#     po_connections = 0
 
-    for nb in G_dir.predecessors(node):
-        label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
-        if "INPUT" in label:
-            pi_connections += 1
+#     for nb in G_dir.predecessors(node):
+#         label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
+#         if "INPUT" in label:
+#             pi_connections += 1
 
-    for nb in G_dir.successors(node):
-        label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
-        if "OUTPUT" in label:
-            po_connections += 1
+#     for nb in G_dir.successors(node):
+#         label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
+#         if "OUTPUT" in label:
+#             po_connections += 1
 
-    return float(pi_connections), float(po_connections)
+#     return float(pi_connections), float(po_connections)
 
 def is_graph_connected(G):
     if G.is_directed():
@@ -265,7 +272,17 @@ def compute_structural_edge_features(G_dir, edge_index_list):
         
     return edge_attrs
 
-def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
+def get_unique_partition_count(G_dir):
+    partitions = set()
+
+    for _, data in G_dir.nodes(data=True):
+        p = _clean_partition(data.get("partition"))
+        if p is not None:
+            partitions.add(p)
+
+    return float(len(partitions))
+
+def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
     print("Processing:", input_gml)
 
     G = nx.read_gml(input_gml)
@@ -305,30 +322,14 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
     else:
         dist_to_io = {}
 
-    # global features
-    num_nodes = G_dir.number_of_nodes()
-    num_edges = G_dir.number_of_edges()
-    graph_density = nx.density(G_und)
 
-    log_nodes = np.log1p(num_nodes)
-    log_edges = np.log1p(num_edges)
+    num_unique_partitions = get_unique_partition_count(G_dir)
 
-    deg_values = np.array(list(deg_und.values()), dtype=np.float32)
-    deg_mean = deg_values.mean()
-    deg_std = deg_values.std()
-    deg_cv = deg_std / (deg_mean + 1e-6)
+    num_nodes = float(G_dir.number_of_nodes())
+    num_edges = float(G_dir.number_of_edges())
+    lib_onehot = encode_library(tech)
 
-    in_degs = np.array([d for _, d in G_dir.in_degree()], dtype=np.float32)
-    out_degs = np.array([d for _, d in G_dir.out_degree()], dtype=np.float32)
-    global_flow_asym = (
-        in_degs.mean() - out_degs.mean()
-    ) / (in_degs.mean() + out_degs.mean() + 1e-6)
-
-    core_vals = np.array(list(core_num.values()), dtype=np.float32)
-    max_core = core_vals.max()
-    mean_core = core_vals.mean()
-
-
+    unknown_gate_labels = {}
     for node in G_dir.nodes():
         in_d = float(indeg.get(node, 0))
         out_d = float(outdeg.get(node, 0))
@@ -362,6 +363,12 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
 
         # one hot encoding section ---:::::::
         gate_type = parse_gate_from_label(label_copy)
+
+
+        if gate_type == "UNKNOWN":
+            key = str(label_copy).strip("'")
+            unknown_gate_labels[key] = unknown_gate_labels.get(key, 0) + 1
+
         gate_onehot = encode_gate(gate_type)
         gate_1hop_counts = count_1hop_gate_types(node, G_und, G_dir)
         gate_2hop_counts = count_2hop_gate_types(node, G_und, G_dir)
@@ -371,16 +378,15 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         neighbor_degs = [deg_und.get(nb, 0) for nb in G_und.neighbors(node)]
         deg_contrast = deg_und.get(node, 0) - (np.mean(neighbor_degs) if neighbor_degs else 0.0)
 
-        pi_conn, po_conn = count_pi_po_connections(node, G_dir)
         # structural / graph features
         struct_feats = torch.tensor([
             in_d, out_d, fan_ratio, 
-            pi_conn, po_conn, d_io, # input output infoa
             in_mean, in_std, 
             out_mean, out_std, 
             float(ego_density),
             kcore, pager, 
             f_reach, b_reach, reach_asym, deg_contrast, 
+            d_io, # input output infoa
         ], dtype=torch.float32)
 
         x = torch.cat([gate_feats, struct_feats])
@@ -393,68 +399,64 @@ def process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2):
         G_dir.nodes[node]["partition_features"] = [
             float(frac_same_p1),
             float(frac_same_p2),
+            int(num_unique_partitions)
         ]
 
         # graph features
-        graph_features = torch.tensor([
-            log_nodes,
-            log_edges,
-            graph_density,
-            deg_cv,
-            global_flow_asym,
-            max_core,
-            mean_core,
-        ], dtype=torch.float32)
-
-        G_dir.nodes[node]["graph_features"] = graph_features.tolist()
+        graph_feats = torch.cat([torch.tensor([num_nodes, num_edges], dtype=torch.float32), lib_onehot])
+        G_dir.nodes[node]["graph_features"] = graph_feats.tolist()
 
 
-    os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
-
-
-    # ------------------------
-    # EDGE FEATURES
-    # ------------------------
-
+    # edge features
     for u, v in G_dir.edges():
+        # 1. Gate Logic Symmetry (The "Bundle" Signal)
+        gate_u = parse_gate_from_label(G_dir.nodes[u].get("label_copy", ""))
+        gate_v = parse_gate_from_label(G_dir.nodes[v].get("label_copy", ""))
+        is_same_gate_type = 1.0 if gate_u == gate_v else 0.0
 
+        # 3. Connectivity Delta (The "Flow" Signal)
         deg_u = float(deg_und.get(u, 0))
         deg_v = float(deg_und.get(v, 0))
+        delta_deg = deg_u - deg_v
 
-        outdeg_u = float(outdeg.get(u, 0))
-        indeg_v = float(indeg.get(v, 0))
-
-        d_io_u = float(dist_to_io.get(u, -1))
-        d_io_v = float(dist_to_io.get(v, -1))
-
-        # reach asym already computed per node
-        f_reach_u = float(_forward_reach_within_k(G_dir, u, k=reach_k))
-        b_reach_u = float(_backward_reach_within_k(G_dir, u, k=reach_k))
-        reach_asym_u = (f_reach_u - b_reach_u) / (f_reach_u + b_reach_u + 1.0)
-
-        f_reach_v = float(_forward_reach_within_k(G_dir, v, k=reach_k))
-        b_reach_v = float(_backward_reach_within_k(G_dir, v, k=reach_k))
-        reach_asym_v = (f_reach_v - b_reach_v) / (f_reach_v + b_reach_v + 1.0)
+        # 4. Neighborhood Overlap (The "Ribbon" Signal)
+        neigh_u = set(G_und.neighbors(u))
+        neigh_v = set(G_und.neighbors(v))
+        shared_count = float(len(neigh_u.intersection(neigh_v)))
 
         edge_feat = [
-            deg_u - deg_v,                        # Δ degree
-            np.log1p(outdeg_u),                   # source fanout
-            np.log1p(indeg_v),                    # target fanin
-            # d_io_u - d_io_v,                      # Δ IO distance
-            reach_asym_u - reach_asym_v,          # Δ reach asym
+            is_same_gate_type,    # Does logic type persist?If the source and destination gates are the same type (AND→AND, INV→INV, etc.), the feature becomes 1. Otherwise it’s 0. 
+            delta_deg,            # Is there a density change? whether the edge moves from a highly connected region to a less connected region, or the reverse.
+            shared_count,         # Are they tightly coupled? This tells us whether the two nodes live inside the same local cluster.
         ]
 
         G_dir.edges[u, v]["edge_features"] = edge_feat
 
 
+    os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
     nx.write_gml(G_dir, output_gml)
     print(f"[INFO] Saved processed GML → {output_gml}")
 
+    if len(unknown_gate_labels) > 0:
+        import csv
+        csv_path = output_gml.replace(".gml", "_unknown_gates.csv")
+        with open(csv_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["gate_label", "count"])
 
-# ROOT_RAW = "graphs/raw_v2/raw"
-# ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10_wEdgeFeatures"
-ROOT_RAW = "new_graphs_crypto/raw/raw"
-ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10_wEdgeFeatures"
+            for gate, count in sorted(unknown_gate_labels.items(), key=lambda x: -x[1]):
+                writer.writerow([gate, count])
+
+        print(f"[INFO] Unknown gate report saved → {csv_path}")
+    else:
+        print(f"[INFO] unknown gates not found")
+
+
+
+ROOT_RAW = "graphs/raw_v2/raw"
+ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_final_march16"
+# ROOT_RAW = "new_graphs_crypto/raw/raw"
+# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_final_march16"
 
 processed_dirs = {}
 usable_graphs = []
@@ -499,7 +501,7 @@ for design in os.listdir(ROOT_RAW):
                 continue
 
             try:
-                process_single_gml(input_gml, output_gml, reach_k=3, ego_k=2)
+                process_single_gml(input_gml, output_gml, tech, reach_k=3, ego_k=2)
                 usable_graphs.append(output_gml)
 
                 G_out = nx.read_gml(output_gml)

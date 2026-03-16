@@ -40,6 +40,9 @@ from datetime import datetime
 import joblib
 import copy
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("[INFO] Using device:", device)
+
 def set_seed(seed=42):
     random.seed(seed)
     np.random.seed(seed)
@@ -523,13 +526,16 @@ def focal_loss(logits, targets, gamma=2.0, alpha = 0.25):
     at = torch.where(targets ==1, alpha, 1 - alpha)
     return at * ((1 - pt) ** gamma) * ce
     
+
 def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft_class_weights=None):
     model.train()
     optimizer.zero_grad()
 
-    per_graph_losses = []
+    total_loss = 0.0
+    num_graphs = len(graphs)
 
     for g in graphs:
+        g = g.to(device)
         out = model(g.x, g.edge_index)
 
         if args.loss_type == "focal":
@@ -549,23 +555,26 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
         else:
             loss_per_node = F.cross_entropy(out, g.y, reduction="none")
 
-        # IMPORTANT: mean over nodes of THIS graph
-        per_graph_losses.append(loss_per_node.mean())
+        # divide by num_graphs here so gradients are equivalent to the mean
+        loss = loss_per_node.mean() / num_graphs
+        loss.backward()  # frees this graph's computation graph immediately
 
-    # IMPORTANT: mean over graphs
-    loss = torch.stack(per_graph_losses).mean()
-    loss.backward()
+        total_loss += loss.item()
+
+        # optionally move graph back to CPU to free VRAM between designs
+        g = g.to("cpu")
 
     if args.set_gradient_clipping:
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
 
     optimizer.step()
-    return float(loss.item())
+    return float(total_loss)
+    
     
 def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weights=None):
     model.train()
     optimizer.zero_grad()
-
+    data = data.to(device)
     out = model(data.x, data.edge_index)
 
     if args.loss_type == "focal":
@@ -606,6 +615,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
     epoch_nodes = set() # for coverage and debugging and analysis
 
     for batch in loader: # here, batch is is not the full graph but the sampled subgraph by graphSAINT
+        batch = batch.to(device)
         ###### ?????? - i think this logs the node indexes covered in eahc epoch
         if hasattr(batch, "global_id"):
             epoch_nodes.update(batch.global_id.cpu().tolist())
@@ -620,7 +630,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
         # c) batch.edge_index = edges between those nodes
         # d) batch.y = node labels
         optimizer.zero_grad()
-
+        
         out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
 
         # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
@@ -695,6 +705,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
 @torch.no_grad()
 def evaluate_train_acc(model, data, mask):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
     if args.decision_threshold is not None:
         probs = torch.softmax(out, dim=1)
@@ -703,7 +714,7 @@ def evaluate_train_acc(model, data, mask):
         pred = out.argmax(dim=1)
     # pred = predict_with_threshold(out, args.decision_threshold)
 
-    valid_mask = mask 
+    valid_mask = mask.to(device)
     correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
 
     accuracy = correct / valid_mask.sum().item() 
@@ -713,6 +724,7 @@ def evaluate_train_acc(model, data, mask):
 @torch.no_grad()
 def evaluate_train_fpr(data, model, mask):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
 
     # another moving part: ???
@@ -728,7 +740,7 @@ def evaluate_train_fpr(data, model, mask):
         pred = out.argmax(dim=1)
 
 
-    valid_mask = mask 
+    valid_mask = mask.to(device)
 
     y_true = data.y[valid_mask].cpu().numpy()
     y_pred = pred[valid_mask].cpu().numpy()
@@ -743,6 +755,7 @@ def evaluate_train_fpr(data, model, mask):
 @torch.no_grad()
 def eval_class_acc(data, model, mask, id2name=None):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
     # pred = out.argmax(dim=1)
     if args.decision_threshold is not None:
@@ -751,7 +764,7 @@ def eval_class_acc(data, model, mask, id2name=None):
     else:
         pred = out.argmax(dim=1)
 
-    valid_mask = mask 
+    valid_mask = mask.to(device)
     y_true = data.y[valid_mask]
     y_pred = pred[valid_mask]
 
@@ -819,6 +832,7 @@ def compute_region_iou(G, true_boundary_set, pred_boundary_set, k_hop):
 @torch.no_grad()
 def evaluate_test(data, model):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
     
     # another moving part: ???
@@ -864,6 +878,7 @@ def evaluate_test(data, model):
 @torch.no_grad()
 def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, prob_mass=0.5):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy() # callingsoftmax predictions
 
@@ -964,6 +979,7 @@ def predict_with_threshold(out, threshold):
 @torch.no_grad()
 def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
     # loss = F.cross_entropy(out, data.y, reduction="mean")
     # loss = focal_loss(out, data.y, gamma=2.0).mean()
@@ -994,6 +1010,7 @@ def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
 @torch.no_grad()
 def compute_density_stats(model, data):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
     y_true = data.y.cpu().numpy()
@@ -1012,6 +1029,7 @@ def compute_density_stats(model, data):
 @torch.no_grad()
 def get_probs_and_labels(model, data):
     model.eval()
+    data = data.to(device)
     out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
     labels = data.y.cpu().numpy()
@@ -1094,7 +1112,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = FlatDirectedGAT(in_channels = in_dim, hidden_channels = 256,num_layers=6,  out_channels = out_dim, dropout=0.1)
         print("[INFO] using FlatDirectedGAT")
     elif model_name =="DirectedOnlyGAT":
-        model = DirectedOnlyGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        model = DirectedOnlyGAT(in_channels = in_dim, hidden_channels = 512, out_channels = out_dim, dropout=0.1).to(device)
         print("[INFO] using DirectedOnlyGAT")
     elif model_name =="HierarchicalOnlyGAT4":
         model = HierarchicalOnlyGAT4(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
