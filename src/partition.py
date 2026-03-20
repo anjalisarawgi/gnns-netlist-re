@@ -351,7 +351,7 @@ def load_single_gml(gml_path, remove_edges = False):
     for node in nodes:
         attr = G.nodes[node] # attr?
         feat = attr.get("features", [])
-        # feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio 
+        feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio  -- basic dimensions
         # feat = feat[28:31] #### indeg, outdeg, fanin
         # feat = feat[0:28] ####  (14ohe) + (14ohe) 
         # feat = feat[:-2]
@@ -405,6 +405,21 @@ def load_single_gml(gml_path, remove_edges = False):
         except (ValueError, TypeError): ######??? - we wanna change this ***s
             label= 0
         labels.append(label)
+
+
+        # boundary_value = attr.get("boundary", 0)
+        # try:
+        #     label = int(boundary_value)
+        # except (ValueError, TypeError):
+        #     label = 0
+
+        # # INPUT/OUTPUT gates are circuit-level I/O, not subcircuit boundaries
+        # # force them to boundary = 0 regardless of what the label generation assigned
+        # label_copy = attr.get("label_copy", "")
+        # if "INPUT" in str(label_copy) or "OUTPUT" in str(label_copy):
+        #     label = 0
+
+        # labels.append(label)
 
     id2label = {0: "not_boundary", 1:"boundary"}
     labels = torch.tensor(labels, dtype = torch.long)
@@ -561,6 +576,9 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
 
         total_loss += loss.item()
 
+        # ADD THESE TWO LINES:
+        del out, loss, loss_per_node
+        torch.cuda.empty_cache()
         # optionally move graph back to CPU to free VRAM between designs
         g = g.to("cpu")
 
@@ -1106,13 +1124,13 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = HierarchicalGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using HierarchicalGAT")
     elif model_name == 'hdGNN':
-        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
+        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 512, out_channels = out_dim, dropout=0.1).to(device)
         print("[INFO] using HierarchicalDirectedGAT")
     elif model_name =="FlatDirectedGAT":
         model = FlatDirectedGAT(in_channels = in_dim, hidden_channels = 256,num_layers=6,  out_channels = out_dim, dropout=0.1)
         print("[INFO] using FlatDirectedGAT")
     elif model_name =="DirectedOnlyGAT":
-        model = DirectedOnlyGAT(in_channels = in_dim, hidden_channels = 512, out_channels = out_dim, dropout=0.1).to(device)
+        model = DirectedOnlyGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1).to(device)
         print("[INFO] using DirectedOnlyGAT")
     elif model_name =="HierarchicalOnlyGAT4":
         model = HierarchicalOnlyGAT4(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
@@ -1128,6 +1146,8 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
             in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
         )
         print("[INFO] using DirectedOnlyGATWithGlobal")
+
+    model = model.to(device)
 
     ##### training parameters 
     # base_lr = 0.01 
@@ -1192,7 +1212,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     ## block also for early stopping
     best_val_score = -float("inf")
     best_model_state = None
-    patience = 3
+    patience = 6
     patience_counter = 0
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()

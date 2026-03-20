@@ -1,30 +1,19 @@
-# model: rf
-# n_estimators: 300
-# top_k_features: 10
-# n_jobs: 10
-
-
-# model: tabpfn
-# tabpfn_version: v1
-# n_ensemble_configurations: 32
-# device: cuda
-# subsample_train: 8000
-
-# model: tabpfn
-# tabpfn_version: v2
-# time_budget: 300
-# device: cuda
-# subsample_train: 10000
-
-model: tabicl
-tabicl_n_estimators: 32      # down from 32, reduces memory 4x
-tabicl_batch_size: 2        # down from 8, reduces memory further
-tabicl_device: cuda         # GPU handles this much better than CPU
-subsample_train: 50000      # cap training rows
-
-use_partition_features: False
-use_graph_features: False
-save_predictions: False
+epochs: 1000
+# walk_length: 20
+# perc_batchsize: 0.01
+set_gradient_clipping: true
+normalize_class_weights: true
+reduction_method_cel: "mean"
+lr: 0.001
+loss_type : "ce_soft" #ce_weighted #ce_soft
+sample_coverage : 50
+training_mode: "fullgraph"
+fullgraph_mode: "per_design"
+# use_lib_id: true
+# use_design_id: true
+# use_partition_features: truef
+# use_graph_features: true
+model: hdGNN
 
 
 train_gml:
@@ -78,37 +67,37 @@ train_gml:
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/osu035/aes_inv_sbox_combined_m1.gml"
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes_core/osu035/aes_cipher_top_combined_m1.gml"
 
-# gost28147-89_latest
-# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_cfb_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_cfb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_ecb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_cfb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_sbox_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_ecb_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_mac_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
-# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_ecb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_sbox_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_mac_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_pipelined_ecb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_cfb_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_cfb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_ecb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_cfb_decrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_sbox_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_ecb_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_mac_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_pipelined_ecb_encrypt_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_ecb_decrypt_combined_m1.gml"
+# # gost28147-89_latest
+# # - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_cfb_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_cfb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_ecb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_cfb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_sbox_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_ecb_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_mac_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+# # - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/nangate/gost89_ecb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_sbox_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_mac_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_pipelined_ecb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_cfb_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_cfb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_ecb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_cfb_decrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_sbox_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_ecb_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_mac_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/gost28147-89_latest/osu035/gost89_ecb_decrypt_combined_m1.gml"
 
 # aes-encryption_latest
 # - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/nangate/aes_key_expand_128_combined_m1.gml"
@@ -138,25 +127,25 @@ train_gml:
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha3_latest/osu035/round2in1_combined_m1.gml"
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha3_latest/osu035/round_combined_m1.gml"
 
-# hight_latest
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/SKG_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/RF_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/WKG_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/HIGHT_CORE_TOP_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/KEY_SCHED_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/CRYPTO_PATH_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/SKG_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/RF_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/WKG_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/HIGHT_CORE_TOP_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/KEY_SCHED_combined_m1.gml"
-# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/CRYPTO_PATH_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/SKG_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/RF_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/WKG_combined_m1.gml"
-# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/HIGHT_CORE_TOP_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/KEY_SCHED_combined_m1.gml"
-- "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/CRYPTO_PATH_combined_m1.gml"
+# # hight_latest
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/SKG_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/RF_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/WKG_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/HIGHT_CORE_TOP_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/KEY_SCHED_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/nangate/CRYPTO_PATH_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/SKG_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/RF_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/WKG_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/HIGHT_CORE_TOP_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/KEY_SCHED_combined_m1.gml"
+# # - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/gscl45nm/CRYPTO_PATH_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/SKG_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/RF_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/WKG_combined_m1.gml"
+# # - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/HIGHT_CORE_TOP_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/KEY_SCHED_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/CRYPTO_PATH_combined_m1.gml"
 
 # not sure -- des 
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/des_latest/nangate/sbox3_combined_m1.gml"
@@ -503,6 +492,7 @@ val_gml:
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/aes-encryption_latest/nangate/aes_cipher_top_combined_m1.gml"
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/sha3_latest/nangate/keccak_combined_m1.gml"
 - "new_graphs_crypto_scp/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_feb10/hight_latest/osu035/HIGHT_CORE_TOP_combined_m1.gml"
+
 
 
 test_gml: 

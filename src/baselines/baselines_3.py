@@ -1,40 +1,3 @@
-"""
-train_baseline.py — Unified tabular baseline for boundary node classification.
-Supports: Random Forest, TabICL, TabPFN (v1 or v2).
-
-Usage:
-    python train_baseline.py --config config/baseline_config.yml
-
-    # or via CLI:
-    python train_baseline.py --model rf      --train_gml ... --val_gml ... --test_gml ...
-    python train_baseline.py --model tabicl  --train_gml ... --val_gml ... --test_gml ...
-    python train_baseline.py --model tabpfn  --train_gml ... --val_gml ... --test_gml ...
-
-Example YAML config:
-    model: rf          # rf | tabicl | tabpfn
-    train_gml:
-      - path/to/train.gml
-    val_gml:
-      - path/to/val.gml
-    test_gml:
-      - path/to/test.gml
-
-    # RF-specific
-    n_estimators: 300
-    top_k_features: 10
-
-    # TabICL-specific
-    n_d: 64
-    n_steps: 5
-    max_epochs: 200
-    patience: 15
-
-    # TabPFN-specific
-    tabpfn_version: v1       # v1 | v2
-    n_ensemble_configurations: 32
-    subsample_train: 8000    # cap rows for TabPFN v1
-"""
-
 import os
 import sys
 import json
@@ -78,7 +41,7 @@ def get_args():
     parser.add_argument("--train_gml", type=str, nargs="+", default=None)
     parser.add_argument("--val_gml",   type=str, nargs="+", default=None)
     parser.add_argument("--test_gml",  type=str, nargs="+", default=None)
-    parser.add_argument("--output_dir", type=str, default="results/baselines")
+    parser.add_argument("--output_dir", type=str, default="results_baselines")
     parser.add_argument("--use_partition_features", action="store_true")
     parser.add_argument("--use_graph_features",     action="store_true")
     parser.add_argument("--save_predictions",       action="store_true",
@@ -470,7 +433,7 @@ def main():
     set_seed(args.seed)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_dir = os.path.join(args.output_dir, f"{args.model}_{timestamp}")
+    model_dir = os.path.join(args.output_dir, args.model, timestamp)
     os.makedirs(model_dir, exist_ok=True)
 
     print(f"\n[INFO] Model: {args.model.upper()}")

@@ -8,8 +8,6 @@ import re
 import torch
 
 GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
-LIBRARIES = ["osu035", "nangate", "gscl45nm"]
-lib2id = {l: i for i, l in enumerate(LIBRARIES)}
 gate2id = {g: i for i, g in enumerate(GATE_TYPES)}
 
 def parse_gate_from_label(label_copy: str):
@@ -43,11 +41,6 @@ def encode_gate(gate_type: str):
 
     return gate_onehot
 
-def encode_library(lib_name):
-    vec = torch.zeros(len(LIBRARIES), dtype=torch.float32)
-    if lib_name in lib2id:
-        vec[lib2id[lib_name]] = 1.0
-    return vec
 
 def count_1hop_gate_types(node, G_und, G_dir):
     """
@@ -327,7 +320,6 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
     num_nodes = float(G_dir.number_of_nodes())
     num_edges = float(G_dir.number_of_edges())
-    lib_onehot = encode_library(tech)
 
     unknown_gate_labels = {}
     for node in G_dir.nodes():
@@ -371,9 +363,10 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
         gate_onehot = encode_gate(gate_type)
         gate_1hop_counts = count_1hop_gate_types(node, G_und, G_dir)
-        gate_2hop_counts = count_2hop_gate_types(node, G_und, G_dir)
+        # gate_2hop_counts = count_2hop_gate_types(node, G_und, G_dir)
 
-        gate_feats = torch.cat([gate_onehot, gate_1hop_counts, gate_2hop_counts]) #### check
+        # gate_feats = torch.cat([gate_onehot, gate_1hop_counts, gate_2hop_counts]) #### check
+        gate_feats = torch.cat([gate_onehot, gate_1hop_counts]) #### check
 
         neighbor_degs = [deg_und.get(nb, 0) for nb in G_und.neighbors(node)]
         deg_contrast = deg_und.get(node, 0) - (np.mean(neighbor_degs) if neighbor_degs else 0.0)
@@ -399,11 +392,11 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
         G_dir.nodes[node]["partition_features"] = [
             float(frac_same_p1),
             float(frac_same_p2),
-            int(num_unique_partitions)
+            int(num_unique_partitions) # basically total partitions
         ]
 
         # graph features
-        graph_feats = torch.cat([torch.tensor([num_nodes, num_edges], dtype=torch.float32), lib_onehot])
+        graph_feats = torch.tensor([num_nodes, num_edges], dtype=torch.float32)
         G_dir.nodes[node]["graph_features"] = graph_feats.tolist()
 
 
@@ -432,6 +425,28 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
         G_dir.edges[u, v]["edge_features"] = edge_feat
 
+    # ── Force INPUT/OUTPUT gates to boundary = 0 ──────────────────
+    # Primary I/O gates satisfy the boundary criterion by definition
+    # (no incoming/outgoing edges within any partition) but are not
+    # subcircuit interface nodes in the reverse engineering sense.
+    io_overridden = 0
+    io_forced = 0
+    for node in G_dir.nodes():
+        label_copy = str(G_dir.nodes[node].get("label_copy", "")).upper()
+        if "INPUT" in label_copy or "OUTPUT" in label_copy:
+            current = G_dir.nodes[node].get("boundary", "MISSING")
+            if current == 1:
+                G_dir.nodes[node]["boundary"] = 0
+                io_overridden += 1
+            elif current == "MISSING":
+                G_dir.nodes[node]["boundary"] = 0
+                io_forced += 1
+
+    if io_overridden > 0:
+        print(f"[INFO] Overrode boundary=1 → 0 for {io_overridden} INPUT/OUTPUT nodes")
+    if io_forced > 0:
+        print(f"[INFO] Assigned boundary=0 to {io_forced} INPUT/OUTPUT nodes with missing label")
+
 
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
     nx.write_gml(G_dir, output_gml)
@@ -454,9 +469,9 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
 
 ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_final_march16"
+ROOT_OUT = "graphs/processed_boundaryDetection_final"
 # ROOT_RAW = "new_graphs_crypto/raw/raw"
-# ROOT_OUT = "new_graphs_crypto/processed_partitions_boundaryM1_oneHotAdd_graphF_partitionF_final_march16"
+# ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_final"
 
 processed_dirs = {}
 usable_graphs = []
@@ -503,6 +518,24 @@ for design in os.listdir(ROOT_RAW):
             try:
                 process_single_gml(input_gml, output_gml, tech, reach_k=3, ego_k=2)
                 usable_graphs.append(output_gml)
+
+                # Check for nodes with missing boundary labels
+                G_out = nx.read_gml(output_gml)
+                any_node = next(iter(G_out.nodes()))
+                print("Feature dim:", len(G_out.nodes[any_node]["features"]))
+
+                # ── NEW: check for missing boundary labels ──
+                missing_boundary = []
+                for node in G_out.nodes():
+                    val = G_out.nodes[node].get("boundary", "MISSING")
+                    if val == "MISSING":
+                        missing_boundary.append(node)
+
+                if missing_boundary:
+                    print(f"[WARN] {len(missing_boundary)} nodes with NO boundary label in {output_gml}")
+                    print(f"       Example nodes: {missing_boundary[:5]}")
+                else:
+                    print(f"[OK] All nodes have boundary labels in {output_gml}")
 
                 G_out = nx.read_gml(output_gml)
                 any_node = next(iter(G_out.nodes()))
