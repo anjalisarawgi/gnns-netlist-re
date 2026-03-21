@@ -82,3 +82,37 @@ class gatv2(nn.Module):
         # Layer 4 (Output)
         x = self.conv4(x, edge_index)
         return x
+
+
+
+import torch.nn.functional as F
+from torch_geometric.nn import GATv2Conv
+
+class gatv2_wEdges(nn.Module):
+    def __init__(self, in_channels, edge_dim, hidden_channels, out_channels):
+        super().__init__()
+        # edge_dim is the number of features per edge (e.g., 3 in your case)
+        self.conv1 = GATv2Conv(in_channels, hidden_channels, heads=1, dropout=0.1, edge_dim=edge_dim)
+        self.conv2 = GATv2Conv(hidden_channels, hidden_channels, heads=1, dropout=0.1, edge_dim=edge_dim)
+        self.conv3 = GATv2Conv(hidden_channels, hidden_channels, heads=1, dropout=0.1, edge_dim=edge_dim)
+        self.conv4 = GATv2Conv(hidden_channels, out_channels, heads=1, dropout=0.1, edge_dim=edge_dim)
+
+    def forward(self, x, edge_index, edge_attr):
+        # Layer 1
+        x = self.conv1(x, edge_index, edge_attr)
+        x = F.elu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
+
+        # Layer 2
+        x = self.conv2(x, edge_index, edge_attr)
+        x = F.elu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
+
+        # Layer 3
+        x = self.conv3(x, edge_index, edge_attr)
+        x = F.elu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
+
+        # Layer 4 (Output)
+        x = self.conv4(x, edge_index, edge_attr)
+        return x

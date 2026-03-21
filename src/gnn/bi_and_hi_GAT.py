@@ -74,6 +74,36 @@ class DirectedOnlyGAT(nn.Module):
         return self.classifier(h)
 
 
+
+class DirectedOnlyGAT_wEdges(nn.Module):
+    def __init__(self, in_channels, edge_dim, hidden_channels, out_channels, dropout=0.1):
+        super().__init__()
+        C = hidden_channels
+        self.dropout = dropout
+
+        # Use the edge_dim in the layers
+        self.layers = nn.ModuleList([
+            DirectedGATBlock(in_channels if i == 0 else C, C, edge_dim=edge_dim, dropout=dropout)
+            for i in range(4)
+        ])
+        
+        # ... (rest of your init)
+
+    def forward(self, x, edge_index, edge_attr, batch=None):
+        # 1. Create the reverse index for the bi-directional flow
+        row, col = edge_index
+        rev_edge_index = torch.stack([col, row], dim=0)
+
+        h = x
+        for i, layer in enumerate(self.layers):
+            # 2. Pass edge_attr into each block
+            h = layer(h, edge_index, rev_edge_index, edge_attr)
+            h = F.elu(h)
+            if i < len(self.layers) - 1:
+                h = F.dropout(h, p=self.dropout, training=self.training)
+
+        return self.classifier(h)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Ablation 2a: Hierarchical-only (no directed), 2 scales = 4 layers
 # ──────────────────────────────────────────────────────────────────────────────

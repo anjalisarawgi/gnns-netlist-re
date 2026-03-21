@@ -112,7 +112,6 @@ parser.add_argument("--set_gradient_clipping", action="store_true", help="do you
 # parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
-parser.add_argument("--decision_threshold", type=float, default = None)
 parser.add_argument(
     "--training_mode",type=str, choices=["fullgraph", "graphsaint"],  default="graphsaint",    help="Train on full graph or sampled subgraphs")
 
@@ -126,6 +125,9 @@ parser.add_argument(
     default="merged",
     help="How to train in fullgraph mode"
 )
+parser.add_argument("--use_unsupervised_features", action="store_true")
+parser.add_argument("--use_unsupervised_features_louvian", action="store_true")
+
 ## test block
 parser.add_argument("--use_lib_id", action="store_true", help="append library one-hot to node features")
 parser.add_argument("--use_design_id", action="store_true", help="append design one-hot to node features (leaky if testing unseen designs!)")
@@ -150,6 +152,15 @@ if args.config:
     for key, value in cfg.items():
         setattr(args, key, value)
 
+def get_config_prefix():
+    return config_tag if config_tag is not None else "no_config"
+
+def make_result_dir(model_family: str):
+    prefix = get_config_prefix()
+    out_dir = os.path.join("results", model_family, wandb.run.name)
+    os.makedirs(out_dir, exist_ok=True)
+    return out_dir
+
 # wandb setup 
 # test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
 test_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.test_gml]
@@ -165,11 +176,16 @@ elif args.sampling_method == "khop":
 else:
     sampling_suffix = args.sampling_method
 
-if args.training_mode == "fullgraph":
-    run_name = f"fullgraph_{args.fullgraph_mode}_{args.loss_type}_{args.epochs}ep_for_{test_name}"
-else:
-    run_name = f"{args.perc_batchsize}perc_{config_tag}_{args.model}_{sampling_suffix}_{args.epochs}ep_for_{test_name}"
+config_prefix = config_tag if config_tag is not None else "no_config"
 
+if args.training_mode == "fullgraph":
+    run_name = (
+        f"{args.model}_{args.loss_type}_"
+        f"fullgraph_{args.fullgraph_mode}_"
+        f"{config_prefix}"
+    )
+else:
+    run_name = "gnnsampling"
 
 wandb.init(project="gnn-parition-detection", name=run_name)
 wandb.config.update(vars(args))
@@ -372,6 +388,16 @@ def load_single_gml(gml_path, remove_edges = False):
             feat = list(feat) +list(graph_feat_subset)
             if after_graph_dim is None:
                 after_graph_dim = len(feat)
+
+        if args.use_unsupervised_features:
+            f1 = float(attr.get("unsup_louvain_1hop", 0.0))
+            f2 = float(attr.get("unsup_louvain_2hop", 0.0))
+            feat = list(feat) + [f1, f2]
+
+        if args.use_unsupervised_features_louvian:
+            f1 = float(attr.get("unsup_leiden_1hop", 0.0))
+            f2 = float(attr.get("unsup_leiden_2hop", 0.0))
+            feat = list(feat) + [f1, f2]
 
 
         if not isinstance(feat, (list, tuple, np.ndarray)):
@@ -725,12 +751,7 @@ def evaluate_train_acc(model, data, mask):
     model.eval()
     data = data.to(device)
     out = model(data.x, data.edge_index)
-    if args.decision_threshold is not None:
-        probs = torch.softmax(out, dim=1)
-        pred = (probs[:, 1] >= args.decision_threshold).long()
-    else:
-        pred = out.argmax(dim=1)
-    # pred = predict_with_threshold(out, args.decision_threshold)
+    pred = out.argmax(dim=1)
 
     valid_mask = mask.to(device)
     correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
@@ -751,11 +772,7 @@ def evaluate_train_fpr(data, model, mask):
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
     # pred = predict_with_threshold(out, args.decision_threshold)
 
-    if args.decision_threshold is not None:
-        probs = torch.softmax(out, dim=1)
-        pred = (probs[:, 1] >= args.decision_threshold).long()
-    else:
-        pred = out.argmax(dim=1)
+    pred = out.argmax(dim=1)
 
 
     valid_mask = mask.to(device)
@@ -776,11 +793,7 @@ def eval_class_acc(data, model, mask, id2name=None):
     data = data.to(device)
     out = model(data.x, data.edge_index)
     # pred = out.argmax(dim=1)
-    if args.decision_threshold is not None:
-        probs = torch.softmax(out, dim=1)
-        pred = (probs[:, 1] >= args.decision_threshold).long()
-    else:
-        pred = out.argmax(dim=1)
+    pred = out.argmax(dim=1)
 
     valid_mask = mask.to(device)
     y_true = data.y[valid_mask]
@@ -859,11 +872,7 @@ def evaluate_test(data, model):
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
     # pred = predict_with_threshold(out, args.decision_threshold)
 
-    if args.decision_threshold is not None:
-        probs = torch.softmax(out, dim=1)
-        pred = (probs[:, 1] >= args.decision_threshold).long()
-    else:
-        pred = out.argmax(dim=1)
+    pred = out.argmax(dim=1)
 
     
     # valid_mask = (data.y != -1)
@@ -1053,22 +1062,6 @@ def get_probs_and_labels(model, data):
     labels = data.y.cpu().numpy()
     return probs, labels
 
-def find_best_threshold(probs, labels, thresholds=None):
-    if thresholds is None:
-        thresholds = np.linspace(0.01, 0.99, 99)
-
-    best_f1 = -1
-    best_t = 0.5
-
-    for t in thresholds:
-        preds = (probs >= t).astype(int)
-        f1 = f1_score(labels, preds, zero_division=0)
-        if f1 > best_f1:
-            best_f1 = f1
-            best_t = t
-
-    return best_t, best_f1
-
 
 ### threholding end
 NUM_CATEGORICAL = 14
@@ -1112,7 +1105,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = MLP(in_dim, 256, out_dim)
         print("[INFO] using MLP model")
     elif model_name =="gatv2":
-        model = gatv2(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
+        model = gatv2(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim).to(device)
         print("[INFO] using gatv2")
     elif model_name =="gin":
         model = GIN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
@@ -1497,7 +1490,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
         print("[INFO] Loaded best model from early stopping")
-    run_dir =  os.path.join("models", wandb.run.name)
+    run_dir =  os.path.join("models", "gnns", wandb.run.name)
     os.makedirs(run_dir, exist_ok=True)
     model_path = f"{run_dir}/model.pt"
     torch.save(model.state_dict(), model_path)
@@ -1712,188 +1705,7 @@ if __name__ == "__main__":
     #     test_graphs=test_graphs,
     # )
 
-    #### implementing random forest
-    print("[INFO] Running Random Forest baseline:::::")
-    # X_train = []
-    # y_train = []
 
-    # for g in train_graphs:
-    #     X_train.append(g.x.cpu().numpy())
-    #     y_train.append(g.y.cpu().numpy())
-
-    # X_train = np.vstack(X_train)
-    # y_train = np.concatenate(y_train)
-
-    # rf = RandomForestClassifier(n_estimators=200, max_depth=None, class_weight="balanced", n_jobs=10, random_state=42)
-    # rf.fit(X_train_raw, y_train_raw)
-    # print("[INFO] RF training complete.")
-
-    # ## saving random forest model 
-    # rf_run_dir = os.path.join("models", wandb.run.name)
-    # os.makedirs(rf_run_dir, exist_ok=True)
-    # rf_model_path = os.path.join(rf_run_dir, "rf_model_march3allCrypto.joblib")
-    # joblib.dump(rf, rf_model_path)
-    # print("[INFO] Saved model for RF to:", rf_model_path)
-
-    # eval on validation (scaled) 
-    # for path, X_val in val_raw:
-    #     p = Path(path)
-    #     name = "/".join(p.parts[-3:])
-    #     X_val = g.x.cpu().numpy()
-    #     y_val = g.y.cpu().numpy()
-
-    #     y_pred = rf.predict(X_val)
-    #     y_prob = rf.predict_proba(X_val)[:, 1]
-    #     pr_auc = pr_auc_from_probs(y_val, y_prob)
-
-    #     f1 = f1_score(y_val, y_pred, zero_division=0)
-    #     precision = precision_score(y_val, y_pred, zero_division=0)
-    #     recall = recall_score(y_val, y_pred, zero_division=0)
-
-    #     print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
-
-    ####### 
-    # eval on validation (unscaled)
-    ####### 
-    # print("[INFO] Saving RF predictions on val graphs:")
-    # rf_output_dir = "results/rf_predictions"
-    # os.makedirs(rf_output_dir, exist_ok=True)
-
-    # for path, X_val_raw, y_val in val_raw:
-    #     val_graph_name = os.path.splitext(os.path.basename(path))[0]
-    #     p = Path(path)
-    #     name = "/".join(p.parts[-3:])
-
-    #     y_pred = rf.predict(X_val_raw)
-    #     y_prob = rf.predict_proba(X_val_raw)[:, 1]
-    #     pr_auc = pr_auc_from_probs(y_val, y_prob)
-
-    #     f1 = f1_score(y_val, y_pred, zero_division=0)
-    #     precision = precision_score(y_val, y_pred, zero_division=0)
-    #     recall = recall_score(y_val, y_pred, zero_division=0)
-
-    #     print(f"[RF][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
-
-    #     G = nx.read_gml(path)
-    #     id2label_rf = {0: "not_boundary", 1: "boundary"}
-    #     for i, node in enumerate(G.nodes()):
-    #         G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
-    #         G.nodes[node]["predicted_prob"]  = float(y_prob[i])
-
-    #     output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_predictions.gml")
-    #     nx.write_gml(G, output_path)
-    #     print(f"[RF] Saved predictions to: {output_path}")
-    
-
-    import pandas as pd  # ADD THIS near your imports (top of file)
-
-    print("[INFO] Running Random Forest baseline (all features)")
-
-    rf_output_dir = "results/rf_predictions"
-    os.makedirs(rf_output_dir, exist_ok=True)
-
-    rf = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=None,
-        class_weight="balanced",
-        n_jobs=10,
-        random_state=42
-    )
-    rf.fit(X_train_raw, y_train_raw)
-    print("[INFO] RF training complete (all features).")
-
-    # ---- Evaluate RF (all features) on VAL and save preds ----
-    print("[INFO] Saving RF(all) predictions on val graphs:")
-    for path, X_val_raw, y_val in val_raw:
-        p = Path(path)
-        name = "/".join(p.parts[-3:])
-        val_graph_name = os.path.splitext(os.path.basename(path))[0]
-
-        y_pred = rf.predict(X_val_raw)
-        y_prob = rf.predict_proba(X_val_raw)[:, 1]
-        pr_auc = pr_auc_from_probs(y_val, y_prob)
-
-        f1 = f1_score(y_val, y_pred, zero_division=0)
-        precision = precision_score(y_val, y_pred, zero_division=0)
-        recall = recall_score(y_val, y_pred, zero_division=0)
-
-        print(f"[RF-ALL][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
-
-        # G = nx.read_gml(path)
-        # id2label_rf = {0: "not_boundary", 1: "boundary"}
-        # for i, node in enumerate(G.nodes()):
-        #     G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
-        #     G.nodes[node]["predicted_prob"]  = float(y_prob[i])
-
-        # output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_all.gml")
-        # nx.write_gml(G, output_path)
-
-    # ---- Feature selection from RF(all) ----
-    print("[INFO] Computing feature importances for selection")
-    importances = rf.feature_importances_
-    feature_ids = np.arange(len(importances))
-
-    feature_importance_df = (
-        pd.DataFrame({"feature_id": feature_ids, "importance": importances})
-        .sort_values("importance", ascending=False)
-    )
-
-    TOP_K = 10
-    top_features = feature_importance_df["feature_id"].values[:TOP_K]
-    print("[INFO] Selected feature indices (top-k):", top_features.tolist())
-    print("\nTop feature importances:")
-    print(feature_importance_df.head(20))
-
-    # Reduce train set for RF-selected
-    X_train_selected = X_train_raw[:, top_features]
-
-    # ---- Train RF(selected) ----
-    print("[INFO] Training RF with selected features")
-    rf_selected = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=None,
-        class_weight="balanced",
-        n_jobs=10,
-        random_state=42
-    )
-    rf_selected.fit(X_train_selected, y_train_raw)
-    print("[INFO] RF training complete (selected features).")
-
-    # ---- Evaluate RF(selected) on VAL and save preds ----
-    print("[INFO] Saving RF(selected) predictions on val graphs:")
-    for path, X_val_raw, y_val in val_raw:
-        p = Path(path)
-        name = "/".join(p.parts[-3:])
-        val_graph_name = os.path.splitext(os.path.basename(path))[0]
-
-        X_val_selected = X_val_raw[:, top_features]
-
-        y_pred = rf_selected.predict(X_val_selected)
-        y_prob = rf_selected.predict_proba(X_val_selected)[:, 1]
-        pr_auc = pr_auc_from_probs(y_val, y_prob)
-
-        f1 = f1_score(y_val, y_pred, zero_division=0)
-        precision = precision_score(y_val, y_pred, zero_division=0)
-        recall = recall_score(y_val, y_pred, zero_division=0)
-
-        print(f"[RF-TOP{TOP_K}][VAL] {name} | F1={f1:.4f}, P={precision:.4f}, R={recall:.4f}, PR-AUC={pr_auc:.4f}")
-
-        # G = nx.read_gml(path)
-        # id2label_rf = {0: "not_boundary", 1: "boundary"}
-        # for i, node in enumerate(G.nodes()):
-        #     G.nodes[node]["predicted_label"] = id2label_rf[int(y_pred[i])]
-        #     G.nodes[node]["predicted_prob"]  = float(y_prob[i])
-
-        # output_path = os.path.join(rf_output_dir, f"{val_graph_name}_rf_top{TOP_K}.gml")
-        # nx.write_gml(G, output_path)
-
-    # # ---- Save both RF models ----
-    # rf_run_dir = os.path.join("models", wandb.run.name)
-    # os.makedirs(rf_run_dir, exist_ok=True)
-    # joblib.dump(rf, os.path.join(rf_run_dir, "rf_all.joblib"))
-    # joblib.dump(rf_selected, os.path.join(rf_run_dir, f"rf_top{TOP_K}.joblib"))
-    # feature_importance_df.to_csv(os.path.join(rf_run_dir, "rf_feature_importance.csv"), index=False)
-    
     model = run_training(
         train_graphs=train_graphs,
         train_data=combined_data,
@@ -1918,44 +1730,30 @@ if __name__ == "__main__":
     # print(f"Boundary = 1 Accuracy    : {metrics[f'boundary_1_acc']:.4f}")
     # print(f"Boundary = 0 Accuracy: {metrics[f'boundary_0_acc']:.4f}")
 
-    print("\n[INFO] Tuning per-design thresholds on validation set")
-    design_thresholds = {}
-    for path, g in val_graphs:
-        name = os.path.splitext(os.path.basename(path))[0]
-        probs, labels = get_probs_and_labels(model, g)
-        best_t, best_f1 = find_best_threshold(probs, labels)
-        design_thresholds[name] = best_t
-        print(f"[THRESHOLD][VAL] {name}: best_t={best_t:.3f}, F1={best_f1:.4f}")
-
-        with open("design_thresholds.json", "w") as f:
-            json.dump(design_thresholds, f, indent=2)
-        
     print("[INFO] Final evaluation on TEST graphs:")
 
     test_metrics = defaultdict(list)
 
     for path, g in test_graphs:
-        # n = evaluate_test(g, model)
-        # name = os.path.splitext(os.path.basename(path))[0]
-
         name = os.path.splitext(os.path.basename(path))[0]
-        t = design_thresholds.get(name, 0.5)
-        args.decision_threshold = t
         n = evaluate_test(g, model)
 
-        # print(
-        #     f"[TEST] {name} | "
-        #     f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
-        #     f"Acc={n['total_acc']:.4f}, b1={n['boundary_1_acc']:.4f}, b0={n['boundary_0_acc']:.4f}"
-        # )
+        probs, labels = get_probs_and_labels(model, g)
+        pr_auc = pr_auc_from_probs(labels, probs)
+
+        mean_prob_pos = float(probs[labels == 1].mean()) if np.any(labels == 1) else float("nan")
+        mean_prob_neg = float(probs[labels == 0].mean()) if np.any(labels == 0) else float("nan")
+
         print(
-            f"[TEST] {name} (t={t:.3f}) | "
+            f"[TEST] {name} | "
             f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
-            f"Acc={n['total_acc']:.4f}"
+            f"Acc={n['total_acc']:.4f}, PR-AUC={pr_auc:.4f}, "
+            f"MeanProb b=1: {mean_prob_pos:.4f}, b=0: {mean_prob_neg:.4f}"
         )
 
         for k, v in n.items():
             test_metrics[k].append(float(v))
+        test_metrics["pr_auc"].append(pr_auc)
 
         wandb.log({
             f"test/{name}/f1": n["f1"],
@@ -1964,6 +1762,9 @@ if __name__ == "__main__":
             f"test/{name}/accuracy": n["total_acc"],
             f"test/{name}/boundary_acc": n["boundary_1_acc"],
             f"test/{name}/not_boundary_acc": n["boundary_0_acc"],
+            f"test/{name}/pr_auc": pr_auc,
+            f"test/{name}/mean_prob_boundary": mean_prob_pos,
+            f"test/{name}/mean_prob_not_boundary": mean_prob_neg,
         })
 
         region_metrics = evaluate_region_metrics(g, model, k_percent=2.0, r=2)
@@ -2006,8 +1807,8 @@ if __name__ == "__main__":
     })
 
     # saving the results in gml 
-    output_dir = "results/aes_to_testml"
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir = make_result_dir("gnns")
+    print("[INFO] GNN results will be saved to:", output_dir)
 
     output_labels = {0: "not_boundary", 1: "boundary"}
     print("[INFO] Output Labels:", output_labels)

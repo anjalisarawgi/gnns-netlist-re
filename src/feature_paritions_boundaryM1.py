@@ -4,8 +4,10 @@ import numpy as np
 import networkx as nx
 from collections import deque
 import re
-
+import community.community_louvain as community_louvain
 import torch
+import igraph as ig
+import leidenalg
 
 GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
 gate2id = {g: i for i, g in enumerate(GATE_TYPES)}
@@ -289,6 +291,21 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
     outdeg = dict(G_dir.out_degree())
     deg_und = dict(G_und.degree())
 
+    # unsuerpvised - features test:
+    partition_map = community_louvain.best_partition(G_und)
+    print(f"[INFO] Louvain found {len(set(partition_map.values()))} clusters")
+
+
+
+    # Leiden community detection (unsupervised)
+    g_ig = ig.Graph.from_networkx(G_und)
+    leiden_partition = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition, seed=42)
+    leiden_map = {}
+    for cluster_id, node_list in enumerate(leiden_partition):
+        for node_idx in node_list:
+            original_node = g_ig.vs[node_idx]["_nx_name"]
+            leiden_map[original_node] = cluster_id
+    print(f"[INFO] Leiden found {len(leiden_partition)} clusters")
 
     try:
         core_num = nx.core_number(G_und)
@@ -399,6 +416,39 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
         graph_feats = torch.tensor([num_nodes, num_edges], dtype=torch.float32)
         G_dir.nodes[node]["graph_features"] = graph_feats.tolist()
 
+        # unsupervised - feature test
+        my_cluster = partition_map.get(node, 0)
+        neighbors_und = list(G_und.neighbors(node))
+        louvain_frac_1hop = (
+            sum(1 for nb in neighbors_und if partition_map.get(nb) == my_cluster) / len(neighbors_und)
+            if neighbors_und else 0.0
+        )
+        # G_dir.nodes[node]["unsupervised_partition_feats"] = [float(louvain_frac_1hop)]
+        two_hop = _ego_nodes_khop_undirected(G_und, node, k=2)
+        two_hop.discard(node)
+        louvain_frac_2hop = (
+            sum(1 for nb in two_hop if partition_map.get(nb) == my_cluster) / len(two_hop)
+            if two_hop else 0.0
+        )
+        G_dir.nodes[node]["unsup_louvain_1hop"] = float(louvain_frac_1hop)
+        G_dir.nodes[node]["unsup_louvain_2hop"] = float(louvain_frac_2hop)
+        G_dir.nodes[node]["unsup_louvain_cluster"] = int(my_cluster)
+
+        # Leiden unsupervised features
+        my_leiden_cluster = leiden_map.get(node, 0)
+        leiden_frac_1hop = (
+            sum(1 for nb in neighbors_und if leiden_map.get(nb) == my_leiden_cluster) / len(neighbors_und)
+            if neighbors_und else 0.0
+        )
+        leiden_two_hop = _ego_nodes_khop_undirected(G_und, node, k=2)
+        leiden_two_hop.discard(node)
+        leiden_frac_2hop = (
+            sum(1 for nb in leiden_two_hop if leiden_map.get(nb) == my_leiden_cluster) / len(leiden_two_hop)
+            if leiden_two_hop else 0.0
+        )
+        G_dir.nodes[node]["unsup_leiden_1hop"] = float(leiden_frac_1hop)
+        G_dir.nodes[node]["unsup_leiden_2hop"] = float(leiden_frac_2hop)
+        G_dir.nodes[node]["unsup_leiden_cluster"] = int(my_leiden_cluster)
 
     # edge features
     for u, v in G_dir.edges():
@@ -469,9 +519,9 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
 
 ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_boundaryDetection_final"
-# ROOT_RAW = "new_graphs_crypto/raw/raw"
-# ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_final"
+ROOT_OUT = "graphs/processed_boundaryDetection_march21"
+# ROOT_RAW = "new_graphs_crypto/raw/raw/"
+# ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_march21"
 
 processed_dirs = {}
 usable_graphs = []
