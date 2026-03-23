@@ -18,9 +18,9 @@ class GIN(nn.Module):
             )
 
         self.conv1 = GINConv(create_mlp(in_channels, hidden_channels))
-        self.conv2 = GINConv(create_mlp(hidden_channels, out_channels))
-        # self.conv3 = GINConv(create_mlp(hidden_channels, hidden_channels))
-        # self.conv4 = GINConv(create_mlp(hidden_channels, out_channels))
+        self.conv2 = GINConv(create_mlp(hidden_channels, hidden_channels))
+        self.conv3 = GINConv(create_mlp(hidden_channels, hidden_channels))
+        self.conv4 = GINConv(create_mlp(hidden_channels, out_channels))
 
     def forward(self, x, edge_index):
         # Layer 1
@@ -28,16 +28,16 @@ class GIN(nn.Module):
         x = F.relu(x)
         x = F.dropout(x, p=0.1, training=self.training)
 
-        # # Layer 2
-        # x = self.conv2(x, edge_index)
-        # x = F.relu(x)
-        # x = F.dropout(x, p=0.1, training=self.training)
+        # Layer 2
+        x = self.conv2(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
 
-        # # Layer 3
-        # x = self.conv3(x, edge_index)
-        # x = F.relu(x)
-        # x = F.dropout(x, p=0.1, training=self.training)
+        # Layer 3
+        x = self.conv3(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, p=0.1, training=self.training)
 
         # Layer 4 (Output)
-        x = self.conv2(x, edge_index)
+        x = self.conv4(x, edge_index)
         return x

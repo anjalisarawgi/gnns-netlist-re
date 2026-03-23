@@ -73,7 +73,67 @@ class DirectedOnlyGAT(nn.Module):
         h = h + skip
         return self.classifier(h)
 
+class BiDirectedGaAN(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, heads=4, dropout=0.1):
+        super().__init__()
+        self.heads = heads
+        self.dropout = dropout
+        H = hidden_channels
 
+        # Forward + backward convs
+        self.fwd_conv1 = GATv2Conv(in_channels, H, heads=heads, dropout=dropout, concat=True)
+        self.bwd_conv1 = GATv2Conv(in_channels, H, heads=heads, dropout=dropout, concat=True)
+
+        self.gate1 = nn.Sequential(
+            nn.Linear(2 * H * heads, heads),
+            nn.Sigmoid()
+        )
+
+        self.fwd_conv2 = GATv2Conv(2 * H * heads, H, heads=heads, dropout=dropout, concat=True)
+        self.bwd_conv2 = GATv2Conv(2 * H * heads, H, heads=heads, dropout=dropout, concat=True)
+
+        self.gate2 = nn.Sequential(
+            nn.Linear(2 * H * heads, heads),
+            nn.Sigmoid()
+        )
+
+        self.out_proj = nn.Linear(2 * H * heads, out_channels)
+
+    def forward(self, x, edge_index):
+        row, col = edge_index
+        rev_edge_index = torch.stack([col, row], dim=0)
+
+        # --- Layer 1 ---
+        fwd1 = self.fwd_conv1(x, edge_index)
+        bwd1 = self.bwd_conv1(x, rev_edge_index)
+
+        out1 = torch.cat([fwd1, bwd1], dim=-1)  # combine directions
+
+        g1 = self.gate1(out1)
+
+        out1 = out1.view(-1, self.heads, out1.size(-1) // self.heads)
+        out1 = out1 * g1.unsqueeze(-1)
+        out1 = out1.view(out1.size(0), -1)
+
+        x = F.relu(out1)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
+        # --- Layer 2 ---
+        fwd2 = self.fwd_conv2(x, edge_index)
+        bwd2 = self.bwd_conv2(x, rev_edge_index)
+
+        out2 = torch.cat([fwd2, bwd2], dim=-1)
+
+        g2 = self.gate2(out2)
+
+        out2 = out2.view(-1, self.heads, out2.size(-1) // self.heads)
+        out2 = out2 * g2.unsqueeze(-1)
+        out2 = out2.view(out2.size(0), -1)
+
+        x = F.relu(out2)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
+        return self.out_proj(x)
 
 class DirectedOnlyGAT_wEdges(nn.Module):
     def __init__(self, in_channels, edge_dim, hidden_channels, out_channels, dropout=0.1):
@@ -384,3 +444,78 @@ class DirectedOnlyGATWithGlobal(nn.Module):
 
         h = h + skip
         return self.classifier(h[:N])
+
+
+
+
+from torch_geometric.nn import SAGEConv
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+class DirectedSAGEBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, dropout=0.1):
+        super().__init__()
+
+        self.conv_fwd = SAGEConv(in_channels, out_channels)
+        self.conv_bwd = SAGEConv(in_channels, out_channels)
+
+    def forward(self, x, edge_index, rev_edge_index):
+        x_f = self.conv_fwd(x, edge_index)
+        x_b = self.conv_bwd(x, rev_edge_index)
+
+        return x_f + x_b   # same idea as DirectedGAT
+
+class DirectedOnlySAGE(nn.Module):
+    """
+    Directed GraphSAGE version of your DirectedOnlyGAT.
+    4 DirectedSAGEBlocks + input skip + classifier.
+    """
+    def __init__(self, in_channels, hidden_channels, out_channels, dropout=0.1):
+        super().__init__()
+        C = hidden_channels
+        self.dropout = dropout
+
+        # input skip
+        self.skip = nn.Linear(in_channels, C, bias=False) if in_channels != C else nn.Identity()
+
+        # 4 layers
+        self.layers = nn.ModuleList([
+            DirectedSAGEBlock(in_channels if i == 0 else C, C, dropout=dropout)
+            for i in range(4)
+        ])
+
+        # classifier (same style as your GAT)
+        self.classifier = nn.Sequential(
+            nn.Linear(C, C),
+            nn.ELU(),
+            nn.Dropout(dropout),
+            nn.Linear(C, out_channels),
+        )
+
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x, edge_index, batch=None):
+        row, col = edge_index
+        rev_edge_index = torch.stack([col, row], dim=0)
+
+        skip = self.skip(x)
+
+        h = x
+        for i, layer in enumerate(self.layers):
+            h = layer(h, edge_index, rev_edge_index)
+            h = F.elu(h)
+
+            if i < len(self.layers) - 1:
+                h = F.dropout(h, p=self.dropout, training=self.training)
+
+        h = h + skip
+        return self.classifier(h)

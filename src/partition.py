@@ -9,11 +9,11 @@ import networkx as nx
 import numpy as np
 from collections import defaultdict, Counter
 from torch_geometric.data import Data
-from gnn.graphSAGE import graphSAGE
+from gnn.graphSAGE import graphSAGE, GraphSAGE_ResNorm
 from gnn.gcn import GCN
-from gnn.gat import gat, MLP, gatv2
+from gnn.gat import gat, MLP, gatv2, GaAN, GATv2_ResNorm
 from gnn.gin import GIN
-from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, DirectedOnlyGATWithGlobal
+from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, DirectedOnlyGATWithGlobal, BiDirectedGaAN, DirectedOnlySAGE
 from gnn.graphTransformer import GraphTransformer 
 from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
@@ -87,7 +87,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal", "GaAN", "GATv2_ResNorm", "GraphSAGE_ResNorm", "DirectedOnlySAGE"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -367,7 +367,7 @@ def load_single_gml(gml_path, remove_edges = False):
     for node in nodes:
         attr = G.nodes[node] # attr?
         feat = attr.get("features", [])
-        feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio  -- basic dimensions
+        # feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio  -- basic dimensions
         # feat = feat[28:31] #### indeg, outdeg, fanin
         # feat = feat[0:28] ####  (14ohe) + (14ohe) 
         # feat = feat[:-2]
@@ -375,7 +375,8 @@ def load_single_gml(gml_path, remove_edges = False):
             base_feat_dim = len(feat)
 
         if args.use_partition_features:     
-            partition_feat = attr.get("partition_features", [0.0, 0.0])
+            partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
+            # partition_feat = partition_feat[2:3]
             # partition_feat_twoHop = partition_feat[1]
             feat = list(feat) +list(partition_feat)
             # feat = list(feat) + [float(partition_feat_twoHop)]
@@ -425,11 +426,11 @@ def load_single_gml(gml_path, remove_edges = False):
 
         features.append(feat)
     
-        boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
+        boundary_value = attr.get("boundary", 1) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
         try:
             label = int(boundary_value)
         except (ValueError, TypeError): ######??? - we wanna change this ***s
-            label= 0
+            label= 1
         labels.append(label)
 
 
@@ -449,7 +450,7 @@ def load_single_gml(gml_path, remove_edges = False):
 
     id2label = {0: "not_boundary", 1:"boundary"}
     labels = torch.tensor(labels, dtype = torch.long)
-    labels[labels == -1] = 0     # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
+    labels[labels == -1] = 1    # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
 
 
     ## normalizing features *** ???
@@ -1138,7 +1139,18 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = DirectedOnlyGATWithGlobal(
             in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
         )
-        print("[INFO] using DirectedOnlyGATWithGlobal")
+    elif model_name =="GaAN":
+        model = GaAN( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=4)
+        print("[INFO] using GaAN")
+    elif model_name =="GATv2_ResNorm":
+        model = GATv2_ResNorm( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=4)
+        print("[INFO] using GATv2_ResNorm")
+    elif model_name =="GraphSAGE_ResNorm":
+        model = GraphSAGE_ResNorm(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+        print("[INFO] using GraphSAGE_ResNorm")
+    elif model_name =="DirectedOnlySAGE":
+        model = DirectedOnlySAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+        print("[INFO] using DirectedOnlySAGE")
 
     model = model.to(device)
 
@@ -1205,7 +1217,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     ## block also for early stopping
     best_val_score = -float("inf")
     best_model_state = None
-    patience = 6
+    patience = 3
     patience_counter = 0
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
@@ -1794,7 +1806,8 @@ if __name__ == "__main__":
         f"R={test_macro.get('recall', 0.0):.4f}, "
         f"Acc={test_macro.get('total_acc', 0.0):.4f}, "
         f"b1={test_macro.get('boundary_1_acc', 0.0):.4f}, "
-        f"b0={test_macro.get('boundary_0_acc', 0.0):.4f}"
+        f"b0={test_macro.get('boundary_0_acc', 0.0):.4f},"
+        f"PR-AUC={test_macro.get('pr_auc', 0.0):.4f}, "
     )
 
     wandb.log({
@@ -1804,6 +1817,7 @@ if __name__ == "__main__":
         "test_macro/accuracy": test_macro.get("total_acc", 0.0),
         "test_macro/boundary_acc": test_macro.get("boundary_1_acc", 0.0),
         "test_macro/not_boundary_acc": test_macro.get("boundary_0_acc", 0.0),
+        "test_macro/pr_auc": test_macro.get("pr_auc", 0.0),
     })
 
     # saving the results in gml 
