@@ -146,12 +146,13 @@ class BiDirectedGraphSAGE(nn.Module):
             for i in range(num_layers)
         ])
 
-        self.classifier = nn.Sequential(
-            nn.Linear(C, C),
-            nn.ELU(),
-            nn.Dropout(dropout),
-            nn.Linear(C, out_channels),
-        )
+        # self.classifier = nn.Sequential(
+        #     nn.Linear(C, C),
+        #     nn.ReLU(),
+        #     nn.Dropout(dropout),
+        #     nn.Linear(C, out_channels),
+        # )
+        self.out = nn.Linear(C, out_channels) 
         self._init_weights()
 
     def _init_weights(self):
@@ -170,9 +171,10 @@ class BiDirectedGraphSAGE(nn.Module):
         h = x
         for i, layer in enumerate(self.layers):
             h = layer(h, edge_index, rev_edge_index)
-            h = F.elu(h)
+            h = F.relu(h)
             if i < len(self.layers) - 1:
                 h = F.dropout(h, p=self.dropout, training=self.training)
 
-        h = h + skip
-        return self.classifier(h)
+        # h = h + skip
+        # return self.classifier(h)
+        return self.out(h)

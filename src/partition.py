@@ -213,12 +213,11 @@ parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the 
 # parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
-# parser.add_argument("--normalize_class_weights", action="store_true", help="kinda confused - but to stabalize training? (i think its just like scaling the weights to avoid exploding gradients)")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
 parser.add_argument(
     "--training_mode",type=str, choices=["fullgraph", "graphsaint"],  default="graphsaint",    help="Train on full graph or sampled subgraphs")
-
+parser.add_argument("--use_scheduler", action="store_true", help="do you want to use the learning rate scheduler?")
 # features 
 parser.add_argument("--use_partition_features", action="store_true", help="if you want to concatenate partition_features to node features")
 parser.add_argument("--use_graph_features", action="store_true", help="if you want to concatenate partition_features to node features")
@@ -419,7 +418,7 @@ def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=N
         total_loss += loss.item()
 
     if args.set_gradient_clipping:
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
     optimizer.step()
     return total_loss
@@ -1307,8 +1306,14 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
     ##### training parameters 
     # base_lr = 0.01 
-    optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=200,   gamma=0.5 )       # halve the LR)
+    # optimizer = torch.optim.Adam(model.parameters(), lr = args.lr, weight_decay = 1e-4)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
+
+    # if args.use_scheduler:
+    #     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=200, gamma=0.5 )  
+    if args.use_scheduler:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='max', factor=0.5, patience=5, min_lr=1e-6 )
 
     # ---- coverage tracking ----
     ever_seen_nodes = set()
@@ -1319,13 +1324,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     )
     num_boundary = len(boundary_nodes)
 
-
-    # warmup_epochs = 50 
-    # warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
-    #     optimizer,
-    #     lr_lambda = lambda epoch: min((epoch+1)/ warmup_epochs, 1.0)
-    # )
-    # warmup_scheduler.step()
 
 
     class_weights = None
@@ -1368,7 +1366,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     ## block also for early stopping
     best_val_score = -float("inf")
     best_model_state = None
-    patience = 3
+    patience = 5
     patience_counter = 0
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
@@ -1476,7 +1474,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         wandb.log(log_dict)
         # scheduler.step()
 
-        if epoch % 10 == 0 :
+        if epoch % 5 == 0 :
             # ###########
             # ## train side of eval
             # ###########
@@ -1638,6 +1636,14 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
             # ---- EARLY STOPPING ----
             current_score = val_macro.get("pr_auc", 0.0)
 
+            # add these lines:
+            if args.use_scheduler:
+                scheduler.step(current_score)
+                current_lr = optimizer.param_groups[0]['lr']
+                print(f"[SCHEDULER] Current LR: {current_lr:.6f}")
+                wandb.log({"train/lr": current_lr, "epoch": epoch})
+
+
             if current_score > best_val_score + 1e-4:
                 best_val_score = current_score
                 patience_counter = 0
@@ -1654,12 +1660,37 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 print(f"[EARLY STOP] Triggered at epoch {epoch}")
                 break
 
-            
+
+        if epoch % 20 == 0:
+            print(f"\n[TEST PEEK][Epoch {epoch:03d}]")
+            for path, g in test_graphs:
+                name = os.path.splitext(os.path.basename(path))[0]
+                n = evaluate_test(g, model)
+                probs, labels = get_probs_and_labels(model, g)
+                pr_auc = pr_auc_from_probs(labels, probs)
+
+                print(
+                    f"[TEST PEEK] {name} | "
+                    f"F1={n['f1']:.4f}, P={n['precision']:.4f}, R={n['recall']:.4f}, "
+                    f"PR-AUC={pr_auc:.4f}"
+                )
+
+                wandb.log({
+                    "epoch": epoch,
+                    f"test_peek/{name}/f1": n["f1"],
+                    f"test_peek/{name}/precision": n["precision"],
+                    f"test_peek/{name}/recall": n["recall"],
+                    f"test_peek/{name}/pr_auc": pr_auc,
+                    f"test_peek/{name}/boundary_acc": n["boundary_1_acc"],
+                    f"test_peek/{name}/not_boundary_acc": n["boundary_0_acc"],
+                })    
 
     ### Save model
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
         print("[INFO] Loaded best model from early stopping")
+    else:
+        print("[INFO] no best model found, saving current model")
     run_dir =  os.path.join("models", "gnns", wandb.run.name)
     os.makedirs(run_dir, exist_ok=True)
     model_path = f"{run_dir}/model.pt"

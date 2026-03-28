@@ -87,18 +87,14 @@
 
 
 # sampling_method: graphsaint_rw
-model: DirectedOnlyGAT
+model: BiDirectedGraphSAGE
 epochs: 500
-# walk_length: 20
-# perc_batchsize: 0.01
 set_gradient_clipping: true
-normalize_class_weights: true
-reduction_method_cel: "mean"
 lr: 0.001
 loss_type : "ce_weighted" #ce_weighted #ce_soft
-# sample_coverage : 50
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
+use_scheduler : true
 # use_partition_features: true
 # use_unsupervised_features: true
 # use_unsupervised_features_louvian: true
@@ -107,10 +103,10 @@ fullgraph_mode: "per_design"
 train_gml:
 # # # === aes_core ===
 # # - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
-# - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
 # - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_cipher_top_combined_m1.gml"
 # - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml"
-# - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"
 # - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
 # - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/osu035/aes_key_expand_128_combined_m1.gml"
 # - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
