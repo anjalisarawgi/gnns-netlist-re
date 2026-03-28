@@ -528,9 +528,9 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
 
 ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_boundaryDetection_march21"
+ROOT_OUT = "graphs/processed_boundaryDetection_march23"
 # ROOT_RAW = "new_graphs_crypto/raw/raw/"
-# ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_march21"
+# ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_march23"
 
 processed_dirs = {}
 usable_graphs = []

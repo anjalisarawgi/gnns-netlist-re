@@ -1366,7 +1366,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     ## block also for early stopping
     best_val_score = -float("inf")
     best_model_state = None
-    patience = 5
+    patience = 8
     patience_counter = 0
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()
