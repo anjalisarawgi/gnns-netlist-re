@@ -1,7 +1,7 @@
 import torch
 import os
 from torch_geometric.loader import GraphSAINTSampler, GraphSAINTRandomWalkSampler, GraphSAINTNodeSampler,GraphSAINTEdgeSampler
-from main import save_predictions_to_gml
+# from main import save_predictions_to_gml
 # from utils.set_seed import set_seed
 import wandb
 import random
@@ -9,11 +9,13 @@ import networkx as nx
 import numpy as np
 from collections import defaultdict, Counter
 from torch_geometric.data import Data
-from gnn.graphSAGE import graphSAGE, GraphSAGE_ResNorm
+from gnn.graphSAGE import graphSAGE
+from gnn.sage_bidirected import BiDirectedGraphSAGE
+from gnn.sage_jk import GraphSAGE_JK
 from gnn.gcn import GCN
-from gnn.gat import gat, MLP, gatv2, GaAN, GATv2_ResNorm
+from gnn.gat import gat, MLP, gatv2, GATv2_ResNorm, GAAN
 from gnn.gin import GIN
-from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, DirectedOnlyGATWithGlobal, BiDirectedGaAN, DirectedOnlySAGE
+from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, DirectedOnlyGATWithGlobal
 from gnn.graphTransformer import GraphTransformer 
 from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
@@ -52,6 +54,106 @@ def set_seed(seed=42):
     torch.backends.cudnn.benchmark = False
     os.environ['PYTHONHASHSEED'] = str(seed)
 
+
+@torch.no_grad()
+def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_path):
+    import networkx as nx
+    import torch
+    import numpy as np
+
+    model.eval()
+    data = data.to(next(model.parameters()).device)
+
+    # --- forward pass ---
+    out = model(data.x, data.edge_index)
+    probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
+    labels = data.y.cpu().numpy()
+
+    # --- default prediction ---
+    pred_default = (probs >= 0.5).astype(int)
+
+    # --- BEST threshold (F1-based) ---
+    from sklearn.metrics import precision_recall_curve
+
+    precision, recall, thresholds = precision_recall_curve(labels, probs)
+    f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
+
+    best_idx = np.argmax(f1_scores[:-1])  # ignore last point
+    best_thresh = thresholds[best_idx]
+
+    pred_best = (probs >= best_thresh).astype(int)
+
+    # --- RATIO-BASED prediction (top-k) ---
+    N = len(probs)
+    true_ratio = float((labels == 1).mean())
+    k = max(1, int(np.ceil(true_ratio * N)))
+
+    idx_sorted = np.argsort(-probs)
+    topk_idx = idx_sorted[:k]
+
+    pred_ratio = np.zeros_like(labels)
+    pred_ratio[topk_idx] = 1
+    
+    # --- TP / FP / FN / TN ---
+    def compute_classes(y_true, y_pred):
+        classes = []
+        for yt, yp in zip(y_true, y_pred):
+            if yt == 1 and yp == 1:
+                classes.append("TP")
+            elif yt == 0 and yp == 1:
+                classes.append("FP")
+            elif yt == 1 and yp == 0:
+                classes.append("FN")
+            else:
+                classes.append("TN")
+        return classes
+
+    classes_default = compute_classes(labels, pred_default)
+    classes_best = compute_classes(labels, pred_best)
+    classes_ratio = compute_classes(labels, pred_ratio)
+    print(f"[INFO] Best threshold: {best_thresh:.4f}")
+    
+    from sklearn.metrics import f1_score, precision_score, recall_score
+
+    def compute_metrics(y_true, y_pred, name):
+        f1 = f1_score(y_true, y_pred, zero_division=0)
+        p = precision_score(y_true, y_pred, zero_division=0)
+        r = recall_score(y_true, y_pred, zero_division=0)
+        print(f"[{name}] F1={f1:.4f}, P={p:.4f}, R={r:.4f}")
+        return f1, p, r
+
+    print("\n[THRESHOLD COMPARISON]")
+    compute_metrics(labels, pred_default, "Default@0.5")
+    compute_metrics(labels, pred_best, f"Best@{best_thresh:.3f}")
+    compute_metrics(labels, pred_ratio, "Top-K (ratio)")
+
+    print("\n[PREDICTED POSITIVE COUNTS]")
+    print(f"Default@0.5        → {pred_default.sum()} nodes")
+    print(f"Best@{best_thresh:.3f} → {pred_best.sum()} nodes")
+    print(f"Top-K (ratio)      → {pred_ratio.sum()} nodes (target={k})")
+
+    G = nx.read_gml(original_gml_path)
+    nodes = list(G.nodes())
+
+    for i, node in enumerate(nodes):
+        G.nodes[node]["prob"] = float(probs[i])
+
+        G.nodes[node]["pred_default"] = int(pred_default[i])
+        G.nodes[node]["pred_best"] = int(pred_best[i])
+
+        G.nodes[node]["pred_class_default"] = classes_default[i]
+        G.nodes[node]["pred_class_best"] = classes_best[i]
+        G.nodes[node]["pred_ratio"] = int(pred_ratio[i])
+        G.nodes[node]["pred_class_ratio"] = classes_ratio[i]
+
+        G.nodes[node]["is_correct_default"] = int(pred_default[i] == labels[i])
+        G.nodes[node]["is_correct_best"] = int(pred_best[i] == labels[i])
+        G.nodes[node]["is_correct_ratio"] = int(pred_ratio[i] == labels[i])
+
+
+    nx.write_gml(G, output_gml_path)
+    print(f"[INFO] Saved GML with predictions → {output_gml_path}")
+
 class Tee(object):
     def __init__(self, *files):
         self.files = files
@@ -87,7 +189,9 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
                     help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal", "GaAN", "GATv2_ResNorm", "GraphSAGE_ResNorm", "DirectedOnlySAGE"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", 
+                    "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal",
+                     "GAAN", "GraphSAGE_ResNorm", "BiDirectedGraphSAGE","GraphSAGE_JK"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -273,6 +377,53 @@ def merge_data(gml_1, gml_2):
 
     return merged_data
 
+
+def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=None, soft_class_weights=None):
+    model.train()
+    optimizer.zero_grad()
+
+    # group graph indices by family
+    family_to_indices = defaultdict(list)
+    for i, path in enumerate(graph_paths):
+        fam, _ = parse_lib_design(path)
+        family_to_indices[fam].append(i)
+
+    num_families = len(family_to_indices)
+    total_loss = 0.0
+
+    for fam, indices in family_to_indices.items():
+        family_loss = 0.0
+
+        for i in indices:
+            g = graphs[i].to(device)
+            out = model(g.x, g.edge_index)
+
+            if args.loss_type == "focal":
+                loss_per_node = focal_loss(out, g.y)
+            elif args.loss_type == "ce_weighted":
+                loss_per_node = F.cross_entropy(out, g.y, weight=class_weights.to(out.device), reduction="none")
+            elif args.loss_type == "ce_soft":
+                loss_per_node = F.cross_entropy(out, g.y, weight=soft_class_weights.to(out.device), reduction="none")
+            else:
+                loss_per_node = F.cross_entropy(out, g.y, reduction="none")
+
+            # average within this graph, then accumulate within family
+            family_loss += loss_per_node.mean() / len(indices)
+
+            del out, loss_per_node
+            g = g.to("cpu")
+
+        # each family contributes equally to the total loss
+        loss = family_loss / num_families
+        loss.backward()
+        total_loss += loss.item()
+
+    if args.set_gradient_clipping:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+
+    optimizer.step()
+    return total_loss
+
 ## this function takes a .gml graph --> changes to PyTorch Geometric Dataset
 ## note:
 # a) x = node features (matrix)
@@ -376,19 +527,15 @@ def load_single_gml(gml_path, remove_edges = False):
 
         if args.use_partition_features:     
             partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
-            # partition_feat = partition_feat[2:3]
+            partition_feat = partition_feat[2:3]
             # partition_feat_twoHop = partition_feat[1]
             feat = list(feat) +list(partition_feat)
             # feat = list(feat) + [float(partition_feat_twoHop)]
-            if after_partition_dim is None:
-                after_partition_dim = len(feat)
 
         if args.use_graph_features:
             graph_feat = attr.get("graph_features", [0.0, 0.0])
             graph_feat_subset = graph_feat[:2]
             feat = list(feat) +list(graph_feat_subset)
-            if after_graph_dim is None:
-                after_graph_dim = len(feat)
 
         if args.use_unsupervised_features:
             f1 = float(attr.get("unsup_louvain_1hop", 0.0))
@@ -426,11 +573,14 @@ def load_single_gml(gml_path, remove_edges = False):
 
         features.append(feat)
     
-        boundary_value = attr.get("boundary", 1) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
+        ### we set here, if we get no boundary - we set it to 1 ! 
+        boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
+        
+        # safety check for integer
         try:
             label = int(boundary_value)
         except (ValueError, TypeError): ######??? - we wanna change this ***s
-            label= 1
+            label= 0
         labels.append(label)
 
 
@@ -450,7 +600,7 @@ def load_single_gml(gml_path, remove_edges = False):
 
     id2label = {0: "not_boundary", 1:"boundary"}
     labels = torch.tensor(labels, dtype = torch.long)
-    labels[labels == -1] = 1    # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
+    labels[labels == -1] = 0   # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
 
 
     ## normalizing features *** ???
@@ -562,7 +712,7 @@ def load_single_gml(gml_path, remove_edges = False):
     print("  final feature dim (tensor) :", data.x.shape[1])
     return data, id2label
 
-def focal_loss(logits, targets, gamma=2.0, alpha = 0.25):
+def focal_loss(logits, targets, gamma=2.0, alpha = 0.8): # high alpha, for handling more imbalnace, higher gamma = focus on mistakes (0.65 , 0.75, 0.85) (1.0, 2.0, 3.0) so higher gamma downweights easy samples and says it to focus on harder samples
     ce = F.cross_entropy(logits, targets, reduction="none")
     pt = torch.exp(-ce)
     at = torch.where(targets ==1, alpha, 1 - alpha)
@@ -588,7 +738,7 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
                 weight=class_weights.to(out.device),
                 reduction="none"
             )
-        elif args.loss_type == "ce_soft":
+        elif args.loss_type == "ce_soft": 
             loss_per_node = F.cross_entropy(
                 out, g.y,
                 weight=soft_class_weights.to(out.device),
@@ -1139,19 +1289,20 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         model = DirectedOnlyGATWithGlobal(
             in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
         )
-    elif model_name =="GaAN":
-        model = GaAN( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=4)
+    elif model_name =="GAAN":
+        model = GAAN( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=4)
         print("[INFO] using GaAN")
-    elif model_name =="GATv2_ResNorm":
-        model = GATv2_ResNorm( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=4)
-        print("[INFO] using GATv2_ResNorm")
     elif model_name =="GraphSAGE_ResNorm":
-        model = GraphSAGE_ResNorm(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-        print("[INFO] using GraphSAGE_ResNorm")
-    elif model_name =="DirectedOnlySAGE":
-        model = DirectedOnlySAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
-        print("[INFO] using DirectedOnlySAGE")
+        model = GraphSAGE_ResNorm(in_channels=in_dim, hidden_channels=256, out_channels=out_dim, num_layers=2)
+        print("[INFO] using GraphSAGE_ResNorm ")
 
+
+    elif model_name =="BiDirectedGraphSAGE":
+        model = BiDirectedGraphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+        print("[INFO] using BiDirectedGraphSAGE ")
+    elif model_name =="GraphSAGE_JK":
+        model = GraphSAGE_JK(in_channels=in_dim, hidden_channels=256, out_channels=out_dim, num_layers = 8)
+        print("[INFO] using GraphSAGE_JK - 4 layers ")
     model = model.to(device)
 
     ##### training parameters 
@@ -1206,7 +1357,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         class_weights = torch.tensor(weights, dtype=torch.float)
 
         # soften (same as before)
-        alpha = 0.8
+        alpha = 0.8 # 0.4, 0.6, 0.8
         soft_weights = weights ** alpha
         soft_weights = soft_weights / np.mean(soft_weights)
         soft_class_weights = torch.tensor(soft_weights, dtype=torch.float)
@@ -1283,6 +1434,13 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                     optimizer,
                     class_weights=class_weights,
                     soft_class_weights=soft_class_weights
+                )
+
+            elif args.fullgraph_mode == "per_family":
+                loss = train_family_weighted(
+                    model, train_graphs, args.train_gml, optimizer,
+                    class_weights=class_weights,
+                    soft_class_weights=soft_class_weights,
                 )
 
             else:
@@ -1828,8 +1986,14 @@ if __name__ == "__main__":
     print("[INFO] Output Labels:", output_labels)
 
     for path, g in test_graphs:
-        test_graph_name = os.path.splitext(os.path.basename(path))[0]
-        output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
+        p = Path(path)
+        test_graph_name = p.stem
+        lib_name = p.parent.name
+        design_family = p.parent.parent.name
+
+        safe_name = f"{design_family}__{lib_name}__{test_graph_name}"
+        output_path = os.path.join(output_dir, f"{safe_name}_predictions.gml")
+
         print("[INFO] Saving predictions to:", output_path)
 
         save_predictions_to_gml(

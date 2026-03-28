@@ -150,27 +150,38 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
         attr = G.nodes[node]
 
         feat = list(attr.get("features", []))
-        feat = feat[:31]            # (14 OHE) + (14 OHE) + indeg, outdeg, ratio
+        # feat = feat[:31]            # (14 OHE) + (14 OHE) + indeg, outdeg, ratio
 
         if args.use_partition_features:
-            feat += list(attr.get("partition_features", [0.0, 0.0]))
+            feat += list(attr.get("partition_features", [0.0, 0.0, 0.0]))
 
         if args.use_graph_features:
             graph_feat = attr.get("graph_features", [0.0, 0.0])
             feat += list(graph_feat[:2])
+        
+        # if args.use_unsupervised_features:
+        #     f1 = float(attr.get("unsup_louvain_1hop", 0.0))
+        #     f2 = float(attr.get("unsup_louvain_2hop", 0.0))
+        #     feat = list(feat) + [f1, f2]
+
+        # if args.use_unsupervised_features_louvian:
+        #     f1 = float(attr.get("unsup_leiden_1hop", 0.0))
+        #     f2 = float(attr.get("unsup_leiden_2hop", 0.0))
+        #     feat = list(feat) + [f1, f2]
+
 
         features.append(feat)
 
-        boundary_value = attr.get("boundary", 0)
+        boundary_value = attr.get("boundary", 1)
         try:
             label = int(boundary_value)
         except (ValueError, TypeError):
-            label = 0
+            label = 1
         labels.append(label)
 
     X = np.array(features, dtype=np.float32)
     y = np.array(labels,   dtype=np.int64)
-    y[y == -1] = 0          # treat -1 as non-boundary (matches train.py)
+    y[y == -1] = 1          # treat -1 as non-boundary (matches train.py)
 
     print(f"  [{Path(gml_path).name}]  nodes={len(y)}  "
           f"boundary={y.sum()}  non-boundary={(y == 0).sum()}")
@@ -284,9 +295,9 @@ def main():
         y_pred = rf_all.predict(X_val)
         y_prob = rf_all.predict_proba(X_val)[:, 1]
         val_results_all.append(evaluate(name, "RF-ALL VAL", y_val, y_pred, y_prob))
-        if args.save_predictions:
-            out = os.path.join(args.output_dir, f"{name}_rf_all.gml")
-            save_preds_to_gml(path, y_pred, y_prob, out)
+        # if args.save_predictions:
+            # out = os.path.join(args.output_dir, f"{name}_rf_all.gml")
+            # save_preds_to_gml(path, y_pred, y_prob, out)
 
     print(f"  VAL MACRO: {macro_avg(val_results_all)}")
 
@@ -345,11 +356,11 @@ def main():
         y_prob_sel = rf_sel.predict_proba(X_test[:, top_features])[:, 1]
         test_results_sel.append(evaluate(name, f"RF-TOP{args.top_k} TEST", y_test, y_pred_sel, y_prob_sel))
 
-        if args.save_predictions:
-            save_preds_to_gml(path, y_pred_all, y_prob_all,
-                              os.path.join(args.output_dir, f"{name}_rf_all_test.gml"))
-            save_preds_to_gml(path, y_pred_sel, y_prob_sel,
-                              os.path.join(args.output_dir, f"{name}_rf_top{args.top_k}_test.gml"))
+        # if args.save_predictions:
+        #     save_preds_to_gml(path, y_pred_all, y_prob_all,
+        #                       os.path.join(args.output_dir, f"{name}_rf_all_test.gml"))
+        #     save_preds_to_gml(path, y_pred_sel, y_prob_sel,
+        #                       os.path.join(args.output_dir, f"{name}_rf_top{args.top_k}_test.gml"))
 
     print(f"\n  TEST MACRO (all features): {macro_avg(test_results_all)}")
     print(f"  TEST MACRO (top-{args.top_k}):       {macro_avg(test_results_sel)}")
@@ -373,10 +384,10 @@ def main():
         json.dump(results_summary, f, indent=2)
     print(f"  Results summary          → {summary_path}")
 
-    if args.save_models:
-        joblib.dump(rf_all, os.path.join(args.output_dir, "rf_all.joblib"))
-        joblib.dump(rf_sel, os.path.join(args.output_dir, f"rf_top{args.top_k}.joblib"))
-        print(f"  Models saved to {args.output_dir}/")
+    # if args.save_models:
+    #     joblib.dump(rf_all, os.path.join(args.output_dir, "rf_all.joblib"))
+    #     joblib.dump(rf_sel, os.path.join(args.output_dir, f"rf_top{args.top_k}.joblib"))
+    #     print(f"  Models saved to {args.output_dir}/")
 
     print("\nDone.")
 

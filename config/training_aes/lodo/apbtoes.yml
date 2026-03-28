@@ -1,0 +1,74 @@
+# sampling_method: graphsaint_rw
+model: graphsage
+epochs: 500
+# walk_length: 20
+# perc_batchsize: 0.01
+set_gradient_clipping: true
+normalize_class_weights: true
+reduction_method_cel: "mean"
+lr: 0.001
+loss_type : "ce_weighted" #ce_weighted #ce_soft
+# sample_coverage : 50
+training_mode: "fullgraph"
+fullgraph_mode: "per_design"
+# use_partition_features: true
+# use_unsupervised_features: true
+# use_unsupervised_features_louvian: true
+
+
+train_gml:
+# # === aes_core ===
+# - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/osu035/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/osu035/aes_cipher_top_combined_m1.gml"
+
+# # # # === aes-master ===
+- "graphs_scp/processed_boundaryDetection_march21/aes-master/gscl45nm/aes_core_combined_m1.gml"
+# - "graphs_scp/processed_boundaryDetection_march21/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
+- "graphs_scp/processed_boundaryDetection_march21/aes-master/osu035/aes_core_combined_m1.gml"
+- "graphs_scp/processed_boundaryDetection_march21/aes-master/osu035/aes_decipher_block_combined_m1.gml"
+
+# # # === aes-encryption_latest ===
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/nangate/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/nangate/aes_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml"
+
+# # # # === apbtoaes128_latest ===
+# # - "graphs_scp/processed_boundaryDetection_march21/apbtoaes128_latest/nangate/aes_core_combined_m1.gml"
+# - "graphs_scp/processed_boundaryDetection_march21/apbtoaes128_latest/gscl45nm/aes_core_combined_m1.gml"
+# - "graphs_scp/processed_boundaryDetection_march21/apbtoaes128_latest/osu035/aes_core_combined_m1.gml"
+
+# # === gcm-aes_latest ===
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/nangate/aes_key_expand_128_combined_m1.gml"
+# - "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/nangate/gcm_aes_v0_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/nangate/aes_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/gscl45nm/gcm_aes_v0_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/osu035/gcm_aes_v0_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/osu035/aes_cipher_top_combined_m1.gml"
+
+val_gml:
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/gcm-aes_latest/nangate/gcm_aes_v0_combined_m1.gml"
+# - "graphs_scp/processed_boundaryDetection_march21/apbtoaes128_latest/nangate/aes_core_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "graphs_scp/processed_boundaryDetection_march21/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
+- "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+
+
+
+test_gml:
+# # # === apbtoaes128_latest ===
+- "graphs_scp/processed_boundaryDetection_march21/apbtoaes128_latest/nangate/aes_core_combined_m1.gml"
+- "graphs_scp/processed_boundaryDetection_march21/apbtoaes128_latest/gscl45nm/aes_core_combined_m1.gml"
+- "graphs_scp/processed_boundaryDetection_march21/apbtoaes128_latest/osu035/aes_core_combined_m1.gml"

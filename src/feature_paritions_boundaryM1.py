@@ -60,6 +60,12 @@ def count_1hop_gate_types(node, G_und, G_dir):
         counts[idx] += 1.0
 
     return counts
+def normalize_counts(counts: torch.Tensor):
+    total = counts.sum()
+    if total > 0:
+        return counts / total
+    return counts  # stays zero if no neighbors
+    
 
 def count_2hop_gate_types(node, G_und, G_dir):
     """
@@ -337,6 +343,7 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
     num_nodes = float(G_dir.number_of_nodes())
     num_edges = float(G_dir.number_of_edges())
+    graph_density = (2.0 * num_edges) / (num_nodes * (num_nodes - 1))
 
     unknown_gate_labels = {}
     for node in G_dir.nodes():
@@ -380,10 +387,12 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
         gate_onehot = encode_gate(gate_type)
         gate_1hop_counts = count_1hop_gate_types(node, G_und, G_dir)
+        gate_1hop_frac = normalize_counts(gate_1hop_counts)
+
         # gate_2hop_counts = count_2hop_gate_types(node, G_und, G_dir)
 
         # gate_feats = torch.cat([gate_onehot, gate_1hop_counts, gate_2hop_counts]) #### check
-        gate_feats = torch.cat([gate_onehot, gate_1hop_counts]) #### check
+        gate_feats = torch.cat([gate_onehot, gate_1hop_frac]) #### check
 
         neighbor_degs = [deg_und.get(nb, 0) for nb in G_und.neighbors(node)]
         deg_contrast = deg_und.get(node, 0) - (np.mean(neighbor_degs) if neighbor_degs else 0.0)
@@ -413,7 +422,7 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
         ]
 
         # graph features
-        graph_feats = torch.tensor([num_nodes, num_edges], dtype=torch.float32)
+        graph_feats = torch.tensor([num_nodes, num_edges, graph_density], dtype=torch.float32)
         G_dir.nodes[node]["graph_features"] = graph_feats.tolist()
 
         # unsupervised - feature test
