@@ -127,46 +127,74 @@ class BiDirectedSAGEBlock(nn.Module):
         return x_f + x_b  # same as DirectedGATBlock
 
 
+# class BiDirectedGraphSAGE(nn.Module):
+#     """
+#     Mirrors DirectedOnlyGAT structure:
+#     - input residual skip
+#     - N stacked BiDirectedSAGEBlocks with ELU + dropout
+#     - 2-layer classifier head
+#     """
+#     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=4, dropout=0.1):
+#         super().__init__()
+#         C = hidden_channels
+#         self.dropout = dropout
+
+#         self.skip = nn.Linear(in_channels, C, bias=False) if in_channels != C else nn.Identity()
+
+#         self.layers = nn.ModuleList([
+#             BiDirectedSAGEBlock(in_channels if i == 0 else C, C)
+#             for i in range(num_layers)
+#         ])
+
+#         # self.classifier = nn.Sequential(
+#         #     nn.Linear(C, C),
+#         #     nn.ReLU(),
+#         #     nn.Dropout(dropout),
+#         #     nn.Linear(C, out_channels),
+#         # )
+#         self.out = nn.Linear(C, out_channels) 
+#         self._init_weights()
+
+#     def _init_weights(self):
+#         for m in self.modules():
+#             if isinstance(m, nn.Linear):
+#                 nn.init.xavier_uniform_(m.weight)
+#                 if m.bias is not None:
+#                     nn.init.zeros_(m.bias)
+
+#     def forward(self, x, edge_index):
+#         row, col = edge_index
+#         rev_edge_index = torch.stack([col, row], dim=0)
+
+#         skip = self.skip(x)
+
+#         h = x
+#         for i, layer in enumerate(self.layers):
+#             h = layer(h, edge_index, rev_edge_index)
+#             h = F.relu(h)
+#             if i < len(self.layers) - 1:
+#                 h = F.dropout(h, p=self.dropout, training=self.training)
+
+#         # h = h + skip
+#         # return self.classifier(h)
+#         return self.out(h)
+
 class BiDirectedGraphSAGE(nn.Module):
-    """
-    Mirrors DirectedOnlyGAT structure:
-    - input residual skip
-    - N stacked BiDirectedSAGEBlocks with ELU + dropout
-    - 2-layer classifier head
-    """
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=4, dropout=0.1):
         super().__init__()
         C = hidden_channels
         self.dropout = dropout
-
-        self.skip = nn.Linear(in_channels, C, bias=False) if in_channels != C else nn.Identity()
 
         self.layers = nn.ModuleList([
             BiDirectedSAGEBlock(in_channels if i == 0 else C, C)
             for i in range(num_layers)
         ])
 
-        # self.classifier = nn.Sequential(
-        #     nn.Linear(C, C),
-        #     nn.ReLU(),
-        #     nn.Dropout(dropout),
-        #     nn.Linear(C, out_channels),
-        # )
-        self.out = nn.Linear(C, out_channels) 
-        self._init_weights()
-
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
+        self.out = nn.Linear(C, out_channels)
 
     def forward(self, x, edge_index):
         row, col = edge_index
         rev_edge_index = torch.stack([col, row], dim=0)
-
-        skip = self.skip(x)
 
         h = x
         for i, layer in enumerate(self.layers):
@@ -175,6 +203,4 @@ class BiDirectedGraphSAGE(nn.Module):
             if i < len(self.layers) - 1:
                 h = F.dropout(h, p=self.dropout, training=self.training)
 
-        # h = h + skip
-        # return self.classifier(h)
         return self.out(h)

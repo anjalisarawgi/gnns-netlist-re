@@ -1,0 +1,84 @@
+model: DirectedOnlyGAT
+epochs: 500
+set_gradient_clipping: true
+lr: 0.001
+loss_type : "ce_weighted" #ce_weighted #ce_soft
+training_mode: "fullgraph"
+fullgraph_mode: "per_design"
+#  use_scheduler : true
+
+train_gml:
+# # === aes_core ===
+# - "crypto_graphs_final/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/aes_core/nangate/aes_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/aes_core/osu035/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/aes_core/osu035/aes_cipher_top_combined_m1.gml"
+
+# # # === aes-master ===
+- "other_graphs_final/aes-master/gscl45nm/aes_core_combined_m1.gml"
+# - "other_graphs_final/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
+- "other_graphs_final/aes-master/osu035/aes_core_combined_m1.gml"
+- "other_graphs_final/aes-master/osu035/aes_decipher_block_combined_m1.gml"
+
+# # === aes-encryption_latest ===
+- "crypto_graphs_final/aes-encryption_latest/nangate/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/aes-encryption_latest/nangate/aes_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+# - "crypto_graphs_final/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml"
+
+# # # === apbtoaes128_latest ===
+# - "other_graphs_final/apbtoaes128_latest/nangate/aes_core_combined_m1.gml"
+- "other_graphs_final/apbtoaes128_latest/gscl45nm/aes_core_combined_m1.gml"
+- "other_graphs_final/apbtoaes128_latest/osu035/aes_core_combined_m1.gml"
+
+# # === gcm-aes_latest ===
+- "crypto_graphs_final/gcm-aes_latest/nangate/aes_key_expand_128_combined_m1.gml"
+# - "crypto_graphs_final/gcm-aes_latest/nangate/gcm_aes_v0_combined_m1.gml"
+- "crypto_graphs_final/gcm-aes_latest/nangate/aes_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/gcm-aes_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/gcm-aes_latest/gscl45nm/gcm_aes_v0_combined_m1.gml"
+- "crypto_graphs_final/gcm-aes_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "crypto_graphs_final/gcm-aes_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "crypto_graphs_final/gcm-aes_latest/osu035/gcm_aes_v0_combined_m1.gml"
+- "crypto_graphs_final/gcm-aes_latest/osu035/aes_cipher_top_combined_m1.gml"
+
+
+val_gml:
+- "crypto_graphs_final/gcm-aes_latest/nangate/gcm_aes_v0_combined_m1.gml"
+- "other_graphs_final/apbtoaes128_latest/nangate/aes_core_combined_m1.gml"
+- "crypto_graphs_final/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "other_graphs_final/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
+- "crypto_graphs_final/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+
+
+
+test_gml:
+- "crypto_graphs_final/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
+
+# test_gml:
+# # - "crypto_graphs_final/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/nangate/aes_cipher_top_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/osu035/aes_key_expand_128_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
+# # - "crypto_graphs_final/aes_core/osu035/aes_cipher_top_combined_m1.gml"
+
+# - "crypto_graphs_final/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
+# - "crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
+# - "crypto_graphs_final/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+
+
+# - "other_graphs_final/mips32r1_latest/gscl45nm/ALU_combined_m1.gml"
+# - "crypto_graphs_final/des_latest/gscl45nm/des_combined_m1.gml"
+# - "other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml"
+

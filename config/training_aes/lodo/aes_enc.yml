@@ -1,19 +1,11 @@
-# sampling_method: graphsaint_rw
 model: graphsage
 epochs: 500
-# walk_length: 20
-# perc_batchsize: 0.01
 set_gradient_clipping: true
-normalize_class_weights: true
-reduction_method_cel: "mean"
 lr: 0.001
-loss_type : "ce_weighted" #ce_weighted #ce_soft
-# sample_coverage : 50
+loss_type : "ce" #ce_weighted #ce_soft
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
-use_partition_features: true
-# use_unsupervised_features: true
-# use_unsupervised_features_louvian: true
+#  use_scheduler : true
 
 
 train_gml:
@@ -75,3 +67,4 @@ test_gml:
 - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
 - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
 - "new_graphs_crypto_scp/processed_boundaryDetection_march21/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml"
+
