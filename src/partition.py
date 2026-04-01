@@ -514,6 +514,8 @@ def load_single_gml(gml_path, remove_edges = False):
     base_feat_dim = None
     after_partition_dim = None
     after_graph_dim = None
+    nan_boundary_count = 0
+    nan_is_io_count = 0 
     for node in nodes:
         attr = G.nodes[node] # attr?
         feat = attr.get("features", [])
@@ -573,15 +575,21 @@ def load_single_gml(gml_path, remove_edges = False):
         features.append(feat)
     
         ### we set here, if we get no boundary - we set it to 1 ! 
-        boundary_value = attr.get("boundary", 0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
+        boundary_value = attr.get("boundary", 1) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
         
         # safety check for integer
         try:
             label = int(boundary_value)
         except (ValueError, TypeError): ######??? - we wanna change this ***s
-            label= 0
+            label= 1
         labels.append(label)
 
+        raw_boundary = attr.get("boundary")
+        if raw_boundary is None:
+            nan_boundary_count += 1
+            label_copy = str(attr.get("label_copy", "")).strip("'\"").upper()
+            if "INPUT" in label_copy or "OUTPUT" in label_copy:
+                nan_is_io_count += 1
 
         # boundary_value = attr.get("boundary", 0)
         # try:
@@ -596,10 +604,11 @@ def load_single_gml(gml_path, remove_edges = False):
         #     label = 0
 
         # labels.append(label)
-
+    
+    print(f"[TOCHECK] {gml_path}: missing boundary: {nan_boundary_count} (of which INPUT/OUTPUT: {nan_is_io_count}, other: {nan_boundary_count - nan_is_io_count})")
     id2label = {0: "not_boundary", 1:"boundary"}
     labels = torch.tensor(labels, dtype = torch.long)
-    labels[labels == -1] = 0   # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
+    labels[labels == -1] = 1  # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
 
 
     ## normalizing features *** ???
@@ -730,30 +739,22 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
         out = model(g.x, g.edge_index)
 
         if args.loss_type == "focal":
-            loss_per_node = focal_loss(out, g.y)
+            loss = focal_loss(out, g.y).mean() / num_graphs
         elif args.loss_type == "ce_weighted":
-            loss_per_node = F.cross_entropy(
-                out, g.y,
-                weight=class_weights.to(out.device),
-                reduction="none"
-            )
-        elif args.loss_type == "ce_soft": 
-            loss_per_node = F.cross_entropy(
-                out, g.y,
-                weight=soft_class_weights.to(out.device),
-                reduction="none"
-            )
+            loss = F.cross_entropy(out, g.y, weight=class_weights.to(out.device)) / num_graphs
+        elif args.loss_type == "ce_soft":
+            loss = F.cross_entropy(out, g.y, weight=soft_class_weights.to(out.device)) / num_graphs
         else:
-            loss_per_node = F.cross_entropy(out, g.y, reduction="none")
-
+            loss = F.cross_entropy(out, g.y) / num_graphs
+        
         # divide by num_graphs here so gradients are equivalent to the mean
-        loss = loss_per_node.mean() / num_graphs
+        # loss = loss_per_node.mean() / num_graphs
         loss.backward()  # frees this graph's computation graph immediately
 
         total_loss += loss.item()
 
         # ADD THESE TWO LINES:
-        del out, loss, loss_per_node
+        del out, loss
         torch.cuda.empty_cache()
         # optionally move graph back to CPU to free VRAM between designs
         g = g.to("cpu")
@@ -777,13 +778,13 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
         loss_per_node = F.cross_entropy(
             out, data.y,
             weight=class_weights.to(out.device),
-            reduction="none"
+            reduction="mean"
         )
     elif args.loss_type == "ce_soft":
         loss_per_node = F.cross_entropy(
             out, data.y,
             weight=soft_class_weights.to(out.device),
-            reduction="none"
+            reduction="mean"
         )
     else:
         loss_per_node = F.cross_entropy(out, data.y, reduction="none")
@@ -1353,9 +1354,9 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         # average across designs
         weights = np.mean(np.stack(per_graph_weights), axis=0)
         class_weights = torch.tensor(weights, dtype=torch.float)
-        # class_weights = torch.tensor([0.05, 10.0], dtype=torch.float)
+        # class_weights = torch.tensor([0.05, 1000.0], dtype=torch.float)
 
-        # class_weights = torch.tensor([0.1, 5.0], dtype=torch.float)
+        # class_weights = torch.tensor([0.1, 10.0], dtype=torch.float)
 
 
         # soften (same as before)
@@ -1434,15 +1435,15 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                     model,
                     train_graphs,
                     optimizer,
-                    class_weights=class_weights,
-                    soft_class_weights=soft_class_weights
+                    class_weights=class_weights if args.loss_type == "ce_weighted" else None,
+                    soft_class_weights=soft_class_weights  if args.loss_type == "ce_soft" else None,
                 )
 
             elif args.fullgraph_mode == "per_family":
                 loss = train_family_weighted(
                     model, train_graphs, args.train_gml, optimizer,
-                    class_weights=class_weights,
-                    soft_class_weights=soft_class_weights,
+                    class_weights=class_weights if args.loss_type == "ce_weighted" else None,
+                    soft_class_weights=soft_class_weights  if args.loss_type == "ce_soft" else None,
                 )
 
             else:

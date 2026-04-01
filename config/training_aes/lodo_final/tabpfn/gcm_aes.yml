@@ -1,14 +1,5 @@
-model: gatv2
-epochs: 500
-set_gradient_clipping: true
-lr: 0.001
-loss_type : "ce_weighted" #ce_weighted #ce_soft
-training_mode: "fullgraph"
-fullgraph_mode: "per_design"
-#  use_scheduler : true
+mode: tabpfn
 # use_partition_features: true
-# use_unsupervised_features: true
-# use_unsupervised_features_louvian: true
 
 train_gml:
 # # === aes_core ===

@@ -1,24 +1,10 @@
-"""
-Example YAML (configs/my_experiment.yaml):
-    train_gml:
-      - data/design_a/lib1/graph.gml
-      - data/design_b/lib1/graph.gml
-    val_gml:
-      - data/design_c/lib1/graph.gml
-    test_gml:
-      - data/design_d/lib1/graph.gml
-    top_k: 15
-    n_estimators: 300
-    use_partition_features: true
-    save_models: true
-    save_predictions: true
-    output_dir: results/rf/my_experiment
-"""
-
 import argparse
 import os
+import sys
 import json
 import random
+import inspect
+import time
 from pathlib import Path
 
 import joblib
@@ -33,114 +19,70 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
+from tabpfn import TabPFNClassifier, TabPFNRegressor
+from tabpfn.constants import ModelVersion
+from tabicl import TabICLClassifier
+from sklearn.preprocessing import StandardScaler
 
 
-# ---------------------------------------------------------------------------
-# CLI  +  YAML config  (same pattern as train.py)
-# ---------------------------------------------------------------------------
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Random Forest baseline for boundary node detection")
+    p = argparse.ArgumentParser(description="Baseline models for boundary node detection")
 
-    # config file (optional — overrides all defaults below, then CLI overrides config)
-    p.add_argument("--config", type=str, default=None,
-                   help="Path to a YAML config file. CLI flags take precedence over YAML values.")
-
-    # data
+    p.add_argument("--config", type=str, default=None)
+    p.add_argument("--mode", type=str, default="rf", choices=["rf", "tabpfn", "tabicl"])
     p.add_argument("--train_gml", nargs="+", default=None)
     p.add_argument("--val_gml",   nargs="+", default=None)
     p.add_argument("--test_gml",  nargs="+", default=None)
 
-    # RF hyper-parameters
-    p.add_argument("--top_k", type=int, default=10,
-                   help="Number of top features to use for the second (selected) RF")
-    p.add_argument("--n_estimators", type=int, default=200)
+    # RF 
+    p.add_argument("--top_k", type=int, default=15)
+    p.add_argument("--n_estimators", type=int, default=100)
+
+    # TabICL
+    p.add_argument("--tabicl_n_estimators", type=int, default=8, help="Number of ensemble estimators for TabICL")
+    p.add_argument("--tabicl_batch_size", type=int, default=8, help="Batch size for TabICL inference")
 
     # feature flags
     p.add_argument("--use_partition_features", action="store_true", default=False)
     p.add_argument("--use_graph_features",     action="store_true", default=False)
-
-    # output / persistence
-    p.add_argument("--save_models",      action="store_true", default=False,
-                   help="Persist trained RF models to disk via joblib")
-    p.add_argument("--save_predictions", action="store_true", default=False,
-                   help="Write per-graph prediction GML files")
-    p.add_argument("--output_dir", type=str, default="results/rf",
-                   help="Where to write prediction GMLs / model files")
-
-    # misc
     p.add_argument("--seed", type=int, default=42)
 
     args = p.parse_args()
 
-    # ---- YAML loading (mirrors train.py) ----
     if args.config:
-        with open(args.config, "r") as f:
+        with open(args.config) as f:
             cfg = yaml.safe_load(f)
-
-        # Re-parse so that explicit CLI flags still win over YAML values.
-        # Strategy: set YAML values as new defaults, then re-parse.
-        # For store_true booleans we need special handling.
-        bool_flags = {"use_partition_features", "use_graph_features",
-                      "save_models", "save_predictions"}
-
-        for key, value in cfg.items():
-            if key == "config":
-                continue
-            if key in bool_flags:
-                # Only apply YAML if the flag was NOT explicitly set on CLI
-                # (argparse doesn't expose this cleanly, so we check current value)
-                if not getattr(args, key, False):
-                    setattr(args, key, bool(value))
-            else:
-                # For non-boolean args: YAML wins unless CLI supplied a non-default value.
-                # Simplest safe approach: YAML always sets, CLI parse below overrides.
-                setattr(args, key, value)
-
-        # Re-parse CLI on top so explicit flags beat the YAML values just applied.
-        # We only override if the user actually passed the flag on the command line.
-        cli_args = p.parse_args()  # fresh parse (YAML not involved)
-        import sys
-        raw_cli = set()
-        for token in sys.argv[1:]:
-            if token.startswith("--"):
-                raw_cli.add(token.lstrip("-").split("=")[0].replace("-", "_"))
-
-        for key in raw_cli:
-            if key == "config":
-                continue
-            if hasattr(cli_args, key):
-                setattr(args, key, getattr(cli_args, key))
-
-        print(f"[CONFIG] Loaded from: {args.config}")
-
-    # ---- Validate required fields ----
-    missing = [f for f in ("train_gml", "val_gml", "test_gml") if not getattr(args, f)]
-    if missing:
-        p.error(
-            f"The following required arguments are missing (set via CLI or config): "
-            f"{', '.join('--' + m for m in missing)}"
-        )
-
+        # Override args with config values (only if not already set via CLI)
+        for key, val in cfg.items():
+            if val is not None:
+                setattr(args, key, val)
     return args
 
 
-# ---------------------------------------------------------------------------
-# Reproducibility
-# ---------------------------------------------------------------------------
 
 def set_seed(seed: int):
     random.seed(seed)
     np.random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
 
+NUM_CATEGORICAL = 14
+class SelectiveScaler:
+    def __init__(self, n_categorical):
+        self.n_cat = n_categorical
+        self.scaler = StandardScaler()
 
-# ---------------------------------------------------------------------------
-# Feature extraction  (mirrors load_single_gml in train.py)
-# ---------------------------------------------------------------------------
+    def fit_transform(self, X):
+        X = X.copy()
+        X[:, self.n_cat:] = self.scaler.fit_transform(X[:, self.n_cat:])
+        return X
+
+    def transform(self, X):
+        X = X.copy()
+        X[:, self.n_cat:] = self.scaler.transform(X[:, self.n_cat:])
+        return X
 
 def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
-    """Return (X, y) numpy arrays for one GML file."""
     G = nx.read_gml(gml_path)
     nodes = list(G.nodes())
 
@@ -150,47 +92,34 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
         attr = G.nodes[node]
 
         feat = list(attr.get("features", []))
-        # feat = feat[:31]            # (14 OHE) + (14 OHE) + indeg, outdeg, ratio
 
-        if args.use_partition_features:
-            feat += list(attr.get("partition_features", [0.0, 0.0, 0.0]))
+        # if args.use_partition_features:
+        #     partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
+        #     partition_feat = partition_feat[2:3]
+        #     feat = list(feat) + list(partition_feat)
 
-        if args.use_graph_features:
-            graph_feat = attr.get("graph_features", [0.0, 0.0])
-            feat += list(graph_feat[:2])
-        
-        # if args.use_unsupervised_features:
-        #     f1 = float(attr.get("unsup_louvain_1hop", 0.0))
-        #     f2 = float(attr.get("unsup_louvain_2hop", 0.0))
-        #     feat = list(feat) + [f1, f2]
-
-        # if args.use_unsupervised_features_louvian:
-        #     f1 = float(attr.get("unsup_leiden_1hop", 0.0))
-        #     f2 = float(attr.get("unsup_leiden_2hop", 0.0))
-        #     feat = list(feat) + [f1, f2]
-
+        # if args.use_graph_features:
+        #     graph_feat = attr.get("graph_features", [0.0, 0.0])
+        #     graph_feat_subset = graph_feat[:2]
+        #     feat = list(feat) + list(graph_feat_subset)
 
         features.append(feat)
 
-        boundary_value = attr.get("boundary", 1)
+        boundary_value = attr.get("boundary", 0)
         try:
             label = int(boundary_value)
         except (ValueError, TypeError):
-            label = 1
+            label = 0
         labels.append(label)
 
     X = np.array(features, dtype=np.float32)
     y = np.array(labels,   dtype=np.int64)
-    y[y == -1] = 1          # treat -1 as non-boundary (matches train.py)
+    y[y == -1] = 0   # can be removed i think but kept as safety check
 
     print(f"  [{Path(gml_path).name}]  nodes={len(y)}  "
           f"boundary={y.sum()}  non-boundary={(y == 0).sum()}")
     return X, y
 
-
-# ---------------------------------------------------------------------------
-# Metrics helpers
-# ---------------------------------------------------------------------------
 
 def pr_auc(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     if y_true.min() == y_true.max():
@@ -212,48 +141,141 @@ def macro_avg(results: list[dict]) -> dict:
     return {k: float(np.mean([r[k] for r in results])) for k in keys}
 
 
-# ---------------------------------------------------------------------------
-# Prediction saving
-# ---------------------------------------------------------------------------
 
 ID2LABEL = {0: "not_boundary", 1: "boundary"}
+def evaluate_splits(clf, tag, val_data, test_data, args, feature_mask=None):
+    def _slice(X):
+        return X[:, feature_mask] if feature_mask is not None else X
+
+    # val
+    # val_results = []
+    # for name, path, X_val, y_val in val_data:
+    #     y_pred = clf.predict(_slice(X_val))
+    #     y_prob = clf.predict_proba(_slice(X_val))[:, 1]
+    #     val_results.append(evaluate(name, f"{tag} VAL", y_val, y_pred, y_prob))
+    # print(f"  VAL MACRO: {macro_avg(val_results)}")
+
+    # test
+    print(f"\ntest - results")
+    test_results = []
+    for name, path, X_test, y_test in test_data:
+        y_pred = clf.predict(_slice(X_test))
+        y_prob = clf.predict_proba(_slice(X_test))[:, 1]
+        test_results.append(evaluate(name, f"{tag} TEST", y_test, y_pred, y_prob))
+    print(f" MACRO (TEST): {macro_avg(test_results)}")
+
+    return test_results
+
+# all models
+def run_tabpfn(X_train, y_train, val_data, test_data, args):
+    print("[TabPFN] using TabPFN v2.5")
+
+    # subsampling
+    print(f"  total rows: {len(X_train)} before subsamples …")
+    if len(X_train) > 50_000:
+        print(f"  Subsampling train rows: {len(X_train)} → {50_000}")
+        X_train, y_train = stratified_subsample(X_train, y_train, 50_000, args.seed)
+    print(f"  total rows: {len(X_train)} after subsamples …")
+
+    classifier = TabPFNClassifier.create_default_for_version(ModelVersion.V2_5, device = "cuda")
+    classifier.fit(X_train, y_train)
+    print("  Training complete.")
+
+    test_results = evaluate_splits(classifier, "TabPFN", val_data, test_data, args)
+    return {
+        # "val_macro":  macro_avg(val_results),
+        "test_macro": macro_avg(test_results),
+    }
+
+# subsampling ad maintining the ratios
+def stratified_subsample(X, y, max_n, seed):
+    rng = np.random.RandomState(seed)
+    classes, counts = np.unique(y, return_counts=True)
+    ratios = counts / counts.sum()
+    per_class = np.maximum((ratios * max_n).astype(int), 1)
+
+    diff = max_n - per_class.sum()
+    if diff > 0:
+        per_class[np.argmax(counts)] += diff
+    elif diff < 0:
+        per_class[np.argmax(per_class)] += diff  # diff is negative
+
+    indices = []
+    for cls, n in zip(classes, per_class):
+        cls_idx = np.where(y == cls)[0]
+        chosen = rng.choice(cls_idx, size=min(n, len(cls_idx)), replace=False)
+        indices.append(chosen)
+
+    indices = np.concatenate(indices)
+    rng.shuffle(indices)
+    return X[indices], y[indices]
 
 
-def save_preds_to_gml(gml_path: str, y_pred, y_prob, output_path: str):
-    G = nx.read_gml(gml_path)
-    for i, node in enumerate(G.nodes()):
-        G.nodes[node]["predicted_label"] = ID2LABEL[int(y_pred[i])]
-        G.nodes[node]["predicted_prob"]  = float(y_prob[i])
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    nx.write_gml(G, output_path)
-    print(f"  Saved → {output_path}")
+def run_tabicl(X_train, y_train, val_data, test_data, args):
+    print("tabicl:")
+    print(f"  total rows: {len(X_train)} before subsamples …")
+    if len(X_train) > 200_000:
+        print(f"  Subsampling train rows: {len(X_train)} → {200_000}")
+        X_train, y_train = stratified_subsample(X_train, y_train, 200_000, args.seed)
+    print(f"  total rows: {len(X_train)} after subsamples …")
+    
 
+    classifier = TabICLClassifier( 
+        n_estimators=args.tabicl_n_estimators,
+        batch_size=args.tabicl_batch_size,
+        checkpoint_version="tabicl-classifier-v2-20260212.ckpt",
+        device="cuda",
+        random_state=42,
+    )
+    classifier.fit(X_train, y_train)
+    print("[TABICL] tabical fitted on training data")
+    
+    test_results = evaluate_splits( classifier, "TabICL", val_data, test_data, args)
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+    return {
+        # "val_macro":  macro_avg(val_results),
+        "test_macro": macro_avg(test_results),
+    }
+
+def run_rf(X_train, y_train, val_data, test_data, args):
+    # on all features
+    rf_all = RandomForestClassifier( n_estimators=args.n_estimators, max_depth=None, class_weight="balanced", n_jobs=-1, random_state=args.seed)
+    rf_all.fit(X_train, y_train)
+    print("rf training done complete")
+    test_results_all = evaluate_splits(rf_all, "RF-ALL", val_data, test_data, args)
+
+    # taking top k 
+    importances = rf_all.feature_importances_
+    feat_df = (
+        pd.DataFrame({"feature_id": np.arange(len(importances)), "importance": importances})
+        .sort_values("importance", ascending=False)
+        .reset_index(drop=True)
+    )
+    print(f"top {args.top_k} feature importances")
+    print(feat_df.head(args.top_k).to_string(index=False))
+    top_features = feat_df["feature_id"].values[: args.top_k]
+
+    # rf now on all the seelcted features only 
+    print(f"rf on the top k")
+    rf_sel = RandomForestClassifier( n_estimators=args.n_estimators, max_depth=None, class_weight="balanced", n_jobs=-1, random_state=args.seed)
+    rf_sel.fit(X_train[:, top_features], y_train)
+    print("Training complete.")
+    test_results_sel = evaluate_splits( rf_sel, f"RF-TOP{args.top_k}", val_data, test_data, args, feature_mask=top_features)
+
+    return {
+        # "val_macro_all":      macro_avg(val_results_all),
+        # "val_macro_selected": macro_avg(val_results_sel),
+        "test_macro_all":     macro_avg(test_results_all),
+        "test_macro_selected":macro_avg(test_results_sel),
+        "top_features":       top_features.tolist(),
+    }
+
 
 def main():
     args = parse_args()
     set_seed(args.seed)
-    os.makedirs(args.output_dir, exist_ok=True)
 
-    print("\n=== RF Experiment Config ===")
-    print(f"  config file       : {args.config or '(none)'}")
-    print(f"  train graphs      : {args.train_gml}")
-    print(f"  val graphs        : {args.val_gml}")
-    print(f"  test graphs       : {args.test_gml}")
-    print(f"  n_estimators      : {args.n_estimators}")
-    print(f"  top_k             : {args.top_k}")
-    print(f"  partition features: {args.use_partition_features}")
-    print(f"  graph features    : {args.use_graph_features}")
-    print(f"  output_dir        : {args.output_dir}")
-    print(f"  seed              : {args.seed}")
-
-    # ------------------------------------------------------------------
-    # 1. Load data
-    # ------------------------------------------------------------------
-    print("\n=== Loading TRAIN graphs ===")
+    print("train graphs:::")
     X_parts, y_parts = [], []
     for path in args.train_gml:
         X, y = load_graph_features(path, args)
@@ -263,133 +285,34 @@ def main():
     y_train = np.concatenate(y_parts)
     print(f"  Total train  nodes={len(y_train)}  boundary={y_train.sum()}")
 
-    print("\n=== Loading VAL graphs ===")
-    val_data = []           # list of (name, path, X, y)
+    print("validation graphs:::")
+    val_data = []
     for path in args.val_gml:
         X, y = load_graph_features(path, args)
         val_data.append((Path(path).stem, path, X, y))
 
-    print("\n=== Loading TEST graphs ===")
+    print("test graphs:::")
     test_data = []
     for path in args.test_gml:
         X, y = load_graph_features(path, args)
         test_data.append((Path(path).stem, path, X, y))
+   
+    # scaling - for tabpfn and tabicl 
+    scaler = SelectiveScaler(NUM_CATEGORICAL)
+    X_train_scaled = scaler.fit_transform(X_train)
+    # scaler fit on the trian and tested on val and test respectively
+    val_data_scaled = [ (name, path, scaler.transform(X), y)for name, path, X, y in val_data]
+    test_data_scaled = [(name, path, scaler.transform(X), y) for name, path, X, y in test_data]
 
-    # ------------------------------------------------------------------
-    # 2. RF — all features
-    # ------------------------------------------------------------------
-    print("\n=== Training RF (all features) ===")
-    rf_all = RandomForestClassifier(
-        n_estimators=args.n_estimators,
-        max_depth=None,
-        class_weight="balanced",
-        n_jobs=-1,
-        random_state=args.seed,
-    )
-    rf_all.fit(X_train, y_train)
-    print("  Training complete.")
+    if args.mode == "rf":
+        results_summary = run_rf(X_train, y_train, val_data, test_data, args)
+    elif args.mode == "tabpfn":
+        # results_summary = run_tabpfn(X_train, y_train, val_data, test_data, args)
+        results_summary = run_tabpfn(X_train_scaled, y_train, val_data_scaled, test_data_scaled, args)
+    elif args.mode == "tabicl":
+        results_summary = run_tabicl(X_train_scaled, y_train, val_data_scaled, test_data_scaled, args)
 
-    print("\n--- RF-ALL  |  VAL ---")
-    val_results_all = []
-    for name, path, X_val, y_val in val_data:
-        y_pred = rf_all.predict(X_val)
-        y_prob = rf_all.predict_proba(X_val)[:, 1]
-        val_results_all.append(evaluate(name, "RF-ALL VAL", y_val, y_pred, y_prob))
-        # if args.save_predictions:
-            # out = os.path.join(args.output_dir, f"{name}_rf_all.gml")
-            # save_preds_to_gml(path, y_pred, y_prob, out)
-
-    print(f"  VAL MACRO: {macro_avg(val_results_all)}")
-
-    # ------------------------------------------------------------------
-    # 3. Feature importance → select top-k
-    # ------------------------------------------------------------------
-    importances = rf_all.feature_importances_
-    feat_df = (
-        pd.DataFrame({"feature_id": np.arange(len(importances)), "importance": importances})
-        .sort_values("importance", ascending=False)
-        .reset_index(drop=True)
-    )
-    print(f"\n=== Top-{args.top_k} feature importances ===")
-    print(feat_df.head(args.top_k).to_string(index=False))
-
-    top_features = feat_df["feature_id"].values[: args.top_k]
-
-    # ------------------------------------------------------------------
-    # 4. RF — selected features
-    # ------------------------------------------------------------------
-    print(f"\n=== Training RF (top-{args.top_k} features) ===")
-    rf_sel = RandomForestClassifier(
-        n_estimators=args.n_estimators,
-        max_depth=None,
-        class_weight="balanced",
-        n_jobs=-1,
-        random_state=args.seed,
-    )
-    rf_sel.fit(X_train[:, top_features], y_train)
-    print("  Training complete.")
-
-    print(f"\n--- RF-TOP{args.top_k}  |  VAL ---")
-    val_results_sel = []
-    for name, path, X_val, y_val in val_data:
-        y_pred = rf_sel.predict(X_val[:, top_features])
-        y_prob = rf_sel.predict_proba(X_val[:, top_features])[:, 1]
-        val_results_sel.append(evaluate(name, f"RF-TOP{args.top_k} VAL", y_val, y_pred, y_prob))
-        if args.save_predictions:
-            out = os.path.join(args.output_dir, f"{name}_rf_top{args.top_k}.gml")
-            save_preds_to_gml(path, y_pred, y_prob, out)
-
-    print(f"  VAL MACRO: {macro_avg(val_results_sel)}")
-
-    # ------------------------------------------------------------------
-    # 5. Test evaluation  (both models)
-    # ------------------------------------------------------------------
-    print("\n=== TEST evaluation ===")
-    test_results_all, test_results_sel = [], []
-
-    for name, path, X_test, y_test in test_data:
-        y_pred_all  = rf_all.predict(X_test)
-        y_prob_all  = rf_all.predict_proba(X_test)[:, 1]
-        test_results_all.append(evaluate(name, "RF-ALL TEST", y_test, y_pred_all, y_prob_all))
-
-        y_pred_sel = rf_sel.predict(X_test[:, top_features])
-        y_prob_sel = rf_sel.predict_proba(X_test[:, top_features])[:, 1]
-        test_results_sel.append(evaluate(name, f"RF-TOP{args.top_k} TEST", y_test, y_pred_sel, y_prob_sel))
-
-        # if args.save_predictions:
-        #     save_preds_to_gml(path, y_pred_all, y_prob_all,
-        #                       os.path.join(args.output_dir, f"{name}_rf_all_test.gml"))
-        #     save_preds_to_gml(path, y_pred_sel, y_prob_sel,
-        #                       os.path.join(args.output_dir, f"{name}_rf_top{args.top_k}_test.gml"))
-
-    print(f"\n  TEST MACRO (all features): {macro_avg(test_results_all)}")
-    print(f"  TEST MACRO (top-{args.top_k}):       {macro_avg(test_results_sel)}")
-
-    # ------------------------------------------------------------------
-    # 6. Persist artefacts
-    # ------------------------------------------------------------------
-    feat_imp_path = os.path.join(args.output_dir, "rf_feature_importance.csv")
-    feat_df.to_csv(feat_imp_path, index=False)
-    print(f"\n  Feature importance table → {feat_imp_path}")
-
-    results_summary = {
-        "val_macro_all":      macro_avg(val_results_all),
-        "val_macro_selected": macro_avg(val_results_sel),
-        "test_macro_all":     macro_avg(test_results_all),
-        "test_macro_selected":macro_avg(test_results_sel),
-        "top_features":       top_features.tolist(),
-    }
-    summary_path = os.path.join(args.output_dir, "results_summary.json")
-    with open(summary_path, "w") as f:
-        json.dump(results_summary, f, indent=2)
-    print(f"  Results summary          → {summary_path}")
-
-    # if args.save_models:
-    #     joblib.dump(rf_all, os.path.join(args.output_dir, "rf_all.joblib"))
-    #     joblib.dump(rf_sel, os.path.join(args.output_dir, f"rf_top{args.top_k}.joblib"))
-    #     print(f"  Models saved to {args.output_dir}/")
-
-    print("\nDone.")
+    print("completed")
 
 
 if __name__ == "__main__":
