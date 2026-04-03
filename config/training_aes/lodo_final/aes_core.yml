@@ -1,4 +1,4 @@
-model: gatv2
+model: gin
 epochs: 500
 set_gradient_clipping: true
 lr: 0.001

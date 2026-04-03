@@ -1360,7 +1360,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
 
         # soften (same as before)
-        alpha = 0.8 # 0.4, 0.6, 0.8
+        alpha = 0.4 # 0.4, 0.6, 0.8
         soft_weights = weights ** alpha
         soft_weights = soft_weights / np.mean(soft_weights)
         soft_class_weights = torch.tensor(soft_weights, dtype=torch.float)
@@ -1371,7 +1371,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     ## block also for early stopping
     best_val_score = -float("inf")
     best_model_state = None
-    patience = 5
+    patience = 10
     patience_counter = 0
     for epoch in range (1, args.epochs + 1):
         epoch_start = time.perf_counter()

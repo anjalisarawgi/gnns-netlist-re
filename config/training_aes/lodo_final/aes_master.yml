@@ -1,8 +1,8 @@
-model: gatv2
+model: gin
 epochs: 500
 set_gradient_clipping: true
 lr: 0.001
-loss_type : "ce_weighted" #ce_weighted #ce_soft
+loss_type : "ce" #ce_weighted #ce_soft
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
 #  use_scheduler : true

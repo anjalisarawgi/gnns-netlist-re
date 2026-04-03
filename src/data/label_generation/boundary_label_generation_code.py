@@ -11,7 +11,7 @@ verliog_root = Path("shared/netlist")
 partition_root = Path("shared/partition")
 
 adj_root = Path("shared/adjlist")
-graph_root = Path("shared/graphs/rawv3")
+graph_root = Path("shared/graphs/rawv4")
 output_files_root = Path("shared/")
 partition_graph_root = Path("outputFiles")
 # LIB = "lib/osu035_stdcells.lib"
@@ -83,45 +83,43 @@ def find_boundaries_method1(adjlist_path, partition_dir, out_gml):
 
     boundary_dict = {}
     partition_files = glob.glob(os.path.join(partition_dir, "*.pq"))
-
-    # for f in partition_files:
     for f in tqdm(partition_files, desc="[M1] Partitions", unit="file"):
-        # if "@top" in f:
-        #     continue
+        if "@" in f:
+            print(f"[M1] Skipping top file: {os.path.basename(f)}")
+            continue
 
         print(f"[M1] Processing {os.path.basename(f)} ...")
         df = pd.read_parquet(f)
 
-        # Build subgraph with only internal edges
         subgraph = nx.from_pandas_edgelist(df, source="source", target="target", create_using=nx.DiGraph())
         nodes_list = list(subgraph.nodes())
-        # for node in subgraph.nodes():
         for node in tqdm(nodes_list, desc=f"[M1] {os.path.basename(f)}", unit="node", leave=False):
-            # anc = nx.ancestors(subgraph, node)
-            # dec = nx.descendants(subgraph, node)
-            # is_boundary = int(len(anc) == 0 or len(dec) == 0)
-            # boundary_dict[node] = is_boundary
+            if node not in boundary_dict.keys() or boundary_dict[node] == "0":
+                in_deg = subgraph.in_degree(node)
+                out_deg = subgraph.out_degree(node)
 
-            # # # # if slow?
-            in_deg = subgraph.in_degree(node)
-            out_deg = subgraph.out_degree(node)
-            is_boundary = int(in_deg == 0 or out_deg == 0)
-            boundary_dict[node] = is_boundary
+                # anc = nx.ancestors(subgraph, node)
+                # dec = nx.descendants(subgraph, node)
+                # if len(anc) == 0 or len(dec) == 0:
+                
+                if in_deg == 0 or out_deg == 0:
+                    boundary_dict[node] = "1"
+                else:
+                    boundary_dict[node] = "0"
 
+    # label INPUT/OUTPUT nodes that weren't in any partition as boundary=0
     # for node in design.nodes():
     #     if node not in boundary_dict:
-    #         boundary_dict[node] = -1
-
-   
-    # label INPUT/OUTPUT nodes that weren't in any partition as boundary=0
-    for node in design.nodes():
-        if node not in boundary_dict:
-            label = str(node).upper()
-            if "INPUT" in label or "OUTPUT" in label:
-                boundary_dict[node] = 0
+    #         label = str(node).upper()
+    #         if "INPUT" in label or "OUTPUT" in label:
+    #             boundary_dict[node] = 0
+    boundary_dict = {k: int(v) for k, v in boundary_dict.items()}
     nx.set_node_attributes(design, boundary_dict, "boundary")
+    report_boundary_coverage(design, boundary_dict, tag="M1")
     nx.write_gml(design, out_gml)
     print(f"[M1] Saved to {out_gml}")
+
+
 
 def report_boundary_coverage(design, boundary_dict, tag=""):
     total_nodes = design.number_of_nodes()
@@ -368,21 +366,21 @@ def process_verilog(verilog_file):
             gate_prefix = label.rsplit("_", 1)[0] if "_" in label else label
             gate_dist[gate_prefix] = gate_dist.get(gate_prefix, 0) + 1
 
-            if "INPUT" in label or "OUTPUT" in label:
-                after_io += 1
-            elif "DFF" in label or "LATCH" in label:
-                after_dff += 1
-            else:
-                after_other += 1
+            # if "INPUT" in label or "OUTPUT" in label:
+            #     after_io += 1
+            # elif "DFF" in label or "LATCH" in label:
+            #     after_dff += 1
+            # else:
+            #     after_other += 1
 
     meta["after_merge"].update({
         "total_nodes": Gm.number_of_nodes(),
         "total_edges": Gm.number_of_edges(),
         "nodes_with_boundary": Gm.number_of_nodes() - len(after_missing),
         "missing_boundary": len(after_missing),
-        "missing_input_output": after_io,
-        "missing_dff_latch": after_dff,
-        "missing_other": after_other,
+        # "missing_input_output": after_io,
+        # "missing_dff_latch": after_dff,
+        # "missing_other": after_other,
         "missing_gate_type_breakdown": gate_dist,
         "pct_missing": round(len(after_missing) / Gm.number_of_nodes() * 100, 4),
     })

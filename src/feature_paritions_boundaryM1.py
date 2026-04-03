@@ -324,7 +324,23 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
     except Exception:
         pr = {n: 0.0 for n in G_dir.nodes()}
 
-    # IO nodes for distance feature
+    for node in G_dir.nodes():
+        label_copy = str(G_dir.nodes[node].get("label_copy", "")).strip("'").upper()
+        
+        if label_copy.startswith("INPUT") or "INPUT" in label_copy:
+            G_dir.nodes[node]["is_input"] = 1
+            G_dir.nodes[node]["is_output"] = 0
+            G_dir.nodes[node]["is_IO"] = 1
+        elif label_copy.startswith("OUTPUT") or "OUTPUT" in label_copy:
+            G_dir.nodes[node]["is_input"] = 0
+            G_dir.nodes[node]["is_output"] = 1
+            G_dir.nodes[node]["is_IO"] = 1
+        else:
+            G_dir.nodes[node]["is_input"] = 0
+            G_dir.nodes[node]["is_output"] = 0
+            G_dir.nodes[node]["is_IO"] = 0
+
+
     io_nodes = []
     for n, data in G_dir.nodes(data=True):
         try:
@@ -335,8 +351,10 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
     if len(io_nodes) > 0:
         dist_to_io = _multi_source_bfs_undirected(G_und, io_nodes)
+        default_dist_io = max(dist_to_io.values()) + 1 if dist_to_io else 0.0
     else:
         dist_to_io = {}
+        default_dist_io = 0.0
 
 
     num_unique_partitions = get_unique_partition_count(G_dir)
@@ -344,6 +362,7 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
     num_nodes = float(G_dir.number_of_nodes())
     num_edges = float(G_dir.number_of_edges())
     graph_density = (2.0 * num_edges) / (num_nodes * (num_nodes - 1))
+
 
     unknown_gate_labels = {}
     for node in G_dir.nodes():
@@ -367,7 +386,8 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
         kcore = float(core_num.get(node, 0))
         pager = float(pr.get(node, 0.0))
-        d_io = float(dist_to_io.get(node, -1))
+        d_io = float(dist_to_io.get(node, default_dist_io)) # d_io = float(dist_to_io.get(node, -1))
+
 
         f_reach = float(_forward_reach_within_k(G_dir, node, k=reach_k))
         b_reach = float(_backward_reach_within_k(G_dir, node, k=reach_k))
@@ -483,30 +503,7 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
         ]
 
         G_dir.edges[u, v]["edge_features"] = edge_feat
-
-    # ── Force INPUT/OUTPUT gates to boundary = 0 ──────────────────
-    # Primary I/O gates satisfy the boundary criterion by definition
-    # (no incoming/outgoing edges within any partition) but are not
-    # subcircuit interface nodes in the reverse engineering sense.
-    io_overridden = 0
-    io_forced = 0
-    for node in G_dir.nodes():
-        label_copy = str(G_dir.nodes[node].get("label_copy", "")).upper()
-        if "INPUT" in label_copy or "OUTPUT" in label_copy:
-            current = G_dir.nodes[node].get("boundary", "MISSING")
-            if current == 1:
-                G_dir.nodes[node]["boundary"] = 0
-                io_overridden += 1
-            elif current == "MISSING":
-                G_dir.nodes[node]["boundary"] = 0
-                io_forced += 1
-
-    if io_overridden > 0:
-        print(f"[INFO] Overrode boundary=1 → 0 for {io_overridden} INPUT/OUTPUT nodes")
-    if io_forced > 0:
-        print(f"[INFO] Assigned boundary=0 to {io_forced} INPUT/OUTPUT nodes with missing label")
-
-
+   
     os.makedirs(os.path.dirname(output_gml) or ".", exist_ok=True)
     nx.write_gml(G_dir, output_gml)
     print(f"[INFO] Saved processed GML → {output_gml}")
@@ -527,16 +524,22 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
 
 
-ROOT_RAW = "graphs/raw_v2/raw"
-ROOT_OUT = "graphs/processed_boundaryDetection_march23"
+# ROOT_RAW = "graphs/raw_v2/raw"
+# ROOT_OUT = "graphs/processed_boundaryDetection_march23"
 # ROOT_RAW = "new_graphs_crypto/raw/raw/"
 # ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_march23"
+
+
+# ROOT_RAW = "crypto_graphs_final/raw_final/rawv4"
+# ROOT_OUT = "crypto_graphs_final/processed_final/"
+ROOT_RAW = "other_graphs_final/raw_final/rawv4"
+ROOT_OUT = "other_graphs_final/processed_final/"
 
 processed_dirs = {}
 usable_graphs = []
 unusable_graphs_connectivity = []
 unusable_graphs_no_boundary = []
-
+missing_boundary_graphs = {} 
 for design in os.listdir(ROOT_RAW):
     design_path = os.path.join(ROOT_RAW, design)
     if not os.path.isdir(design_path):
@@ -583,7 +586,6 @@ for design in os.listdir(ROOT_RAW):
                 any_node = next(iter(G_out.nodes()))
                 print("Feature dim:", len(G_out.nodes[any_node]["features"]))
 
-                # ── NEW: check for missing boundary labels ──
                 missing_boundary = []
                 for node in G_out.nodes():
                     val = G_out.nodes[node].get("boundary", "MISSING")
@@ -593,12 +595,15 @@ for design in os.listdir(ROOT_RAW):
                 if missing_boundary:
                     print(f"[WARN] {len(missing_boundary)} nodes with NO boundary label in {output_gml}")
                     print(f"       Example nodes: {missing_boundary[:5]}")
+
+                    # store full info
+                    missing_boundary_graphs[output_gml] = {
+                        "num_missing": len(missing_boundary),
+                        "nodes": missing_boundary
+                    }
+
                 else:
                     print(f"[OK] All nodes have boundary labels in {output_gml}")
-
-                G_out = nx.read_gml(output_gml)
-                any_node = next(iter(G_out.nodes()))
-                print("Feature dim:", len(G_out.nodes[any_node]["features"]))
 
             except Exception as e:
                 print(f"[CRASH] {input_gml}: {e}")
@@ -615,6 +620,8 @@ with open(os.path.join(ROOT_OUT, "unusable_graphs_connectivity.json"), "w") as f
 with open(os.path.join(ROOT_OUT, "unusable_graphs_no_boundary.json"), "w") as f:
     json.dump(unusable_graphs_no_boundary, f, indent=4)
 
+with open(os.path.join(ROOT_OUT, "graphs_missing_boundary_labels.json"), "w") as f:
+    json.dump(missing_boundary_graphs, f, indent=4)
 
 print("Usable graphs:", len(usable_graphs))
 print("Unusable (not connected) :", len(unusable_graphs_connectivity))
