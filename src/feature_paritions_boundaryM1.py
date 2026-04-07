@@ -425,7 +425,7 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
             float(ego_density),
             kcore, pager, 
             f_reach, b_reach, reach_asym, deg_contrast, 
-            d_io, # input output infoa
+            # d_io, # input output infoa
         ], dtype=torch.float32)
 
         x = torch.cat([gate_feats, struct_feats])

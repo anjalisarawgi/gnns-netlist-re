@@ -4,12 +4,12 @@ import json
 import networkx as nx  
 from tqdm import tqdm  
 
-cfg_path = "config/final_config_list_m1.yml"
+cfg_path = "config/file_paths/new/final_config_list.yml"
 cfg = yaml.safe_load(Path(cfg_path).read_text())
 gml_paths = cfg.get("train_gml", []) + cfg.get("val_gml", []) + cfg.get("test_gml", [])
 
 log_file = "gml_missing_boundary.log"
-json_stats_file = "data_statistics/graph_stats_m1/final_graph_stats_m1.json"
+json_stats_file = "final_graph_stats_m1.json"
 
 missing_boundary = []
 graph_stats = {}

@@ -87,12 +87,17 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
     nodes = list(G.nodes())
 
     features, labels = [], []
-
+    skipped_no_label = 0 
     for node in nodes:
         attr = G.nodes[node]
 
-        feat = list(attr.get("features", []))
+        # skip oded which have no boundary label 
+        if "boundary" not in attr:
+            skipped_no_label +=1 
+            continue
 
+        feat = list(attr.get("features", []))
+        feat = feat[:42] # skipping distance io feature (feature 43)
         # if args.use_partition_features:
         #     partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
         #     partition_feat = partition_feat[2:3]
@@ -112,9 +117,11 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
             label = 0
         labels.append(label)
 
+    if skipped_no_label > 0:
+        print(f"[WARN] skipped {skipped_no_label} nodes because they did not have boundary labels")
     X = np.array(features, dtype=np.float32)
     y = np.array(labels,   dtype=np.int64)
-    y[y == -1] = 0   # can be removed i think but kept as safety check
+    # y[y == -1] = 0   # can be removed i think but kept as safety check
 
     print(f"  [{Path(gml_path).name}]  nodes={len(y)}  "
           f"boundary={y.sum()}  non-boundary={(y == 0).sum()}")

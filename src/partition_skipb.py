@@ -12,6 +12,7 @@ from torch_geometric.data import Data
 from gnn.graphSAGE import graphSAGE
 from gnn.sage_bidirected import BiDirectedGraphSAGE
 from gnn.sage_jk import JK_GraphSAGE
+from gnn.sage_jk_bi import BiDirectedJK_GraphSAGE
 from gnn.gcn import GCN
 from gnn.gat import gat, MLP, gatv2, GAAN
 from gnn.gin import GIN
@@ -55,6 +56,7 @@ def set_seed(seed=42):
     os.environ['PYTHONHASHSEED'] = str(seed)
 
 
+
 @torch.no_grad()
 def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_path):
     import networkx as nx
@@ -66,93 +68,106 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 
     # --- forward pass ---
     out = model(data.x, data.edge_index)
-    probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
-    labels = data.y.cpu().numpy()
+    probs_all = torch.softmax(out, dim=1)[:, 1].cpu().numpy()  # all nodes, for GML writing
+    labels_all = data.y.cpu().numpy()                           # all nodes, includes -1
 
-    # --- default prediction ---
+    # filter to labeled nodes only for all sklearn calls
+    labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (labels_all >= 0)
+    probs  = probs_all[labeled_mask]
+    labels = labels_all[labeled_mask]
+
+    # --- default prediction (labeled only) ---
     pred_default = (probs >= 0.5).astype(int)
 
-    # --- BEST threshold (F1-based) ---
+    # --- BEST threshold (F1-based, labeled only) ---
     from sklearn.metrics import precision_recall_curve
-
     precision, recall, thresholds = precision_recall_curve(labels, probs)
     f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
-
-    best_idx = np.argmax(f1_scores[:-1])  # ignore last point
+    best_idx   = np.argmax(f1_scores[:-1])
     best_thresh = thresholds[best_idx]
+    pred_best  = (probs >= best_thresh).astype(int)
 
-    pred_best = (probs >= best_thresh).astype(int)
-
-    # --- RATIO-BASED prediction (top-k) ---
-    N = len(probs)
+    # --- RATIO-BASED prediction (top-k, labeled only) ---
+    N          = len(probs)
     true_ratio = float((labels == 1).mean())
-    k = max(1, int(np.ceil(true_ratio * N)))
-
+    k          = max(1, int(np.ceil(true_ratio * N)))
     idx_sorted = np.argsort(-probs)
-    topk_idx = idx_sorted[:k]
-
-    pred_ratio = np.zeros_like(labels)
+    topk_idx   = idx_sorted[:k]
+    pred_ratio = np.zeros(N, dtype=int)
     pred_ratio[topk_idx] = 1
-    
-    # --- TP / FP / FN / TN ---
+
+    # --- TP / FP / FN / TN (labeled only) ---
     def compute_classes(y_true, y_pred):
         classes = []
         for yt, yp in zip(y_true, y_pred):
-            if yt == 1 and yp == 1:
-                classes.append("TP")
-            elif yt == 0 and yp == 1:
-                classes.append("FP")
-            elif yt == 1 and yp == 0:
-                classes.append("FN")
-            else:
-                classes.append("TN")
+            if   yt == 1 and yp == 1: classes.append("TP")
+            elif yt == 0 and yp == 1: classes.append("FP")
+            elif yt == 1 and yp == 0: classes.append("FN")
+            else:                     classes.append("TN")
         return classes
 
     classes_default = compute_classes(labels, pred_default)
-    classes_best = compute_classes(labels, pred_best)
-    classes_ratio = compute_classes(labels, pred_ratio)
-    print(f"[INFO] Best threshold: {best_thresh:.4f}")
-    
+    classes_best    = compute_classes(labels, pred_best)
+    classes_ratio   = compute_classes(labels, pred_ratio)
+
+    # --- metrics printout ---
     from sklearn.metrics import f1_score, precision_score, recall_score
 
     def compute_metrics(y_true, y_pred, name):
         f1 = f1_score(y_true, y_pred, zero_division=0)
-        p = precision_score(y_true, y_pred, zero_division=0)
-        r = recall_score(y_true, y_pred, zero_division=0)
+        p  = precision_score(y_true, y_pred, zero_division=0)
+        r  = recall_score(y_true, y_pred, zero_division=0)
         print(f"[{name}] F1={f1:.4f}, P={p:.4f}, R={r:.4f}")
         return f1, p, r
 
+    print(f"[INFO] Best threshold: {best_thresh:.4f}")
     print("\n[THRESHOLD COMPARISON]")
     compute_metrics(labels, pred_default, "Default@0.5")
-    compute_metrics(labels, pred_best, f"Best@{best_thresh:.3f}")
-    compute_metrics(labels, pred_ratio, "Top-K (ratio)")
+    compute_metrics(labels, pred_best,    f"Best@{best_thresh:.3f}")
+    compute_metrics(labels, pred_ratio,   "Top-K (ratio)")
 
     print("\n[PREDICTED POSITIVE COUNTS]")
     print(f"Default@0.5        → {pred_default.sum()} nodes")
     print(f"Best@{best_thresh:.3f} → {pred_best.sum()} nodes")
     print(f"Top-K (ratio)      → {pred_ratio.sum()} nodes (target={k})")
 
-    G = nx.read_gml(original_gml_path)
+    # --- expand predictions back to ALL nodes for GML writing ---
+    labeled_indices = np.where(labeled_mask)[0]
+
+    pred_default_all   = np.full(len(labels_all), -1, dtype=int)
+    pred_best_all      = np.full(len(labels_all), -1, dtype=int)
+    pred_ratio_all     = np.full(len(labels_all), -1, dtype=int)
+    classes_default_all = ["UNLABELED"] * len(labels_all)
+    classes_best_all    = ["UNLABELED"] * len(labels_all)
+    classes_ratio_all   = ["UNLABELED"] * len(labels_all)
+
+    for j, i in enumerate(labeled_indices):
+        pred_default_all[i]    = pred_default[j]
+        pred_best_all[i]       = pred_best[j]
+        pred_ratio_all[i]      = pred_ratio[j]
+        classes_default_all[i] = classes_default[j]
+        classes_best_all[i]    = classes_best[j]
+        classes_ratio_all[i]   = classes_ratio[j]
+
+    # --- write to GML ---
+    G     = nx.read_gml(original_gml_path)
     nodes = list(G.nodes())
 
     for i, node in enumerate(nodes):
-        G.nodes[node]["prob"] = float(probs[i])
-
-        G.nodes[node]["pred_default"] = int(pred_default[i])
-        G.nodes[node]["pred_best"] = int(pred_best[i])
-
-        G.nodes[node]["pred_class_default"] = classes_default[i]
-        G.nodes[node]["pred_class_best"] = classes_best[i]
-        G.nodes[node]["pred_ratio"] = int(pred_ratio[i])
-        G.nodes[node]["pred_class_ratio"] = classes_ratio[i]
-
-        G.nodes[node]["is_correct_default"] = int(pred_default[i] == labels[i])
-        G.nodes[node]["is_correct_best"] = int(pred_best[i] == labels[i])
-        G.nodes[node]["is_correct_ratio"] = int(pred_ratio[i] == labels[i])
-
+        G.nodes[node]["prob"]               = float(probs_all[i])
+        G.nodes[node]["pred_default"]       = int(pred_default_all[i])
+        G.nodes[node]["pred_best"]          = int(pred_best_all[i])
+        G.nodes[node]["pred_ratio"]         = int(pred_ratio_all[i])
+        G.nodes[node]["pred_class_default"] = classes_default_all[i]
+        G.nodes[node]["pred_class_best"]    = classes_best_all[i]
+        G.nodes[node]["pred_class_ratio"]   = classes_ratio_all[i]
+        G.nodes[node]["is_correct_default"] = int(pred_default_all[i] == labels_all[i]) if labeled_mask[i] else -1
+        G.nodes[node]["is_correct_best"]    = int(pred_best_all[i]    == labels_all[i]) if labeled_mask[i] else -1
+        G.nodes[node]["is_correct_ratio"]   = int(pred_ratio_all[i]   == labels_all[i]) if labeled_mask[i] else -1
 
     nx.write_gml(G, output_gml_path)
     print(f"[INFO] Saved GML with predictions → {output_gml_path}")
+
 
 class Tee(object):
     def __init__(self, *files):
@@ -191,7 +206,7 @@ parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphs
                     help="Sampling method: 'graphsaint' or 'khop'")
 parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", 
                     "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal",
-                     "GAAN", "GraphSAGE_ResNorm", "BiDirectedGraphSAGE","JK_GraphSAGE"])
+                     "GAAN", "GraphSAGE_ResNorm", "BiDirectedGraphSAGE","JK_GraphSAGE", "BiDirectedJK_GraphSAGE"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
@@ -364,11 +379,14 @@ def merge_data(gml_1, gml_2):
     val_mask = torch.cat([gml_1.val_mask, gml_2.val_mask], dim = 0)
     test_mask = torch.cat([gml_1.test_mask, gml_2.test_mask], dim = 0)
 
+    label_mask = torch.cat([gml_1.label_mask, gml_2.label_mask], dim=0)
+
     # data obj
     merged_data = Data(
         x = x, 
         edge_index=edge_index,
         y = y, 
+        label_mask = label_mask,
         train_mask = train_mask, 
         val_mask = val_mask, 
         test_mask = test_mask
@@ -391,31 +409,29 @@ def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=N
     total_loss = 0.0
 
     for fam, indices in family_to_indices.items():
-        family_loss = 0.0
-
+        num_families = len(family_to_indices)
+        
         for i in indices:
             g = graphs[i].to(device)
             out = model(g.x, g.edge_index)
+            labeled_mask = g.label_mask if hasattr(g, 'label_mask') else (g.y >= 0)
 
             if args.loss_type == "focal":
-                loss_per_node = focal_loss(out, g.y)
+                loss_per_node = focal_loss(out[labeled_mask], g.y[labeled_mask])
             elif args.loss_type == "ce_weighted":
-                loss_per_node = F.cross_entropy(out, g.y, weight=class_weights.to(out.device), reduction="none")
+                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=class_weights.to(out.device), reduction="none")
             elif args.loss_type == "ce_soft":
-                loss_per_node = F.cross_entropy(out, g.y, weight=soft_class_weights.to(out.device), reduction="none")
+                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=soft_class_weights.to(out.device), reduction="none")
             else:
-                loss_per_node = F.cross_entropy(out, g.y, reduction="none")
+                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], reduction="none")
 
-            # average within this graph, then accumulate within family
-            family_loss += loss_per_node.mean() / len(indices)
+            # divide by both len(indices) and num_families so each family contributes equally
+            loss = loss_per_node.mean() / (len(indices) * num_families)
+            loss.backward()          # ← backward while computation graph still alive
+            total_loss += loss.item()
 
-            del out, loss_per_node
+            del out, loss_per_node, loss
             g = g.to("cpu")
-
-        # each family contributes equally to the total loss
-        loss = family_loss / num_families
-        loss.backward()
-        total_loss += loss.item()
 
     if args.set_gradient_clipping:
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -423,84 +439,13 @@ def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=N
     optimizer.step()
     return total_loss
 
+
 ## this function takes a .gml graph --> changes to PyTorch Geometric Dataset
 ## note:
 # a) x = node features (matrix)
 # b) y = node labels 
 # c) edge_index = edges (2xE tensor)
-def compute_rwpe(edge_index, num_nodes, steps=8):
-    import scipy.sparse as sp
-    import numpy as np
 
-    src = edge_index[0].numpy()
-    dst = edge_index[1].numpy()
-
-    out_deg = np.bincount(src, minlength=num_nodes).astype(np.float32)
-    out_deg = np.maximum(out_deg, 1)
-
-    # Row-normalized adjacency (transition matrix)
-    vals = 1.0 / out_deg[src]
-    A = sp.csr_matrix((vals, (src, dst)), shape=(num_nodes, num_nodes))
-
-    pe = np.zeros((num_nodes, steps), dtype=np.float32)
-    # We can't do full NxN for large graphs, so approximate diagonal via sparse power
-    # P[i,i] after k steps = (A^k)[i,i]
-    Ak = sp.eye(num_nodes, format='csr')
-    for step in range(steps):
-        Ak = Ak @ A
-        pe[:, step] = np.array(Ak.diagonal()).flatten()
-
-    return torch.from_numpy(pe)
-
-def compute_magnetic_laplacian_pe(edge_index, num_nodes, k=8, q=0.25):
-    """
-    Magnetic Laplacian positional encodings (sparse implementation).
-    Returns real-valued PE with shape [N, 2k].
-    """
-
-    import numpy as np
-    import scipy.sparse as sp
-    from scipy.sparse.linalg import eigsh
-
-    src = edge_index[0].cpu().numpy()
-    dst = edge_index[1].cpu().numpy()
-
-    # Directed adjacency
-    A = sp.coo_matrix(
-        (np.ones(len(src)), (src, dst)),
-        shape=(num_nodes, num_nodes)
-    ).tocsr()
-
-    # Symmetric support
-    A_sym = ((A + A.T) > 0).astype(float)
-
-    # Directed difference
-    S = (A - A.T).astype(float)
-
-    # Magnetic phase
-    phase = np.exp(1j * 2 * np.pi * q * S.data)
-    Phase = sp.csr_matrix((phase, S.indices, S.indptr), shape=S.shape)
-
-    # Magnetic adjacency
-    A_mag = A_sym.astype(np.complex64).multiply(Phase)
-
-    # Degree
-    deg = np.array(A_sym.sum(axis=1)).flatten()
-    D = sp.diags(deg.astype(np.complex64))
-
-    # Magnetic Laplacian
-    L = D - A_mag
-
-    # Eigenvectors
-    eigvals, eigvecs = eigsh(L, k=k+1, which="SM")
-
-    # drop trivial eigenvector
-    eigvecs = eigvecs[:, 1:k+1]
-
-    # convert complex → real features
-    pe = np.concatenate([eigvecs.real, eigvecs.imag], axis=1)
-
-    return torch.tensor(pe, dtype=torch.float32)
 
 def load_single_gml(gml_path, remove_edges = False):
     print("[INFO] Calling gml from path:", gml_path)
@@ -510,10 +455,11 @@ def load_single_gml(gml_path, remove_edges = False):
 
     features = []
     labels = []
-
+    label_mask = [] 
     base_feat_dim = None
-    after_partition_dim = None
-    after_graph_dim = None
+
+    
+    id2label = {0: "not_boundary", 1: "boundary", -1: "unlabeled"}  # Define early
     nan_boundary_count = 0
     nan_is_io_count = 0 
     for node in nodes:
@@ -522,7 +468,8 @@ def load_single_gml(gml_path, remove_edges = False):
         # feat = feat[0:31] #### (14ohe) + (14ohe) + indeg, outdeg, ratio  -- basic dimensions
         # feat = feat[28:31] #### indeg, outdeg, fanin
         # feat = feat[0:28] ####  (14ohe) + (14ohe) 
-        feat = feat[:42] # skipping distance io cause it assumes we know input output nodes
+        # feat = feat[:-2]
+        feat = feat[:42]
         if base_feat_dim is None:
             base_feat_dim = len(feat)
 
@@ -532,13 +479,11 @@ def load_single_gml(gml_path, remove_edges = False):
             # partition_feat_twoHop = partition_feat[1]
             feat = list(feat) +list(partition_feat)
             # feat = list(feat) + [float(partition_feat_twoHop)]
-            after_partition_dim = len(feat)  
 
         if args.use_graph_features:
             graph_feat = attr.get("graph_features", [0.0, 0.0])
             graph_feat_subset = graph_feat[:2]
             feat = list(feat) +list(graph_feat_subset)
-            after_graph_dim = len(feat)  
 
         if args.use_unsupervised_features:
             f1 = float(attr.get("unsup_louvain_1hop", 0.0))
@@ -575,60 +520,38 @@ def load_single_gml(gml_path, remove_edges = False):
         #### text block end
 
         features.append(feat)
-    
-        ### we set here, if we get no boundary - we set it to 1 ! 
-        boundary_value = attr.get("boundary",0) # a boundary with no label for boundary gets boundary = 0 (note: essentially this is simply input output node and we want to use it as a no boundary node)
-        
-        # safety check for integer
-        try:
-            label = int(boundary_value)
-        except (ValueError, TypeError): ######??? - we wanna change this ***s
-            label= 0
-        labels.append(label)
 
-        raw_boundary = attr.get("boundary")
-        if raw_boundary is None:
+        if "boundary" in attr:
+            boundary_value = attr["boundary"]
+            try:
+                label = int(boundary_value)
+            except (ValueError, TypeError):
+                label = 0
+            labels.append(label)
+            label_mask.append(True)
+        else:
+            labels.append(-1)  # Placeholder
+            label_mask.append(False)
             nan_boundary_count += 1
+            
             label_copy = str(attr.get("label_copy", "")).strip("'\"").upper()
             if "INPUT" in label_copy or "OUTPUT" in label_copy:
                 nan_is_io_count += 1
 
-        # boundary_value = attr.get("boundary", 0)
-        # try:
-        #     label = int(boundary_value)
-        # except (ValueError, TypeError):
-        #     label = 0
+    print(f"[TOCHECK] {gml_path}: missing boundary: {nan_boundary_count} "
+          f"(of which INPUT/OUTPUT: {nan_is_io_count}, other: {nan_boundary_count - nan_is_io_count})")
 
-        # # INPUT/OUTPUT gates are circuit-level I/O, not subcircuit boundaries
-        # # force them to boundary = 0 regardless of what the label generation assigned
-        # label_copy = attr.get("label_copy", "")
-        # if "INPUT" in str(label_copy) or "OUTPUT" in str(label_copy):
-        #     label = 0
+    labels = torch.tensor(labels, dtype=torch.long)
+    label_mask = torch.tensor(label_mask, dtype=torch.bool)
 
-        # labels.append(label)
-    
-    print(f"[TOCHECK] {gml_path}: missing boundary: {nan_boundary_count} (of which INPUT/OUTPUT: {nan_is_io_count}, other: {nan_boundary_count - nan_is_io_count})")
-    id2label = {0: "not_boundary", 1:"boundary"}
-    labels = torch.tensor(labels, dtype = torch.long)
-    labels[labels == -1] = 0  # treating -1 as label boundary =  0 i.e. not treaitng this as a boundary node
-
-
-    ## normalizing features *** ???
-    # features = normalize_features(np.array(features, dtype = np.float32)) ### - this becomes one scaler for each graph
-
-    # debugging for checking if everything is okay
-    unique_classes, class_counts = np.unique(labels.cpu().numpy(), return_counts = True)
-    # unique_classes, class_counts = torch.unique(labels, return_counts=True)
-    # unique_classes = unique_classes.tolist()
-    # class_counts = class_counts.tolist()
-
-    for u,c in zip(unique_classes, class_counts):
+    # Debug: only count labeled nodes
+    labeled_labels = labels[label_mask]
+    unique_classes, class_counts = np.unique(labeled_labels.cpu().numpy(), return_counts=True)
+    for u, c in zip(unique_classes, class_counts):
         print(f"Class {u} ({id2label.get(int(u), '?')}): {c} samples")
-    print("[INFO] Total nodes:", len(nodes))
-    print("[INFO] Label tensor shape:", labels.shape, "Data Type:", labels.dtype)
-    print("[INFO] Total labels:", len(labels))
-    print("[INFO] Unique labels:", sorted(set(labels.tolist())))
-    print("[INFO] Label Counts:", Counter(labels.tolist()) )
+    
+    print(f"[INFO] Total nodes: {len(nodes)} (labeled: {label_mask.sum().item()}, unlabeled: {(~label_mask).sum().item()})")
+
 
     # node map is like a lookup (between NetworkX and pyG) ???
     # and we want edge_index to be of shape for pyg: [2, num_edges]
@@ -673,41 +596,17 @@ def load_single_gml(gml_path, remove_edges = False):
         edge_index = torch.tensor(new_edges, dtype=torch.long).t().contiguous()
     else:
         print("Keeping all edges")
-    ########################################
-
-    # data = Data(
-    #     # x = torch.tensor(featues, dtype = torch.float), 
-    #     x = torch.as_tensor(features, dtype = torch.float32), 
-    #     edge_index = edge_index,
-    #     y = labels, 
-    #     train_mask = train_mask, 
-    #     val_mask = val_mask, 
-    #     test_mask = test_mask
-    # )
-
   
     features = torch.as_tensor(np.array(features, dtype=np.float32), dtype=torch.float32)
 
-    # RW positional encoding
-    # rwpe = compute_rwpe(edge_index, num_nodes, steps=8)
-
-    # Magnetic Laplacian positional encoding
-    # mag_pe = compute_magnetic_laplacian_pe(edge_index, num_nodes, k=8)
-
-    # features = torch.cat([features, rwpe], dim=-1)
-
-    # print(f"[PE] RWPE dim: {rwpe.shape[1]}")
-    # print(f"[PE] MagLap PE dim: {mag_pe.shape[1]}")
-    # print(f"[PE] final feature dim: {features.shape[1]}")
-
-
     data = Data(
-        x = features,
-        edge_index = edge_index,
-        y = labels,
-        train_mask = train_mask,
-        val_mask = val_mask,
-        test_mask = test_mask
+        x=features,
+        edge_index=edge_index,
+        y=labels,
+        label_mask=label_mask, 
+        train_mask=train_mask,
+        val_mask=val_mask,
+        test_mask=test_mask
     )
 
     print("[FEATURE DIM CHECK]")
@@ -722,7 +621,7 @@ def load_single_gml(gml_path, remove_edges = False):
     print("  final feature dim (tensor) :", data.x.shape[1])
     return data, id2label
 
-def focal_loss(logits, targets, gamma=2.0, alpha = 0.8): # high alpha, for handling more imbalnace, higher gamma = focus on mistakes (0.65 , 0.75, 0.85) (1.0, 2.0, 3.0) so higher gamma downweights easy samples and says it to focus on harder samples
+def focal_loss(logits, targets, gamma=2.0, alpha = 0.25): # high alpha, for   more imbalnace, higher gamma = focus on mistakes (0.65 , 0.75, 0.85) (1.0, 2.0, 3.0) so higher gamma downweights easy samples and says it to focus on harder samples
     ce = F.cross_entropy(logits, targets, reduction="none")
     pt = torch.exp(-ce)
     at = torch.where(targets ==1, alpha, 1 - alpha)
@@ -740,14 +639,15 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
         g = g.to(device)
         out = model(g.x, g.edge_index)
 
+        labeled_mask = g.label_mask if hasattr(g, 'label_mask') else (g.y >= 0) 
         if args.loss_type == "focal":
-            loss = focal_loss(out, g.y).mean() / num_graphs
+            loss = focal_loss(out[labeled_mask], g.y[labeled_mask]).mean() / num_graphs
         elif args.loss_type == "ce_weighted":
-            loss = F.cross_entropy(out, g.y, weight=class_weights.to(out.device)) / num_graphs
+            loss = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=class_weights.to(out.device)) / num_graphs
         elif args.loss_type == "ce_soft":
-            loss = F.cross_entropy(out, g.y, weight=soft_class_weights.to(out.device)) / num_graphs
+            loss = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=soft_class_weights.to(out.device)) / num_graphs
         else:
-            loss = F.cross_entropy(out, g.y) / num_graphs
+            loss = F.cross_entropy(out[labeled_mask], g.y[labeled_mask]) / num_graphs
         
         # divide by num_graphs here so gradients are equivalent to the mean
         # loss = loss_per_node.mean() / num_graphs
@@ -774,25 +674,29 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
     data = data.to(device)
     out = model(data.x, data.edge_index)
 
+     # Compute loss only on labeled nodes
+    labeled_mask = data.label_mask if hasattr(data, 'label_mask') else (data.y >= 0)
+    effective_mask = labeled_mask & data.train_mask
+
     if args.loss_type == "focal":
-        loss_per_node = focal_loss(out, data.y)
+        loss_per_node = focal_loss(out[effective_mask], data.y[effective_mask])
     elif args.loss_type == "ce_weighted":
         loss_per_node = F.cross_entropy(
-            out, data.y,
+            out[effective_mask], data.y[effective_mask],
             weight=class_weights.to(out.device),
             reduction="none"
         )
     elif args.loss_type == "ce_soft":
         loss_per_node = F.cross_entropy(
-            out, data.y,
+            out[effective_mask], data.y[effective_mask],
             weight=soft_class_weights.to(out.device),
             reduction="none"
         )
     else:
-        loss_per_node = F.cross_entropy(out, data.y, reduction="none")
+        loss_per_node = F.cross_entropy(out[effective_mask], data.y[effective_mask], reduction="none")
 
     # train_mask lets you keep future flexibility
-    loss = loss_per_node[data.train_mask].mean()
+    loss = loss_per_node.mean()
 
     loss.backward()
 
@@ -832,27 +736,32 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
 
         # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
         # loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
+        labeled_mask = batch.label_mask if hasattr(batch, 'label_mask') else (batch.y >= 0)
+
+        if labeled_mask.sum() == 0:
+            continue
+
         if args.loss_type == "focal":
-            loss_per_node = focal_loss(out, batch.y, gamma=2.0)
+            loss_per_node = focal_loss(out[labeled_mask], batch.y[labeled_mask], gamma=2.0)
         elif args.loss_type == "ce_weighted":
             loss_per_node = F.cross_entropy(
-                out,
-                batch.y,
+                out[labeled_mask],
+                batch.y[labeled_mask],
                 weight=class_weights.to(out.device),
                 reduction="none"
             )
 
         elif args.loss_type == "ce_soft":
             loss_per_node = F.cross_entropy(
-                out,
-                batch.y,
+                out[labeled_mask],
+                batch.y[labeled_mask],
                 weight=soft_class_weights.to(out.device),
                 reduction="none"
             )
         elif args.loss_type == "ce":
             loss_per_node = F.cross_entropy(
-                out,
-                batch.y,
+                out[labeled_mask],
+                batch.y[labeled_mask],
                 reduction="none"
             )
         else:
@@ -860,7 +769,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
 
         if hasattr(batch, "node_norm"):
             # print("[INFO] using node_norm for loss calculation")
-            loss = (loss_per_node * batch.node_norm).sum()
+            loss = (loss_per_node * batch.node_norm[labeled_mask]).sum()
         else:
             loss = loss_per_node.mean()
 
@@ -906,10 +815,10 @@ def evaluate_train_acc(model, data, mask):
     out = model(data.x, data.edge_index)
     pred = out.argmax(dim=1)
 
-    valid_mask = mask.to(device)
+    label_mask = data.label_mask.to(device) if hasattr(data, 'label_mask') else (data.y >= 0)
+    valid_mask = mask.to(device) & label_mask
     correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
-
-    accuracy = correct / valid_mask.sum().item() 
+    accuracy = correct / valid_mask.sum().item() if valid_mask.sum() > 0 else 0.0
     return accuracy
 
 
@@ -928,7 +837,8 @@ def evaluate_train_fpr(data, model, mask):
     pred = out.argmax(dim=1)
 
 
-    valid_mask = mask.to(device)
+    label_mask = data.label_mask.to(device) if hasattr(data, 'label_mask') else (data.y >= 0)
+    valid_mask = mask.to(device) & label_mask
 
     y_true = data.y[valid_mask].cpu().numpy()
     y_pred = pred[valid_mask].cpu().numpy()
@@ -1027,10 +937,11 @@ def evaluate_test(data, model):
 
     pred = out.argmax(dim=1)
 
-    
+    labeled_mask = data.label_mask if hasattr(data, 'label_mask') else (data.y >= 0)
+
     # valid_mask = (data.y != -1)
-    y_true = data.y.cpu().numpy()
-    y_pred = pred.cpu().numpy()
+    y_true = data.y[labeled_mask].cpu().numpy()
+    y_pred = pred[labeled_mask].cpu().numpy()
     # y_true = data.y.cpu().numpy() ???
     # y_pred = pred.cpu().numpy() ???
 
@@ -1063,8 +974,10 @@ def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, pro
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy() # callingsoftmax predictions
 
     # labels
-    y_true = data.y.cpu().numpy() 
-    true_boundary = set(np.where(y_true == 1)[0].tolist())
+    labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (data.y.cpu().numpy() >= 0)
+    y_true = data.y.cpu().numpy()
+    true_boundary = set(np.where((y_true == 1) & labeled_mask)[0].tolist())
+
     if len(true_boundary) == 0: # gives indices
         return {}
 
@@ -1161,25 +1074,28 @@ def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
     model.eval()
     data = data.to(device)
     out = model(data.x, data.edge_index)
+
+    labeled_mask = data.label_mask if hasattr(data, 'label_mask') else (data.y >= 0)
+
     # loss = F.cross_entropy(out, data.y, reduction="mean")
     # loss = focal_loss(out, data.y, gamma=2.0).mean()
     if args.loss_type == "focal":
-        loss = focal_loss(out, data.y, gamma=2.0).mean()
+        loss = focal_loss(out[labeled_mask], data.y[labeled_mask], gamma=2.0).mean()
     elif args.loss_type == "ce_weighted":
         loss = F.cross_entropy(
-            out,
-            data.y,
+            out[labeled_mask],
+            data.y[labeled_mask],
             weight=class_weights.to(out.device)
         )
 
     elif args.loss_type == "ce_soft":
         loss = F.cross_entropy(
-            out,
-            data.y,
+            out[labeled_mask],
+            data.y[labeled_mask],
             weight=soft_class_weights.to(out.device)
         )
     elif args.loss_type == "ce":
-        loss = F.cross_entropy(out, data.y)
+        loss = F.cross_entropy(out[labeled_mask], data.y[labeled_mask])
 
 
     else:
@@ -1187,17 +1103,28 @@ def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
         
     return loss.item()
 
+
+def sanity_check_masks(data, name="graph"):
+    total = data.num_nodes
+    labeled = data.label_mask.sum().item()
+    unlabeled = (~data.label_mask).sum().item()
+    n_boundary = (data.y[data.label_mask] == 1).sum().item()
+    n_not_boundary = (data.y[data.label_mask] == 0).sum().item()
+
+    print(f"[SANITY] {name} | total={total}, labeled={labeled}, unlabeled={unlabeled}, boundary=1: {n_boundary}, boundary=0: {n_not_boundary}")
+
 @torch.no_grad()
 def compute_density_stats(model, data):
     model.eval()
     data = data.to(device)
     out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
-    y_true = data.y.cpu().numpy()
     
-    true_ratio = float((y_true == 1).mean())
-    mean_prob = float(probs.mean())
-    argmax_ratio = float((probs >= 0.5).mean())  # fixed neutral threshold
+    labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (data.y.cpu().numpy() >= 0)
+    y_true = data.y.cpu().numpy()
+    true_ratio = float((y_true[labeled_mask] == 1).mean())
+    mean_prob = float(probs[labeled_mask].mean())
+    argmax_ratio = float((probs[labeled_mask] >= 0.5).mean())
 
     return {
         "true_ratio": true_ratio,
@@ -1213,7 +1140,9 @@ def get_probs_and_labels(model, data):
     out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
     labels = data.y.cpu().numpy()
-    return probs, labels
+    labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (labels >= 0)
+    return probs[labeled_mask], labels[labeled_mask]
+    
 
 
 ### threholding end
@@ -1236,11 +1165,11 @@ class SelectiveScaler:
 
 ##### training  and eval functions:
 
-
 def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
+
     # setting the model
     if model_name == "graphsage":
-        model = graphSAGE(in_channels = in_dim, hidden_channels = 64, out_channels = out_dim)
+        model = graphSAGE(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using graphsage model")
     elif model_name == "gat":
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim) 
@@ -1298,11 +1227,14 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
 
     elif model_name =="BiDirectedGraphSAGE":
-        model = BiDirectedGraphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim, layers = 6)
+        model = BiDirectedGraphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
         print("[INFO] using BiDirectedGraphSAGE ")
     elif model_name =="JK_GraphSAGE":
-        model = JK_GraphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim, num_layers = 8)
-        print("[INFO] using JK_GraphSAGE - 6 layers ")
+        model = JK_GraphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+        print("[INFO] using JK_GraphSAGE -- 6 layers ")
+    elif model_name =="BiDirectedJK_GraphSAGE":
+        model = BiDirectedJK_GraphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
+        print("[INFO] using BiDirectedJK_GraphSAGE -- 6 layers ")
     model = model.to(device)
 
     ##### training parameters 
@@ -1336,20 +1268,26 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         per_graph_weights = []
 
         for g in train_graphs:
-            y = g.y.cpu().numpy()
+            # Only use labeled nodes for computing class weights
+            labeled_mask = g.label_mask if hasattr(g, 'label_mask') else (g.y >= 0)
+            y = g.y[labeled_mask].cpu().numpy()  # Filter to labeled only
+            
             classes = np.unique(y)
 
-            # safety: skip degenerate graphs
-            if len(classes) < 2:
+            # safety: skip degenerate graphs (need both class 0 and 1)
+            if len(classes) < 2 or not (0 in classes and 1 in classes):
                 continue
 
             w = compute_class_weight(
                 class_weight="balanced",
-                classes=classes,
+                classes=np.array([0, 1]),  # Explicitly specify the two classes
                 y=y
             )
             w = w / np.mean(w)   # normalize per graph
             per_graph_weights.append(w)
+
+        if len(per_graph_weights) == 0:
+            raise ValueError("No graphs with both classes 0 and 1 found!")
 
         # average across designs
         weights = np.mean(np.stack(per_graph_weights), axis=0)
@@ -1367,6 +1305,8 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
         print("[INFO] CE weights (design-avg)     :", class_weights.tolist())
         print("[INFO] Soft CE weights (design-avg):", soft_class_weights.tolist())
+
+
     #### main training loop now 
     ## block also for early stopping
     best_val_score = -float("inf")
@@ -1744,9 +1684,10 @@ if __name__ == "__main__":
     for i, gml_path in enumerate(args.train_gml):
         print(f"[{i+1}] {gml_path}")
         graph_data, label_map = load_single_gml(gml_path = gml_path, remove_edges=False)
-
+        sanity_check_masks(graph_data, name=f"TRAIN[{i}] {os.path.basename(gml_path)}")
         print("Label counts:", Counter(graph_data.y.tolist())) # debug for -1  label
-        assert (graph_data.y < 0).sum().item() == 0, "Still have negative labels!"
+        assert (graph_data.y[graph_data.label_mask] < 0).sum().item() == 0, "Labeled nodes have invalid labels!"
+
 
         if i ==0: ###???
             id2label = label_map
@@ -1776,7 +1717,7 @@ if __name__ == "__main__":
         g, _ = load_single_gml(gml_path=gml_path, remove_edges=False)
 
         print("[INFO] val graphs -- Label counts:", Counter(g.y.tolist())) # debug
-        assert (g.y < 0).sum().item() == 0
+        assert (g.y[g.label_mask] < 0).sum().item() == 0
 
         g.train_mask[:] = False
         g.val_mask[:] = False
@@ -1790,7 +1731,7 @@ if __name__ == "__main__":
         g, _ = load_single_gml(gml_path=gml_path, remove_edges=False)
 
         print("[INFO] test graphs -- Label counts:", Counter(g.y.tolist())) # debug
-        assert (g.y < 0).sum().item() == 0
+        assert (g.y[g.label_mask] < 0).sum().item() == 0
         g.train_mask[:] = False
         g.val_mask[:] = False
         g.test_mask[:] = False

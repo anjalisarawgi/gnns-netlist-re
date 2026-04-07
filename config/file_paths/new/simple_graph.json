@@ -1,0 +1,1002 @@
+{
+  "graphs_final/crypto_graphs_final/gcm-aes_latest/nangate/aes_sbox_combined_m1.gml": {
+    "num_nodes": 572,
+    "num_edges": 1803,
+    "boundary_1_count": 35,
+    "boundary_1_ratio": 0.06118881118881119,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gcm-aes_latest/nangate/aes_rcon_combined_m1.gml": {
+    "num_nodes": 54,
+    "num_edges": 112,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.18518518518518517,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gcm-aes_latest/gscl45nm/aes_sbox_combined_m1.gml": {
+    "num_nodes": 1056,
+    "num_edges": 2176,
+    "boundary_1_count": 29,
+    "boundary_1_ratio": 0.027462121212121212,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gcm-aes_latest/gscl45nm/aes_rcon_combined_m1.gml": {
+    "num_nodes": 62,
+    "num_edges": 112,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.16129032258064516,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gcm-aes_latest/osu035/aes_sbox_combined_m1.gml": {
+    "num_nodes": 794,
+    "num_edges": 2086,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.042821158690176324,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gcm-aes_latest/osu035/aes_rcon_combined_m1.gml": {
+    "num_nodes": 55,
+    "num_edges": 105,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.18181818181818182,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3_sub1_combined_m1.gml": {
+    "num_nodes": 7,
+    "num_edges": 7,
+    "boundary_1_count": 2,
+    "boundary_1_ratio": 0.2857142857142857,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3_add1_combined_m1.gml": {
+    "num_nodes": 7,
+    "num_edges": 7,
+    "boundary_1_count": 2,
+    "boundary_1_ratio": 0.2857142857142857,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/func4_combined_m1.gml": {
+    "num_nodes": 1374,
+    "num_edges": 2156,
+    "boundary_1_count": 588,
+    "boundary_1_ratio": 0.4279475982532751,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/func9_combined_m1.gml": {
+    "num_nodes": 2332,
+    "num_edges": 2719,
+    "boundary_1_count": 391,
+    "boundary_1_ratio": 0.1676672384219554,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3_mult_combined_m1.gml": {
+    "num_nodes": 16,
+    "num_edges": 22,
+    "boundary_1_count": 6,
+    "boundary_1_ratio": 0.375,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3m_mux3_combined_m1.gml": {
+    "num_nodes": 1555,
+    "num_edges": 1940,
+    "boundary_1_count": 197,
+    "boundary_1_ratio": 0.12668810289389068,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/func6_combined_m1.gml": {
+    "num_nodes": 11,
+    "num_edges": 13,
+    "boundary_1_count": 4,
+    "boundary_1_ratio": 0.36363636363636365,
+    "num_unique_partitions": 1,
+    "unique_partitions": [
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3m_mux6_combined_m1.gml": {
+    "num_nodes": 2140,
+    "num_edges": 3104,
+    "boundary_1_count": 200,
+    "boundary_1_ratio": 0.09345794392523364,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes_core/nangate/aes_sbox_combined_m1.gml": {
+    "num_nodes": 572,
+    "num_edges": 1803,
+    "boundary_1_count": 35,
+    "boundary_1_ratio": 0.06118881118881119,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes_core/nangate/aes_inv_sbox_combined_m1.gml": {
+    "num_nodes": 592,
+    "num_edges": 1869,
+    "boundary_1_count": 32,
+    "boundary_1_ratio": 0.05405405405405406,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes_core/gscl45nm/aes_sbox_combined_m1.gml": {
+    "num_nodes": 1056,
+    "num_edges": 2176,
+    "boundary_1_count": 29,
+    "boundary_1_ratio": 0.027462121212121212,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes_core/gscl45nm/aes_inv_sbox_combined_m1.gml": {
+    "num_nodes": 1069,
+    "num_edges": 2133,
+    "boundary_1_count": 31,
+    "boundary_1_ratio": 0.028999064546304958,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes_core/osu035/aes_sbox_combined_m1.gml": {
+    "num_nodes": 794,
+    "num_edges": 2086,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.042821158690176324,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes_core/osu035/aes_inv_sbox_combined_m1.gml": {
+    "num_nodes": 860,
+    "num_edges": 2216,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.03953488372093023,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_sbox_combined_m1.gml": {
+    "num_nodes": 185,
+    "num_edges": 280,
+    "boundary_1_count": 60,
+    "boundary_1_ratio": 0.32432432432432434,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_sbox_combined_m1.gml": {
+    "num_nodes": 224,
+    "num_edges": 304,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.05357142857142857,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_sbox_combined_m1.gml": {
+    "num_nodes": 200,
+    "num_edges": 302,
+    "boundary_1_count": 36,
+    "boundary_1_ratio": 0.18,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes-encryption_latest/nangate/aes_sbox_combined_m1.gml": {
+    "num_nodes": 572,
+    "num_edges": 1803,
+    "boundary_1_count": 35,
+    "boundary_1_ratio": 0.06118881118881119,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes-encryption_latest/nangate/aes_rcon_combined_m1.gml": {
+    "num_nodes": 62,
+    "num_edges": 135,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.2903225806451613,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes-encryption_latest/gscl45nm/aes_sbox_combined_m1.gml": {
+    "num_nodes": 1056,
+    "num_edges": 2176,
+    "boundary_1_count": 29,
+    "boundary_1_ratio": 0.027462121212121212,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes-encryption_latest/gscl45nm/aes_rcon_combined_m1.gml": {
+    "num_nodes": 73,
+    "num_edges": 125,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.2054794520547945,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes-encryption_latest/osu035/aes_sbox_combined_m1.gml": {
+    "num_nodes": 794,
+    "num_edges": 2086,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.042821158690176324,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/aes-encryption_latest/osu035/aes_rcon_combined_m1.gml": {
+    "num_nodes": 76,
+    "num_edges": 149,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.21052631578947367,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/sha3_latest/nangate/round2in1_combined_m1.gml": {
+    "num_nodes": 31389,
+    "num_edges": 69915,
+    "boundary_1_count": 2267,
+    "boundary_1_ratio": 0.07222275319379401,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/sha3_latest/nangate/round_combined_m1.gml": {
+    "num_nodes": 11489,
+    "num_edges": 18104,
+    "boundary_1_count": 2300,
+    "boundary_1_ratio": 0.200191487509792,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/sha3_latest/gscl45nm/round2in1_combined_m1.gml": {
+    "num_nodes": 21216,
+    "num_edges": 37574,
+    "boundary_1_count": 2242,
+    "boundary_1_ratio": 0.10567496229260935,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/sha3_latest/gscl45nm/round_combined_m1.gml": {
+    "num_nodes": 12702,
+    "num_edges": 20590,
+    "boundary_1_count": 2240,
+    "boundary_1_ratio": 0.17635018107384665,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/sha3_latest/osu035/round2in1_combined_m1.gml": {
+    "num_nodes": 60117,
+    "num_edges": 148171,
+    "boundary_1_count": 4743,
+    "boundary_1_ratio": 0.07889615250261989,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/sha3_latest/osu035/round_combined_m1.gml": {
+    "num_nodes": 28475,
+    "num_edges": 63909,
+    "boundary_1_count": 4184,
+    "boundary_1_ratio": 0.14693590869183495,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/nangate/SKG_combined_m1.gml": {
+    "num_nodes": 1020,
+    "num_edges": 2439,
+    "boundary_1_count": 143,
+    "boundary_1_ratio": 0.14019607843137255,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/nangate/RF_combined_m1.gml": {
+    "num_nodes": 717,
+    "num_edges": 1409,
+    "boundary_1_count": 140,
+    "boundary_1_ratio": 0.19525801952580196,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/nangate/WKG_combined_m1.gml": {
+    "num_nodes": 131,
+    "num_edges": 130,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.2595419847328244,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/gscl45nm/SKG_combined_m1.gml": {
+    "num_nodes": 1469,
+    "num_edges": 2834,
+    "boundary_1_count": 40,
+    "boundary_1_ratio": 0.02722940776038121,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/gscl45nm/RF_combined_m1.gml": {
+    "num_nodes": 779,
+    "num_edges": 1408,
+    "boundary_1_count": 114,
+    "boundary_1_ratio": 0.14634146341463414,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/gscl45nm/WKG_combined_m1.gml": {
+    "num_nodes": 196,
+    "num_edges": 228,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.17346938775510204,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/osu035/SKG_combined_m1.gml": {
+    "num_nodes": 1258,
+    "num_edges": 2837,
+    "boundary_1_count": 83,
+    "boundary_1_ratio": 0.06597774244833068,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/osu035/RF_combined_m1.gml": {
+    "num_nodes": 1008,
+    "num_edges": 1997,
+    "boundary_1_count": 171,
+    "boundary_1_ratio": 0.16964285714285715,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/hight_latest/osu035/WKG_combined_m1.gml": {
+    "num_nodes": 198,
+    "num_edges": 296,
+    "boundary_1_count": 34,
+    "boundary_1_ratio": 0.1717171717171717,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/trigonometric_functions_in_double_fpu_latest/nangate/dividor_combined_m1.gml": {
+    "num_nodes": 782,
+    "num_edges": 1859,
+    "boundary_1_count": 67,
+    "boundary_1_ratio": 0.08567774936061381,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/trigonometric_functions_in_double_fpu_latest/gscl45nm/dividor_combined_m1.gml": {
+    "num_nodes": 809,
+    "num_edges": 1537,
+    "boundary_1_count": 61,
+    "boundary_1_ratio": 0.0754017305315204,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/trigonometric_functions_in_double_fpu_latest/osu035/dividor_combined_m1.gml": {
+    "num_nodes": 1063,
+    "num_edges": 2496,
+    "boundary_1_count": 72,
+    "boundary_1_ratio": 0.06773283160865474,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox3_combined_m1.gml": {
+    "num_nodes": 95,
+    "num_edges": 269,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.17894736842105263,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox2_combined_m1.gml": {
+    "num_nodes": 99,
+    "num_edges": 287,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.15151515151515152,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox1_combined_m1.gml": {
+    "num_nodes": 126,
+    "num_edges": 367,
+    "boundary_1_count": 22,
+    "boundary_1_ratio": 0.1746031746031746,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox4_combined_m1.gml": {
+    "num_nodes": 102,
+    "num_edges": 289,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.14705882352941177,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox6_combined_m1.gml": {
+    "num_nodes": 102,
+    "num_edges": 288,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.1568627450980392,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox8_combined_m1.gml": {
+    "num_nodes": 102,
+    "num_edges": 289,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.16666666666666666,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox5_combined_m1.gml": {
+    "num_nodes": 100,
+    "num_edges": 289,
+    "boundary_1_count": 15,
+    "boundary_1_ratio": 0.15,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/key_selh_combined_m1.gml": {
+    "num_nodes": 749,
+    "num_edges": 2200,
+    "boundary_1_count": 55,
+    "boundary_1_ratio": 0.07343124165554073,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/key_sel3_combined_m1.gml": {
+    "num_nodes": 1613,
+    "num_edges": 4191,
+    "boundary_1_count": 170,
+    "boundary_1_ratio": 0.10539367637941724,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/nangate/sbox7_combined_m1.gml": {
+    "num_nodes": 103,
+    "num_edges": 297,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.17475728155339806,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox3_combined_m1.gml": {
+    "num_nodes": 174,
+    "num_edges": 338,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.10919540229885058,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox2_combined_m1.gml": {
+    "num_nodes": 182,
+    "num_edges": 348,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.1043956043956044,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox1_combined_m1.gml": {
+    "num_nodes": 180,
+    "num_edges": 345,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.1,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox4_combined_m1.gml": {
+    "num_nodes": 182,
+    "num_edges": 348,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.0989010989010989,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox6_combined_m1.gml": {
+    "num_nodes": 177,
+    "num_edges": 333,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.096045197740113,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox8_combined_m1.gml": {
+    "num_nodes": 177,
+    "num_edges": 340,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.096045197740113,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox5_combined_m1.gml": {
+    "num_nodes": 189,
+    "num_edges": 363,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.09523809523809523,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/key_selh_combined_m1.gml": {
+    "num_nodes": 1289,
+    "num_edges": 2736,
+    "boundary_1_count": 111,
+    "boundary_1_ratio": 0.08611326609775019,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/key_sel3_combined_m1.gml": {
+    "num_nodes": 2828,
+    "num_edges": 5256,
+    "boundary_1_count": 57,
+    "boundary_1_ratio": 0.020155586987270154,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/gscl45nm/sbox7_combined_m1.gml": {
+    "num_nodes": 177,
+    "num_edges": 337,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.10734463276836158,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox3_combined_m1.gml": {
+    "num_nodes": 134,
+    "num_edges": 309,
+    "boundary_1_count": 16,
+    "boundary_1_ratio": 0.11940298507462686,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox2_combined_m1.gml": {
+    "num_nodes": 145,
+    "num_edges": 347,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.12413793103448276,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox1_combined_m1.gml": {
+    "num_nodes": 147,
+    "num_edges": 353,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.12244897959183673,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox4_combined_m1.gml": {
+    "num_nodes": 152,
+    "num_edges": 360,
+    "boundary_1_count": 19,
+    "boundary_1_ratio": 0.125,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox6_combined_m1.gml": {
+    "num_nodes": 154,
+    "num_edges": 351,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.11688311688311688,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox8_combined_m1.gml": {
+    "num_nodes": 151,
+    "num_edges": 348,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.11920529801324503,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox5_combined_m1.gml": {
+    "num_nodes": 150,
+    "num_edges": 354,
+    "boundary_1_count": 18,
+    "boundary_1_ratio": 0.12,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/key_selh_combined_m1.gml": {
+    "num_nodes": 1020,
+    "num_edges": 2605,
+    "boundary_1_count": 113,
+    "boundary_1_ratio": 0.11078431372549019,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/key_sel3_combined_m1.gml": {
+    "num_nodes": 1927,
+    "num_edges": 4548,
+    "boundary_1_count": 56,
+    "boundary_1_ratio": 0.029060716139076286,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/des_latest/osu035/sbox7_combined_m1.gml": {
+    "num_nodes": 148,
+    "num_edges": 338,
+    "boundary_1_count": 17,
+    "boundary_1_ratio": 0.11486486486486487,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/rsencoder_latest/nangate/FF_combined_m1.gml": {
+    "num_nodes": 26,
+    "num_edges": 32,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.38461538461538464,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/rsencoder_latest/nangate/GFMUL8_combined_m1.gml": {
+    "num_nodes": 222,
+    "num_edges": 410,
+    "boundary_1_count": 71,
+    "boundary_1_ratio": 0.31981981981981983,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/rsencoder_latest/gscl45nm/FF_combined_m1.gml": {
+    "num_nodes": 27,
+    "num_edges": 40,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.37037037037037035,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/rsencoder_latest/gscl45nm/GFMUL8_combined_m1.gml": {
+    "num_nodes": 223,
+    "num_edges": 409,
+    "boundary_1_count": 70,
+    "boundary_1_ratio": 0.31390134529147984,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/rsencoder_latest/osu035/FF_combined_m1.gml": {
+    "num_nodes": 27,
+    "num_edges": 40,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.37037037037037035,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/crypto_graphs_final/rsencoder_latest/osu035/GFMUL8_combined_m1.gml": {
+    "num_nodes": 497,
+    "num_edges": 1093,
+    "boundary_1_count": 94,
+    "boundary_1_ratio": 0.1891348088531187,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top'"
+    ]
+  },
+  "graphs_final/other_graphs_final/8bit_vedic_multiplier_latest/nangate/full_adder_combined_m1.gml": {
+    "num_nodes": 10,
+    "num_edges": 12,
+    "boundary_1_count": 5,
+    "boundary_1_ratio": 0.5,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      "'@top'",
+      "'top+HA0'"
+    ]
+  },
+  "graphs_final/other_graphs_final/8bit_vedic_multiplier_latest/gscl45nm/full_adder_combined_m1.gml": {
+    "num_nodes": 10,
+    "num_edges": 12,
+    "boundary_1_count": 5,
+    "boundary_1_ratio": 0.5,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      "'@top'",
+      "'top+HA0'"
+    ]
+  },
+  "graphs_final/other_graphs_final/dpll-isdn_latest/nangate/variableresetrandomwalkfilter_combined_m1.gml": {
+    "num_nodes": 207,
+    "num_edges": 510,
+    "boundary_1_count": 11,
+    "boundary_1_ratio": 0.05314009661835749,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      "'top'",
+      "'top+inst_M_Filter'"
+    ]
+  },
+  "graphs_final/other_graphs_final/dpll-isdn_latest/gscl45nm/variableresetrandomwalkfilter_combined_m1.gml": {
+    "num_nodes": 232,
+    "num_edges": 481,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.04310344827586207,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      "'top'",
+      "'top+inst_M_Filter'"
+    ]
+  },
+  "graphs_final/other_graphs_final/dpll-isdn_latest/osu035/variableresetrandomwalkfilter_combined_m1.gml": {
+    "num_nodes": 224,
+    "num_edges": 486,
+    "boundary_1_count": 10,
+    "boundary_1_ratio": 0.044642857142857144,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      "'top'",
+      "'top+inst_M_Filter'"
+    ]
+  },
+  "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlo8_combined_m1.gml": {
+    "num_nodes": 36,
+    "num_edges": 52,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.3333333333333333,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top+u1'"
+    ]
+  },
+  "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlo8_combined_m1.gml": {
+    "num_nodes": 44,
+    "num_edges": 59,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.2727272727272727,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top+u1'"
+    ]
+  },
+  "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlo8_combined_m1.gml": {
+    "num_nodes": 38,
+    "num_edges": 52,
+    "boundary_1_count": 12,
+    "boundary_1_ratio": 0.3157894736842105,
+    "num_unique_partitions": 2,
+    "unique_partitions": [
+      null,
+      "'top+u1'"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+import json
+
+with open("config/file_paths/new/final_graph_stats_m1.json", "r") as f:
+    data = json.load(f)
+
+simple_graph = {}
+complex_graph = {}
+
+for key, value in data.items():
+    if value.get("num_unique_partitions", 0) <= 2:
+        simple_graph[key] = value
+    else:
+        complex_graph[key] = value
+
+with open("config/file_paths/new/simple_graph.json", "w") as f:
+    json.dump(simple_graph, f, indent=2)
+
+with open("config/file_paths/new/complex_graph.json", "w") as f:
+    json.dump(complex_graph, f, indent=2)
+
+print("Split complete ✅")

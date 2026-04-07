@@ -1,0 +1,9 @@
+[
+    "other_graphs_final/raw_final/rawv4/chacha-master/nangate/chacha_core_combined_m1.gml",
+    "other_graphs_final/raw_final/rawv4/chacha-master/nangate/chacha_combined_m1.gml",
+    "other_graphs_final/raw_final/rawv4/cmac-master/nangate/cmac_combined_m1.gml",
+    "other_graphs_final/raw_final/rawv4/pairing_latest/osu035/f3m_mux6_combined_m1.gml",
+    "other_graphs_final/raw_final/rawv4/nextz80_latest/nangate/Next8080_combined_m1.gml",
+    "other_graphs_final/raw_final/rawv4/sha256-master/nangate/sha256_stream_combined_m1.gml",
+    "other_graphs_final/raw_final/rawv4/sha256-master/nangate/sha256_core_combined_m1.gml"
+]
