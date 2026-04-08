@@ -1,0 +1,55 @@
+model: BiDirectedGraphSAGE
+epochs: 300
+set_gradient_clipping: true
+lr: 0.001
+loss_type : "ce_weighted" #ce_weighted #ce_soft
+training_mode: "fullgraph"
+fullgraph_mode: "per_design"
+#  use_scheduler : true
+# use_partition_features: true
+# use_unsupervised_features: true
+# use_unsupervised_features_louvian: true
+
+
+train_gml:
+# # === sha1-master ===
+# - "graphs_final/other_graphs_final/sha1-master/nangate/sha1_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
+# # - "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_core_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/osu035/sha1_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml"
+
+
+# === sha3_latest ===
+- "graphs_final/crypto_graphs_final/sha3_latest/nangate/f_permutation_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/nangate/keccak_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/gscl45nm/f_permutation_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/gscl45nm/keccak_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/osu035/f_permutation_combined_m1.gml"
+# - "graphs_final/crypto_graphs_final/sha3_latest/osu035/keccak_combined_m1.gml"
+
+# === sha256-master ===
+- "graphs_final/other_graphs_final/sha256-master/gscl45nm/sha256_stream_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha256-master/gscl45nm/sha256_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha256-master/osu035/sha256_stream_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha256-master/osu035/sha256_core_combined_m1.gml"
+
+
+- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_combined_m1.gml"
+
+
+
+val_gml:
+- "graphs_final/crypto_graphs_final/sha3_latest/osu035/keccak_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha256-master/gscl45nm/sha256_core_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_combined_m1.gml"
+
+
+test_gml:
+# === sha1-master ===
+- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"

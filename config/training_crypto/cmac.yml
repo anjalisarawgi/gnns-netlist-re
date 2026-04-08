@@ -1,4 +1,4 @@
-model: BiDirectedJK_GraphSAGE
+model: BiDirectedGraphSAGE
 epochs: 300
 set_gradient_clipping: true
 lr: 0.001

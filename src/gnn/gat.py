@@ -64,10 +64,10 @@ class gatv2(nn.Module):
         # self.conv3 = GATv2Conv(hidden_channels, hidden_channels, heads=1, concat = False)
         # self.conv4 = GATv2Conv(hidden_channels, out_channels, heads=1, concat = False)
 
-        self.conv1 = GATv2Conv(in_channels,            hidden_channels,     heads=1,  concat=True)
-        self.conv2 = GATv2Conv(hidden_channels * 1,    hidden_channels,     heads=1, concat=True)
-        self.conv3 = GATv2Conv(hidden_channels * 1,    hidden_channels,     heads=1, concat=True)
-        self.conv4 = GATv2Conv(hidden_channels * 1,    out_channels,        heads=1, concat=False)
+        self.conv1 = GATv2Conv(in_channels,            hidden_channels,     heads=8,  concat=True)
+        self.conv2 = GATv2Conv(hidden_channels * 8,    hidden_channels,     heads=8, concat=True)
+        self.conv3 = GATv2Conv(hidden_channels * 8,    hidden_channels,     heads=8, concat=True)
+        self.conv4 = GATv2Conv(hidden_channels * 8,    out_channels,        heads=8, concat=False)
 
     def forward(self, x, edge_index):
         # Layer 1
@@ -90,7 +90,7 @@ class gatv2(nn.Module):
         return x
 
 class GAAN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, heads=4, dropout=0.1):
+    def __init__(self, in_channels, hidden_channels, out_channels, heads=8, dropout=0.1):
         super().__init__()
         self.dropout = dropout
         self.heads = heads

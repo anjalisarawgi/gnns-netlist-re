@@ -1,14 +1,10 @@
-model: BiDirectedGraphSAGE
-epochs: 300
-set_gradient_clipping: true
-lr: 0.001
-loss_type : "ce_weighted" #ce_weighted #ce_soft
-training_mode: "fullgraph"
-fullgraph_mode: "per_design"
-#  use_scheduler : true
+top_k: 15
+n_estimators: 300
 # use_partition_features: true
-# use_unsupervised_features: true
-# use_unsupervised_features_louvian: true
+save_models: false
+save_predictions: false
+# output_dir: results/tabical/lodo/aes_core
+
 
 train_gml:
 # # # # === aes_core ===
@@ -22,11 +18,11 @@ train_gml:
 - "graphs_final/crypto_graphs_final/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/aes_core/osu035/aes_cipher_top_combined_m1.gml"
 
-# # # # # === aes-master ===
-# - "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_core_combined_m1.gml"
-# - "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
-# - "graphs_final/other_graphs_final/aes-master/osu035/aes_core_combined_m1.gml"
-# - "graphs_final/other_graphs_final/aes-master/osu035/aes_decipher_block_combined_m1.gml"
+# # # # === aes-master ===
+- "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
+- "graphs_final/other_graphs_final/aes-master/osu035/aes_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/aes-master/osu035/aes_decipher_block_combined_m1.gml"
 
 # # # # === aes-encryption_latest ===
 - "graphs_final/crypto_graphs_final/aes-encryption_latest/nangate/aes_key_expand_128_combined_m1.gml"
@@ -139,13 +135,13 @@ train_gml:
 - "graphs_final/crypto_graphs_final/sha3_latest/osu035/f_permutation_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/sha3_latest/osu035/keccak_combined_m1.gml"
 
-# === sha1-master ===
-- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_combined_m1.gml"
-# - "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
-- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_combined_m1.gml"
-- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_core_combined_m1.gml"
-- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_combined_m1.gml"
-- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml"
+# # === sha1-master ===
+# - "graphs_final/other_graphs_final/sha1-master/nangate/sha1_combined_m1.gml"
+# # - "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_core_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/osu035/sha1_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml"
 
 # === sha256-master ===
 - "graphs_final/other_graphs_final/sha256-master/gscl45nm/sha256_stream_combined_m1.gml"
@@ -164,16 +160,18 @@ val_gml:
 - "graphs_final/crypto_graphs_final/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/sha3_latest/nangate/keccak_combined_m1.gml"
-- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
-- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_ecb_decrypt_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_cfb_decrypt_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/des_latest/gscl45nm/des_combined_m1.gml"
 
 
 
 test_gml:
-# # # # === aes-master ===
-- "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_core_combined_m1.gml"
-- "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
-- "graphs_final/other_graphs_final/aes-master/osu035/aes_core_combined_m1.gml"
-- "graphs_final/other_graphs_final/aes-master/osu035/aes_decipher_block_combined_m1.gml"
+# === sha1-master ===
+- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml"

@@ -1219,7 +1219,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
             in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
         )
     elif model_name =="GAAN":
-        model = GAAN( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=4)
+        model = GAAN( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=6)
         print("[INFO] using GaAN")
     elif model_name =="GraphSAGE_ResNorm":
         model = GraphSAGE_ResNorm(in_channels=in_dim, hidden_channels=256, out_channels=out_dim, num_layers=2)
