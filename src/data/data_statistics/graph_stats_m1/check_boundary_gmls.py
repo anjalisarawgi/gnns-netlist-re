@@ -4,7 +4,7 @@ import json
 import networkx as nx  
 from tqdm import tqdm  
 
-cfg_path = "config/file_paths/new/final_config_list.yml"
+cfg_path = "config/file_paths/final/final_config_list.yml"
 cfg = yaml.safe_load(Path(cfg_path).read_text())
 gml_paths = cfg.get("train_gml", []) + cfg.get("val_gml", []) + cfg.get("test_gml", [])
 
@@ -30,10 +30,13 @@ for p in tqdm(gml_paths, desc="Processing GML files"):
         G = nx.read_gml(path)
 
         boundary_vals = [G.nodes[n].get("boundary") for n in G.nodes]
+        labeled_boundary_vals = [v for v in boundary_vals if v is not None] #         # filter to only nodes that have a boundary label
         partition_vals = [G.nodes[n].get("partition") for n in G.nodes]
 
         num_boundary_1 = sum(1 for v in boundary_vals if v == 1)
         num_total_nodes = len(boundary_vals)
+        num_labeled_nodes = len(labeled_boundary_vals)
+
 
         # unique modules based on partition
         unique_partitions = set(partition_vals)
@@ -41,8 +44,13 @@ for p in tqdm(gml_paths, desc="Processing GML files"):
 
         stat["num_nodes"] = num_total_nodes
         stat["num_edges"] = G.number_of_edges()
+        stat["num_labeled_nodes"] = num_labeled_nodes
+        stat["num_unlabeled_nodes"] = num_total_nodes - num_labeled_nodes
         stat["boundary_1_count"] = num_boundary_1
-        stat["boundary_1_ratio"] = num_boundary_1 / num_total_nodes if num_total_nodes > 0 else 0
+
+        stat["boundary_1_ratio_total"] = num_boundary_1 / num_total_nodes if num_total_nodes > 0 else 0
+        stat["boundary_1_ratio_labeled"] = num_boundary_1 / num_labeled_nodes if num_labeled_nodes > 0 else 0 # only for the non masked one 
+
 
         stat["num_unique_partitions"] = num_unique_modules
         stat["unique_partitions"] = list(unique_partitions)

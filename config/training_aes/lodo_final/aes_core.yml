@@ -5,6 +5,9 @@ lr: 0.001
 loss_type : "ce_weighted" #ce_weighted #ce_soft
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
+# use_augmentation: true
+# aug_gate_flip_frac: 0.10
+# aug_edge_corrupt_frac: 0.10
 #  use_scheduler : true
 # use_partition_features: true
 # use_unsupervised_features: true
@@ -74,14 +77,14 @@ test_gml:
 - "graphs_final/crypto_graphs_final/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/aes_core/osu035/aes_cipher_top_combined_m1.gml"
 
-- "graphs_final/crypto_graphs_final/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
+# - "graphs_final/crypto_graphs_final/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
 
 
-- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml" # sha1 core
-- "graphs_final/crypto_graphs_final/des_latest/gscl45nm/des_combined_m1.gml" # des - cross library gen
-- "graphs_final/other_graphs_final/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml" # completely new design - also non crypto 
-- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/ALU_combined_m1.gml" # completely new design - also non crypto 
-- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
-- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml" # sha1 core
+# - "graphs_final/crypto_graphs_final/des_latest/gscl45nm/des_combined_m1.gml" # des - cross library gen
+# - "graphs_final/other_graphs_final/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml" # completely new design - also non crypto 
+# - "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/ALU_combined_m1.gml" # completely new design - also non crypto 
+# - "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
+# - "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
 
 

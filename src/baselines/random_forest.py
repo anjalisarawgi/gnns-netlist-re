@@ -97,7 +97,7 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
             continue
 
         feat = list(attr.get("features", []))
-        feat = feat[:42] # skipping distance io feature (feature 43)
+        feat = feat[:31] # skipping distance io feature (feature 43)
         # if args.use_partition_features:
         #     partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
         #     partition_feat = partition_feat[2:3]

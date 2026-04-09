@@ -250,6 +250,9 @@ parser.add_argument("--use_unsupervised_features_louvian", action="store_true")
 parser.add_argument("--use_lib_id", action="store_true", help="append library one-hot to node features")
 parser.add_argument("--use_design_id", action="store_true", help="append design one-hot to node features (leaky if testing unseen designs!)")
 ##### test block end
+parser.add_argument("--use_augmentation",      action="store_true")
+parser.add_argument("--aug_gate_flip_frac",    type=float, default=0.10)
+parser.add_argument("--aug_edge_corrupt_frac", type=float, default=0.10)
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -445,8 +448,47 @@ def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=N
 # a) x = node features (matrix)
 # b) y = node labels 
 # c) edge_index = edges (2xE tensor)
+def augment_graph_noise(data: Data,
+                        n_categorical: int = 14,
+                        gate_flip_frac: float = 0.10,
+                        edge_corrupt_frac: float = 0.10) -> Data:
+    """
+    Simulates real-world circuit noise:
+      1) Gate mislabelling  — randomly swap one-hot gate type for gate_flip_frac of nodes
+      2) Wrong wires        — randomly drop + add edges for edge_corrupt_frac of edges
+    Continuous features (indeg, outdeg, ratio) are left alone — in a real
+    corrupted netlist these would change too, but recomputing them is expensive.
+    """
+    data = data.clone()
+    N = data.x.size(0)
+    E = data.edge_index.size(1)
 
+    # --- 1. gate label corruption (one-hot swap) ---
+    n_flip = max(1, int(gate_flip_frac * N))
+    flip_idx = torch.randperm(N)[:n_flip]
+    # pick a random different gate type for each flipped node
+    random_gates = torch.randint(0, n_categorical, (n_flip,))
+    new_onehot = torch.zeros(n_flip, n_categorical)
+    new_onehot[torch.arange(n_flip), random_gates] = 1.0
+    data.x[flip_idx, :n_categorical] = new_onehot
 
+    # --- 2. edge corruption (drop + add random edges) ---
+    n_corrupt = max(1, int(edge_corrupt_frac * E))
+
+    # drop n_corrupt random existing edges
+    keep_mask = torch.ones(E, dtype=torch.bool)
+    drop_idx = torch.randperm(E)[:n_corrupt]
+    keep_mask[drop_idx] = False
+    kept_edges = data.edge_index[:, keep_mask]
+
+    # add n_corrupt random new edges to replace them
+    rand_src = torch.randint(0, N, (n_corrupt,))
+    rand_dst = torch.randint(0, N, (n_corrupt,))
+    new_edges = torch.stack([rand_src, rand_dst], dim=0)
+
+    data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
+
+    return data
 def load_single_gml(gml_path, remove_edges = False):
     print("[INFO] Calling gml from path:", gml_path)
     
@@ -1769,14 +1811,39 @@ if __name__ == "__main__":
         scaler.fit_transform(combined_data.x.cpu().numpy()),
         dtype=torch.float32
     )
+
+
+    
     for g in train_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+        
     # we use the train sclaer to transform val and test
     for path, g in val_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
 
     for path, g in test_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+
+    # # train: scale + augment (write back by index)
+    # for i, g in enumerate(train_graphs):
+    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+    #     if args.use_augmentation:
+    #         train_graphs[i] = augment_graph_noise(g, n_categorical=NUM_CATEGORICAL,
+    #                                                gate_flip_frac=args.aug_gate_flip_frac,
+    #                                                edge_corrupt_frac=args.aug_edge_corrupt_frac)
+
+    # # val: scale only, always clean
+    # for path, g in val_graphs:
+    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+
+    # # test: scale + augment (write back by index, preserve path)
+    # for i, (path, g) in enumerate(test_graphs):
+    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+    #     if args.use_augmentation:
+    #         test_graphs[i] = (path, augment_graph_noise(g, n_categorical=NUM_CATEGORICAL,
+    #                                                      gate_flip_frac=args.aug_gate_flip_frac,
+    #                                                      edge_corrupt_frac=args.aug_edge_corrupt_frac))
+
 
     print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())
     print("Val[0] mean/std:", val_graphs[0][1].x.mean().item(), val_graphs[0][1].x.std().item() if len(val_graphs) else ("NA", "NA"))
