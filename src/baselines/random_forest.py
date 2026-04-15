@@ -74,14 +74,17 @@ class SelectiveScaler:
 
     def fit_transform(self, X):
         X = X.copy()
-        X[:, self.n_cat:] = self.scaler.fit_transform(X[:, self.n_cat:])
+        if self.n_cat < X.shape[1]:  # only scale if continuous cols exist
+            X[:, self.n_cat:] = self.scaler.fit_transform(X[:, self.n_cat:])
         return X
 
     def transform(self, X):
         X = X.copy()
-        X[:, self.n_cat:] = self.scaler.transform(X[:, self.n_cat:])
+        if self.n_cat < X.shape[1]:
+            X[:, self.n_cat:] = self.scaler.transform(X[:, self.n_cat:])
         return X
 
+        
 def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
     G = nx.read_gml(gml_path)
     nodes = list(G.nodes())
@@ -97,7 +100,7 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
             continue
 
         feat = list(attr.get("features", []))
-        feat = feat[:31] # skipping distance io feature (feature 43)
+        feat = feat[:14] # skipping distance io feature (feature 43)
         # if args.use_partition_features:
         #     partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
         #     partition_feat = partition_feat[2:3]

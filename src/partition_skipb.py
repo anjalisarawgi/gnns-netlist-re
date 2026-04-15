@@ -301,7 +301,7 @@ config_prefix = config_tag if config_tag is not None else "no_config"
 
 if args.training_mode == "fullgraph":
     run_name = (
-        f"{args.model}_{args.loss_type}_"
+        f"51lodo_31f_{args.model}_{args.loss_type}_"
         f"fullgraph_{args.fullgraph_mode}_"
         f"{config_prefix}"
     )
@@ -511,7 +511,7 @@ def load_single_gml(gml_path, remove_edges = False):
         # feat = feat[28:31] #### indeg, outdeg, fanin
         # feat = feat[0:28] ####  (14ohe) + (14ohe) 
         # feat = feat[:-2]
-        feat = feat[:42]
+        feat = feat[:31]
         if base_feat_dim is None:
             base_feat_dim = len(feat)
 
