@@ -1,0 +1,20 @@
+model: BiDirectedGraphSAGE
+epochs: 300
+set_gradient_clipping: true
+lr: 0.001
+loss_type : "ce_weighted" #ce_weighted #ce_soft
+training_mode: "fullgraph"
+fullgraph_mode: "per_design"
+# use_augmentation: true
+#  use_scheduler : true
+# use_partition_features: true
+# use_unsupervised_features: true
+# use_unsupervised_features_louvian: true
+
+
+train_gml:
+- "graphs_final/crypto_graphs_final/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
+- "new_designs/processed_final/zipcpu/osu035/zipsystem_combined_m1.gml"
+- "new_designs/processed_final/zipcpu/osu035/zipbones_combined_m1.gml"
+- "new_designs/processed_final/riscv-soc/osu035/riscv_soc_combined_m1.gml"
+- "new_designs/processed_final/usb_sniffer/osu035/usb_sniffer_combined_m1.gml"

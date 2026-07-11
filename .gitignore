@@ -24,3 +24,15 @@ models/
 new_graphs_crypto_scp/
 graphs_scp/
 *.joblib
+
+
+
+new_designs/
+data_files_misc/
+eval_results/
+graphs_final/
+mad_results/
+mwe/
+results/
+results_final/
+thresholds/

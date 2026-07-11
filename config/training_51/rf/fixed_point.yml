@@ -1,0 +1,522 @@
+top_k: 15
+n_estimators: 300
+# use_partition_features: true
+save_models: false
+save_predictions: false
+# output_dir: results/tabical/lodo/aes_core
+
+
+train_gml:
+
+# ##### 8bit_vedic_multiplier_latest
+- "graphs_final/other_graphs_final/8bit_vedic_multiplier_latest/osu035/full_adder_combined_m1.gml"
+
+###### 8051_latest
+- "graphs_final/other_graphs_final/8051_latest/nangate/oc8051_sfr_combined_m1.gml"
+- "graphs_final/other_graphs_final/8051_latest/gscl45nm/oc8051_sfr_combined_m1.gml"
+- "graphs_final/other_graphs_final/8051_latest/osu035/oc8051_sfr_combined_m1.gml"
+
+# # # === aes_core === # 9
+# - "graphs_final/crypto_graphs_final/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/nangate/aes_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/osu035/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/osu035/aes_inv_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/osu035/aes_cipher_top_combined_m1.gml"
+
+# # # # === aes-master === # 4
+- "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/aes-master/gscl45nm/aes_decipher_block_combined_m1.gml"
+- "graphs_final/other_graphs_final/aes-master/osu035/aes_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/aes-master/osu035/aes_decipher_block_combined_m1.gml"
+
+# # # === aes-encryption_latest === # 6 
+- "graphs_final/crypto_graphs_final/aes-encryption_latest/nangate/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes-encryption_latest/nangate/aes_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes-encryption_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes-encryption_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes-encryption_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes-encryption_latest/osu035/aes_cipher_top_combined_m1.gml"
+
+# # # # === apbtoaes128_latest === # 3
+- "graphs_final/other_graphs_final/apbtoaes128_latest/nangate/aes_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/apbtoaes128_latest/gscl45nm/aes_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/apbtoaes128_latest/osu035/aes_core_combined_m1.gml"
+
+########### aemb_latest
+- "graphs_final/other_graphs_final/aemb_latest/osu035/aeMB2_gprf_combined_m1.gml"
+
+
+########### Aquarius_latest
+- "graphs_final/other_graphs_final/Aquarius_latest/osu035/datapath_combined_m1.gml"
+- "graphs_final/other_graphs_final/Aquarius_latest/osu035/cpu_combined_m1.gml"
+
+
+##### blue_latest
+- "graphs_final/other_graphs_final/blue_latest/nangate/uart_combined_m1.gml"
+- "graphs_final/other_graphs_final/blue_latest/gscl45nm/uart_combined_m1.gml"
+- "graphs_final/other_graphs_final/blue_latest/osu035/uart_combined_m1.gml"
+
+
+###### cxd9731_latest
+- "graphs_final/other_graphs_final/cxd9731_latest/nangate/CRC_CAL_combined_m1.gml"
+- "graphs_final/other_graphs_final/cxd9731_latest/gscl45nm/CRC_CAL_combined_m1.gml"
+- "graphs_final/other_graphs_final/cxd9731_latest/osu035/CRC_CAL_combined_m1.gml"
+
+
+##### cavlc_latest
+- "graphs_final/other_graphs_final/cavlc_latest/nangate/cavlc_top_combined_m1.gml"
+- "graphs_final/other_graphs_final/cavlc_latest/gscl45nm/cavlc_top_combined_m1.gml"
+- "graphs_final/other_graphs_final/cavlc_latest/osu035/cavlc_top_combined_m1.gml"
+
+###### cpu8080_latest
+- "graphs_final/other_graphs_final/cpu8080_latest/gscl45nm/M8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/cpu8080_latest/gscl45nm/cpu8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/cpu8080_latest/gscl45nm/SM8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/cpu8080_latest/osu035/M8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/cpu8080_latest/osu035/cpu8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/cpu8080_latest/osu035/SM8080_combined_m1.gml"
+
+
+# chahca-master
+- "graphs_final/other_graphs_final/chacha-master/osu035/chacha_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/chacha-master/osu035/chacha_combined_m1.gml"
+
+# # === cmac-master ===
+- "graphs_final/other_graphs_final/cmac-master/gscl45nm/cmac_combined_m1.gml"
+- "graphs_final/other_graphs_final/cmac-master/osu035/cmac_combined_m1.gml"
+
+# # === csa_latest ===
+- "graphs_final/other_graphs_final/csa_latest/gscl45nm/block_decypher_combined_m1.gml"
+- "graphs_final/other_graphs_final/csa_latest/gscl45nm/decrypt_combined_m1.gml"
+- "graphs_final/other_graphs_final/csa_latest/osu035/stream_8bytes_combined_m1.gml"
+- "graphs_final/other_graphs_final/csa_latest/osu035/block_decypher_combined_m1.gml"
+- "graphs_final/other_graphs_final/csa_latest/osu035/stream_cypher_combined_m1.gml"
+- "graphs_final/other_graphs_final/csa_latest/osu035/key_cnt_combined_m1.gml"
+- "graphs_final/other_graphs_final/csa_latest/osu035/group_decrypt_combined_m1.gml"
+- "graphs_final/other_graphs_final/csa_latest/osu035/decrypt_combined_m1.gml"
+
+# === des_latest ===
+- "graphs_final/crypto_graphs_final/des_latest/nangate/des_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/nangate/des3_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/nangate/crp_combined_m1.gml"
+# - "graphs_final/crypto_graphs_final/des_latest/gscl45nm/des_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/gscl45nm/des3_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/gscl45nm/crp_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/osu035/des_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/osu035/des3_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/osu035/crp_combined_m1.gml"
+
+
+
+####### dpll-isdn_latest
+- "graphs_final/other_graphs_final/dpll-isdn_latest/nangate/dpll_combined_m1.gml"
+- "graphs_final/other_graphs_final/dpll-isdn_latest/gscl45nm/dpll_combined_m1.gml"
+- "graphs_final/other_graphs_final/dpll-isdn_latest/osu035/dpll_combined_m1.gml"
+
+
+
+######## double_fpu_latest
+- "graphs_final/other_graphs_final/double_fpu_latest/nangate/fpu_combined_m1.gml"
+- "graphs_final/other_graphs_final/double_fpu_latest/gscl45nm/fpu_combined_m1.gml"
+- "graphs_final/other_graphs_final/double_fpu_latest/osu035/fpu_combined_m1.gml"
+
+## ecg_latest
+- "graphs_final/crypto_graphs_final/ecg_latest/osu035/func10_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/ecg_latest/osu035/func11_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3m_inv_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3m_mult3_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3m_nine_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/ecg_latest/osu035/f3m_mult_combined_m1.gml"
+
+
+###### edge_latest
+- "graphs_final/other_graphs_final/edge_latest/nangate/Edge_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/nangate/id_ex_pipereg_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/nangate/ex_mem_pipereg_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/nangate/shift_unit_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/gscl45nm/Edge_core_combined_m1.gml"
+# - "graphs_final/other_graphs_final/edge_latest/gscl45nm/id_ex_pipereg_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/gscl45nm/ex_mem_pipereg_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/gscl45nm/shift_unit_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/osu035/Edge_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/osu035/id_ex_pipereg_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/osu035/ex_mem_pipereg_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/osu035/shift_unit_combined_m1.gml"
+
+# ###### fixed_point_arithmetic_parameterized_latest
+# - "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/nangate/qmult_combined_m1.gml"
+# - "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/nangate/top_combined_m1.gml"
+# - "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/gscl45nm/qmult_combined_m1.gml"
+# - "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/gscl45nm/top_combined_m1.gml"
+# - "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/osu035/qmult_combined_m1.gml"
+# - "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/osu035/top_combined_m1.gml"
+
+
+
+##### ft816float_latest 
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlz16_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlo32_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlz64Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlo16_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlz48_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlo48_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlz32Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlz24_combined_m1.gml"
+# - "graphs_final/other_graphs_final/ft816float_latest/nangate/fpMulnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlo64_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlz32_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/fpAddsubnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/cntlz64_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlz16_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlo32_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlz64Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlo16_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlz48_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlo48_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlz32Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlz24_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/fpSqrtnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/fpMulnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/fpRoundReg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlo64_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlz32_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/fpAddsubnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/gscl45nm/cntlz64_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlz16_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlo32_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlz64Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlo16_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlz48_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlo48_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlz32Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlz24_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/fpSqrtnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/fpMulnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/fpRoundReg_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlo64_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlz32_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/fpAddsubnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/osu035/cntlz64_combined_m1.gml"
+
+
+
+
+# # # === gcm-aes_latest === # 9 
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/nangate/aes_key_expand_128_combined_m1.gml"
+# - "graphs_final/crypto_graphs_final/gcm-aes_latest/nangate/gcm_aes_v0_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/nangate/aes_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/gscl45nm/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/gscl45nm/gcm_aes_v0_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/gscl45nm/aes_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/osu035/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/osu035/gcm_aes_v0_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/osu035/aes_cipher_top_combined_m1.gml"
+
+
+
+
+
+# === gost28147-89_latest ===
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_pipelined_ecb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_cfb_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_cfb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_ecb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_cfb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_ecb_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_mac_combined_m1.gml"
+# - "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_ecb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_cfb_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_cfb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_ecb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_cfb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_ecb_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_mac_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/gscl45nm/gost89_ecb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_pipelined_ecb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_cfb_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_cfb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_ecb_encrypt_combined_m1.gml"
+# - "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_cfb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_ecb_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_mac_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_ecb_decrypt_combined_m1.gml"
+ 
+
+# === hight_latest ===
+- "graphs_final/crypto_graphs_final/hight_latest/nangate/HIGHT_CORE_TOP_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/nangate/KEY_SCHED_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/nangate/CRYPTO_PATH_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/gscl45nm/HIGHT_CORE_TOP_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/gscl45nm/KEY_SCHED_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/gscl45nm/CRYPTO_PATH_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/osu035/HIGHT_CORE_TOP_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/osu035/KEY_SCHED_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/hight_latest/osu035/CRYPTO_PATH_combined_m1.gml"
+
+# === md5_core-master ===
+- "graphs_final/other_graphs_final/md5_core-master/nangate/fifo_combined_m1.gml"
+- "graphs_final/other_graphs_final/md5_core-master/gscl45nm/fifo_combined_m1.gml"
+- "graphs_final/other_graphs_final/md5_core-master/gscl45nm/md5_ctl_combined_m1.gml"
+- "graphs_final/other_graphs_final/md5_core-master/gscl45nm/md5_fsm_combined_m1.gml"
+- "graphs_final/other_graphs_final/md5_core-master/osu035/fifo_combined_m1.gml"
+- "graphs_final/other_graphs_final/md5_core-master/osu035/md5_ctl_combined_m1.gml"
+- "graphs_final/other_graphs_final/md5_core-master/osu035/md5_fsm_combined_m1.gml"
+
+
+#### mod3_calc_latest
+- "graphs_final/other_graphs_final/mod3_calc_latest/nangate/mod3_combined_m1.gml"
+- "graphs_final/other_graphs_final/mod3_calc_latest/gscl45nm/mod3_combined_m1.gml"
+- "graphs_final/other_graphs_final/mod3_calc_latest/osu035/mod3_combined_m1.gml"
+
+
+
+
+###### mac_layer_switch_latest
+- "graphs_final/other_graphs_final/mac_layer_switch_latest/nangate/eth_registers_combined_m1.gml"
+- "graphs_final/other_graphs_final/mac_layer_switch_latest/gscl45nm/eth_registers_combined_m1.gml"
+- "graphs_final/other_graphs_final/mac_layer_switch_latest/gscl45nm/eth_txethmac_combined_m1.gml"
+- "graphs_final/other_graphs_final/mac_layer_switch_latest/osu035/eth_registers_combined_m1.gml"
+- "graphs_final/other_graphs_final/mac_layer_switch_latest/osu035/eth_txethmac_combined_m1.gml"
+
+####### mips32r1_latest
+- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/Processor_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/FIFO_NoFull_Count_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/ALU_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/uart_min_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/Switches_combined_m1.gml"
+# - "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/uart_bootloader_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/FIFO_Clear_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/osu035/Processor_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/osu035/FIFO_NoFull_Count_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/osu035/ALU_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/osu035/uart_min_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/osu035/Switches_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/osu035/uart_bootloader_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/osu035/FIFO_Clear_combined_m1.gml"
+
+#######  mips_16_latest
+- "graphs_final/other_graphs_final/mips_16_latest/nangate/mips_16_core_top_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips_16_latest/gscl45nm/mips_16_core_top_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips_16_latest/osu035/mips_16_core_top_combined_m1.gml"
+
+
+
+########## nextz80_latest
+- "graphs_final/other_graphs_final/nextz80_latest/nangate/N8080_Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/gscl45nm/Next8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/gscl45nm/N8080_Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/gscl45nm/NextZ80_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/gscl45nm/Z80Reg_combined_m1.gml"
+# - "graphs_final/other_graphs_final/nextz80_latest/osu035/Next8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/osu035/N8080_Reg_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/osu035/NextZ80_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/osu035/Z80Reg_combined_m1.gml"
+
+
+######## orsoc_graphics_accelerator
+- "graphs_final/other_graphs_final/orsoc_graphics_accelerator/osu035/gfx_interp_combined_m1.gml"
+- "graphs_final/other_graphs_final/orsoc_graphics_accelerator/osu035/gfx_renderer_combined_m1.gml"
+
+
+######## openmsp430_latest
+- "graphs_final/other_graphs_final/openmsp430_latest/nangate/altera_reset_controller_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/nangate/ogfx_gpu_dma_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/nangate/ogfx_backend_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/nangate/ogfx_gpu_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/nangate/omsp_dbg_i2c_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/omsp_timerA_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/altera_reset_controller_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/ogfx_gpu_dma_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/ogfx_backend_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/omsp_execution_unit_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/omsp_dbg_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/ogfx_gpu_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/omsp_dbg_i2c_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/openGFX430_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/omsp_uart_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/gscl45nm/omsp_de0_nano_soc_led_key_sw_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/omsp_timerA_combined_m1.gml"
+# - "graphs_final/other_graphs_final/openmsp430_latest/osu035/altera_reset_controller_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/ogfx_gpu_dma_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/ogfx_backend_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/omsp_execution_unit_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/omsp_dbg_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/ogfx_gpu_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/omsp_dbg_i2c_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/openGFX430_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/omsp_uart_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/omsp_de0_nano_soc_led_key_sw_combined_m1.gml"
+
+# === sha3_latest ===
+- "graphs_final/crypto_graphs_final/sha3_latest/nangate/f_permutation_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/nangate/keccak_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/gscl45nm/f_permutation_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/gscl45nm/keccak_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/osu035/f_permutation_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/sha3_latest/osu035/keccak_combined_m1.gml"
+
+# === sha1-master ===
+- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_combined_m1.gml"
+# - "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/gscl45nm/sha1_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/osu035/sha1_core_combined_m1.gml"
+
+# === sha256-master ===
+- "graphs_final/other_graphs_final/sha256-master/gscl45nm/sha256_stream_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha256-master/gscl45nm/sha256_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha256-master/osu035/sha256_stream_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha256-master/osu035/sha256_core_combined_m1.gml"
+
+
+# === simon_core_latest ===
+- "graphs_final/other_graphs_final/simon_core_latest/nangate/top_module_combined_m1.gml"
+- "graphs_final/other_graphs_final/simon_core_latest/gscl45nm/top_module_combined_m1.gml"
+- "graphs_final/other_graphs_final/simon_core_latest/osu035/top_module_combined_m1.gml"
+
+
+###### rsencoder_latest
+- "graphs_final/crypto_graphs_final/rsencoder_latest/nangate/rs_encode_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/rsencoder_latest/gscl45nm/rs_encode_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/rsencoder_latest/osu035/rs_encode_combined_m1.gml"
+
+###### rs_5_3_gf256_latest
+- "graphs_final/other_graphs_final/rs_5_3_gf256_latest/nangate/SYN2ERR_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_5_3_gf256_latest/nangate/RS_5_3_GF256_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_5_3_gf256_latest/gscl45nm/SYN2ERR_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_5_3_gf256_latest/gscl45nm/RS_5_3_GF256_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_5_3_gf256_latest/osu035/SYN2ERR_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_5_3_gf256_latest/osu035/RS_5_3_GF256_combined_m1.gml"
+
+####### rs_encoder_decoder_latest
+- "graphs_final/other_graphs_final/rs_encoder_decoder_latest/gscl45nm/RS8Encoder8t_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_encoder_decoder_latest/osu035/RS8Encoder8t_combined_m1.gml"
+
+#######  rs_decoder_31_19_6_latest
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/degree4_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/degree1_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/degree3_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/degree5_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/degree2_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/fifo_register_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/CSEEblock_combined_m1.gml"
+# - "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/degree6_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/degree4_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/degree1_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/degree3_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/degree5_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/degree2_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/fifo_register_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/CSEEblock_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/osu035/degree6_cell_combined_m1.gml"
+
+######## sdcard_mass_storage_controller_latest
+- "graphs_final/other_graphs_final/sdcard_mass_storage_controller_latest/gscl45nm/sd_cmd_phy_combined_m1.gml"
+- "graphs_final/other_graphs_final/sdcard_mass_storage_controller_latest/gscl45nm/sd_cmd_serial_host_combined_m1.gml"
+- "graphs_final/other_graphs_final/sdcard_mass_storage_controller_latest/osu035/sd_cmd_phy_combined_m1.gml"
+- "graphs_final/other_graphs_final/sdcard_mass_storage_controller_latest/osu035/sd_cmd_serial_host_combined_m1.gml"
+
+
+
+######### ssp_uart_latest
+- "graphs_final/other_graphs_final/ssp_uart_latest/gscl45nm/UART_INT_combined_m1.gml"
+- "graphs_final/other_graphs_final/ssp_uart_latest/osu035/UART_INT_combined_m1.gml"
+
+
+########## suslik_latest
+- "graphs_final/other_graphs_final/suslik_latest/osu035/brpred_combined_m1.gml"
+- "graphs_final/other_graphs_final/suslik_latest/osu035/regfileint0_combined_m1.gml"
+
+
+##### signed_integer_divider_latest
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/nangate/adder_32bit_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/gscl45nm/shift_15b_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/gscl45nm/divider_dshift_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/gscl45nm/adder_32bit_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/gscl45nm/shift_3b_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/gscl45nm/shift_7b_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/osu035/shift_15b_combined_m1.gml"
+# - "graphs_final/other_graphs_final/signed_integer_divider_latest/osu035/divider_dshift_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/osu035/adder_32bit_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/osu035/shift_3b_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/osu035/shift_7b_combined_m1.gml"
+
+####### trigonometric_functions_in_double_fpu_latest
+- "graphs_final/crypto_graphs_final/trigonometric_functions_in_double_fpu_latest/nangate/top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/trigonometric_functions_in_double_fpu_latest/gscl45nm/top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/trigonometric_functions_in_double_fpu_latest/osu035/top_combined_m1.gml"
+
+
+ ###### tiny_aes_latest
+# - "graphs_final/crypto_graphs_final/tiny_aes_latest/osu035/aes_128_combined_m1.gml"
+
+
+##### uart2spi_latest
+- "graphs_final/other_graphs_final/uart2spi_latest/nangate/uart_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/uart2spi_latest/gscl45nm/uart_core_combined_m1.gml"
+- "graphs_final/other_graphs_final/uart2spi_latest/osu035/uart_core_combined_m1.gml"
+
+
+##### usbhostslave_latest
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbHostCyc2Wrap_combined_m1.gml"
+# - "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbSerialInterfaceEngine_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/RxFifo_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbHostSlaveCyc2Wrap_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbHost_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbHostControl_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbHostSlave_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbHostCyc2Wrap_usb1t11_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbSlaveCyc2Wrap_usb1t11_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbHostSlaveAvalonWrap_combined_m1.gml"
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbSlaveControl_combined_m1.gml"
+
+########## usb_device_core_latest
+- "graphs_final/other_graphs_final/usb_device_core_latest/gscl45nm/usbf_sie_tx_combined_m1.gml"
+- "graphs_final/other_graphs_final/usb_device_core_latest/osu035/usbf_sie_tx_combined_m1.gml"
+
+
+####### verilog-axi-librecores
+- "graphs_final/other_graphs_final/verilog-axi-librecores/osu035/arbiter_combined_m1.gml"
+- "graphs_final/other_graphs_final/verilog-axi-librecores/osu035/axil_register_combined_m1.gml"
+
+
+val_gml:
+
+## crypto set 
+- "graphs_final/crypto_graphs_final/gcm-aes_latest/nangate/gcm_aes_v0_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/nangate/aes_key_expand_128_combined_m1.gml"
+- "graphs_final/other_graphs_final/sha1-master/nangate/sha1_core_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/nangate/gost89_pipelined_ecb_encrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/gost28147-89_latest/osu035/gost89_cfb_decrypt_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/des_latest/gscl45nm/des_combined_m1.gml"
+
+
+### other set 
+- "graphs_final/other_graphs_final/usbhostslave_latest/osu035/usbSerialInterfaceEngine_combined_m1.gml"
+- "graphs_final/other_graphs_final/signed_integer_divider_latest/osu035/divider_dshift_combined_m1.gml"
+- "graphs_final/other_graphs_final/rs_decoder_31_19_6_latest/gscl45nm/degree6_cell_combined_m1.gml"
+- "graphs_final/other_graphs_final/openmsp430_latest/osu035/altera_reset_controller_combined_m1.gml"
+- "graphs_final/other_graphs_final/nextz80_latest/osu035/Next8080_combined_m1.gml"
+- "graphs_final/other_graphs_final/mips32r1_latest/gscl45nm/uart_bootloader_combined_m1.gml"
+- "graphs_final/other_graphs_final/ft816float_latest/nangate/fpMulnr_combined_m1.gml"
+- "graphs_final/other_graphs_final/edge_latest/gscl45nm/id_ex_pipereg_combined_m1.gml"
+
+
+test_gml:
+###### fixed_point_arithmetic_parameterized_latest
+- "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/nangate/qmult_combined_m1.gml"
+- "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/nangate/top_combined_m1.gml"
+- "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/gscl45nm/qmult_combined_m1.gml"
+- "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/gscl45nm/top_combined_m1.gml"
+- "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/osu035/qmult_combined_m1.gml"
+- "graphs_final/other_graphs_final/fixed_point_arithmetic_parameterized_latest/osu035/top_combined_m1.gml"
+

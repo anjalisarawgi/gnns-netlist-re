@@ -5,10 +5,12 @@ lr: 0.001
 loss_type : "ce_weighted" #ce_weighted #ce_soft
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
+# use_augmentation: true
 #  use_scheduler : true
-# use_partition_features: true
+use_partition_features: true
 # use_unsupervised_features: true
 # use_unsupervised_features_louvian: true
+
 
 
 train_gml:

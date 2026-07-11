@@ -1,11 +1,11 @@
-model: graphsage
+model: BiDirectedGraphSAGE
 epochs: 300
 set_gradient_clipping: true
 lr: 0.001
 loss_type : "ce_weighted" #ce_weighted #ce_soft
 training_mode: "fullgraph"
 fullgraph_mode: "per_design"
-# use_augmentation: true
+use_augmentation: true
 # aug_gate_flip_frac: 0.10
 # aug_edge_corrupt_frac: 0.10
 #  use_scheduler : true
@@ -68,7 +68,7 @@ val_gml:
 
 test_gml:
 - "graphs_final/crypto_graphs_final/aes_core/nangate/aes_key_expand_128_combined_m1.gml" 
-- "graphs_final/crypto_graphs_final/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml"
+- "graphs_final/crypto_graphs_final/aes_core/nangate/aes_inv_cipher_top_combined_m1.gml" #
 - "graphs_final/crypto_graphs_final/aes_core/nangate/aes_cipher_top_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/aes_core/gscl45nm/aes_key_expand_128_combined_m1.gml"
 - "graphs_final/crypto_graphs_final/aes_core/gscl45nm/aes_inv_cipher_top_combined_m1.gml"

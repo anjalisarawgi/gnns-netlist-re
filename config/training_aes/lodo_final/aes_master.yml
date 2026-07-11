@@ -1,4 +1,4 @@
-model: GAAN
+model: graphsage
 epochs: 300
 set_gradient_clipping: true
 lr: 0.001
