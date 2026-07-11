@@ -4,12 +4,13 @@ import json
 import networkx as nx  
 from tqdm import tqdm  
 
-cfg_path = "config/file_paths/final/final_config_list.yml"
+# cfg_path = "config/file_paths/final/final_config_list.yml"
+cfg_path = "config/new_list.yml"
 cfg = yaml.safe_load(Path(cfg_path).read_text())
 gml_paths = cfg.get("train_gml", []) + cfg.get("val_gml", []) + cfg.get("test_gml", [])
 
 log_file = "gml_missing_boundary.log"
-json_stats_file = "final_graph_stats_m1.json"
+json_stats_file = "new_designs/new_list_stats.json"
 
 missing_boundary = []
 graph_stats = {}
@@ -54,6 +55,14 @@ for p in tqdm(gml_paths, desc="Processing GML files"):
 
         stat["num_unique_partitions"] = num_unique_modules
         stat["unique_partitions"] = list(unique_partitions)
+
+        # 1. Graph density
+        stat["graph_density"] = nx.density(G)
+
+        # 3. Number of Louvain communities (from existing node attribute)
+        louvain_clusters = [G.nodes[n].get("unsup_louvain_cluster") for n in G.nodes]
+        louvain_clusters = [v for v in louvain_clusters if v is not None]
+        stat["num_louvain_communities"] = len(set(louvain_clusters)) if louvain_clusters else 0
 
         graph_stats[str(path)] = stat
 

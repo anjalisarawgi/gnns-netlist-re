@@ -44,6 +44,7 @@ import joblib
 import copy
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cpu")
 print("[INFO] Using device:", device)
 
 def set_seed(seed=42):
@@ -251,8 +252,9 @@ parser.add_argument("--use_lib_id", action="store_true", help="append library on
 parser.add_argument("--use_design_id", action="store_true", help="append design one-hot to node features (leaky if testing unseen designs!)")
 ##### test block end
 parser.add_argument("--use_augmentation",      action="store_true")
-parser.add_argument("--aug_gate_flip_frac",    type=float, default=0.10)
-parser.add_argument("--aug_edge_corrupt_frac", type=float, default=0.10)
+parser.add_argument("--aug_gate_flip_frac",    type=float, default=0.05)
+parser.add_argument("--aug_edge_corrupt_frac", type=float, default=0.025)
+parser.add_argument("--aug_feat_noise_frac", type=float, default=0.05, help="fraction of nodes to apply continuous feature scaling to")
 # cofnig 
 parser.add_argument("--config", type=str, help="Path to YAML config file")
 args = parser.parse_args()
@@ -301,7 +303,11 @@ config_prefix = config_tag if config_tag is not None else "no_config"
 
 if args.training_mode == "fullgraph":
     run_name = (
-        f"51lodo_31f_{args.model}_{args.loss_type}_"
+        # f"aesEVAL_{args.model}_{args.loss_type}_"
+        # f"trainingAEs_{args.model}_{args.loss_type}_"
+        # f"NOISE_crypto_{args.model}_{args.loss_type}_"
+        # f"NEWDESIGNS_crypto_{args.model}_{args.loss_type}_"
+        f"LIB_ablation_51_{args.model}_{args.loss_type}_"
         f"fullgraph_{args.fullgraph_mode}_"
         f"{config_prefix}"
     )
@@ -448,47 +454,119 @@ def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=N
 # a) x = node features (matrix)
 # b) y = node labels 
 # c) edge_index = edges (2xE tensor)
+# def augment_graph_noise(data: Data,
+#                         n_categorical: int = 14,
+#                         gate_flip_frac: float = 0.10,
+#                         edge_corrupt_frac: float = 0.10) -> Data:
+#     """
+#     Simulates real-world circuit noise:
+#       1) Gate mislabelling  — randomly swap one-hot gate type for gate_flip_frac of nodes
+#       2) Wrong wires        — randomly drop + add edges for edge_corrupt_frac of edges
+#     Continuous features (indeg, outdeg, ratio) are left alone — in a real
+#     corrupted netlist these would change too, but recomputing them is expensive.
+#     """
+#     data = data.clone()
+#     N = data.x.size(0)
+#     E = data.edge_index.size(1)
+
+#     # --- 1. gate label corruption (one-hot swap) ---
+#     n_flip = max(1, int(gate_flip_frac * N))
+#     flip_idx = torch.randperm(N)[:n_flip]
+#     # pick a random different gate type for each flipped node
+#     random_gates = torch.randint(0, n_categorical, (n_flip,))
+#     new_onehot = torch.zeros(n_flip, n_categorical)
+#     new_onehot[torch.arange(n_flip), random_gates] = 1.0
+#     data.x[flip_idx, :n_categorical] = new_onehot
+
+#     # --- 2. edge corruption (drop + add random edges) ---
+#     n_corrupt = max(1, int(edge_corrupt_frac * E))
+
+#     # drop n_corrupt random existing edges
+#     keep_mask = torch.ones(E, dtype=torch.bool)
+#     drop_idx = torch.randperm(E)[:n_corrupt]
+#     keep_mask[drop_idx] = False
+#     kept_edges = data.edge_index[:, keep_mask]
+
+#     # add n_corrupt random new edges to replace them
+#     rand_src = torch.randint(0, N, (n_corrupt,))
+#     rand_dst = torch.randint(0, N, (n_corrupt,))
+#     new_edges = torch.stack([rand_src, rand_dst], dim=0)
+
+#     data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
+
+#     return data
+
+
 def augment_graph_noise(data: Data,
                         n_categorical: int = 14,
                         gate_flip_frac: float = 0.10,
-                        edge_corrupt_frac: float = 0.10) -> Data:
-    """
-    Simulates real-world circuit noise:
-      1) Gate mislabelling  — randomly swap one-hot gate type for gate_flip_frac of nodes
-      2) Wrong wires        — randomly drop + add edges for edge_corrupt_frac of edges
-    Continuous features (indeg, outdeg, ratio) are left alone — in a real
-    corrupted netlist these would change too, but recomputing them is expensive.
-    """
+                        edge_corrupt_frac: float = 0.10,
+                        feat_noise_frac: float = 0.10,
+                        feat_scale_half_frac: float = 0.5,
+                        feat_scale_min: float = 0.80,
+                        feat_scale_max: float = 1.20) -> Data:
+
+    torch.manual_seed(42)
+    np.random.seed(42)
+    random.seed(42)
+
     data = data.clone()
     N = data.x.size(0)
     E = data.edge_index.size(1)
+    n_cont = data.x.size(1) - n_categorical
 
     # --- 1. gate label corruption (one-hot swap) ---
     n_flip = max(1, int(gate_flip_frac * N))
     flip_idx = torch.randperm(N)[:n_flip]
-    # pick a random different gate type for each flipped node
     random_gates = torch.randint(0, n_categorical, (n_flip,))
     new_onehot = torch.zeros(n_flip, n_categorical)
     new_onehot[torch.arange(n_flip), random_gates] = 1.0
     data.x[flip_idx, :n_categorical] = new_onehot
 
     # --- 2. edge corruption (drop + add random edges) ---
-    n_corrupt = max(1, int(edge_corrupt_frac * E))
+    if edge_corrupt_frac > 0:
+        n_corrupt = max(1, int(edge_corrupt_frac * E))
 
-    # drop n_corrupt random existing edges
-    keep_mask = torch.ones(E, dtype=torch.bool)
-    drop_idx = torch.randperm(E)[:n_corrupt]
-    keep_mask[drop_idx] = False
-    kept_edges = data.edge_index[:, keep_mask]
+        src_nodes = data.edge_index[0]
+        dst_nodes = data.edge_index[1]
+        degree = torch.zeros(N, dtype=torch.long)
+        degree.scatter_add_(0, src_nodes, torch.ones(E, dtype=torch.long))
 
-    # add n_corrupt random new edges to replace them
-    rand_src = torch.randint(0, N, (n_corrupt,))
-    rand_dst = torch.randint(0, N, (n_corrupt,))
-    new_edges = torch.stack([rand_src, rand_dst], dim=0)
+        safe_to_drop = (degree[src_nodes] > 1) & (degree[dst_nodes] > 1)
+        candidate_idx = torch.where(safe_to_drop)[0]
 
-    data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
+        if len(candidate_idx) >= n_corrupt:
+            perm = torch.randperm(len(candidate_idx))[:n_corrupt]
+            drop_idx = candidate_idx[perm]
+        else:
+            drop_idx = candidate_idx
+
+        keep_mask = torch.ones(E, dtype=torch.bool)
+        keep_mask[drop_idx] = False
+        kept_edges = data.edge_index[:, keep_mask]
+
+        n_actually_dropped = keep_mask.logical_not().sum().item()
+        rand_src = torch.randint(0, N, (n_actually_dropped,))
+        rand_dst = torch.randint(0, N, (n_actually_dropped,))
+        new_edges = torch.stack([rand_src, rand_dst], dim=0)
+        data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
+
+    # --- 3. continuous feature scaling ---
+    if n_cont > 0:
+        n_noisy_nodes = max(1, int(feat_noise_frac * N))
+        noisy_node_idx = torch.randperm(N)[:n_noisy_nodes]
+
+        n_feats_to_perturb = max(1, int(feat_scale_half_frac * n_cont))
+
+        for node_i in noisy_node_idx:
+            feat_subset = torch.randperm(n_cont)[:n_feats_to_perturb]
+            scales = torch.empty(n_feats_to_perturb).uniform_(feat_scale_min, feat_scale_max)
+            data.x[node_i, n_categorical + feat_subset] *= scales
 
     return data
+
+
+
 def load_single_gml(gml_path, remove_edges = False):
     print("[INFO] Calling gml from path:", gml_path)
     
@@ -517,7 +595,7 @@ def load_single_gml(gml_path, remove_edges = False):
 
         if args.use_partition_features:     
             partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
-            partition_feat = partition_feat[2:3]
+            # partition_feat = partition_feat[2:3]
             # partition_feat_twoHop = partition_feat[1]
             feat = list(feat) +list(partition_feat)
             # feat = list(feat) + [float(partition_feat_twoHop)]
@@ -654,8 +732,6 @@ def load_single_gml(gml_path, remove_edges = False):
     print("[FEATURE DIM CHECK]")
     print("  base features dim           :", base_feat_dim)
 
-    if args.use_partition_features:
-        print("  after partition features   :", after_partition_dim)
 
     if args.use_graph_features:
         print("  after graph features       :", after_graph_dim)
@@ -1812,8 +1888,15 @@ if __name__ == "__main__":
         dtype=torch.float32
     )
 
+    # block added to save the scaler
+    run_dir = os.path.join("models", "gnns", wandb.run.name)
+    os.makedirs(run_dir, exist_ok=True)
+    scaler_path = os.path.join(run_dir, "scaler.pkl")
+    joblib.dump(scaler, scaler_path)
+    print("[INFO] Saved scaler to:", scaler_path)
 
-    
+
+        
     for g in train_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
         
@@ -1843,6 +1926,16 @@ if __name__ == "__main__":
     #         test_graphs[i] = (path, augment_graph_noise(g, n_categorical=NUM_CATEGORICAL,
     #                                                      gate_flip_frac=args.aug_gate_flip_frac,
     #                                                      edge_corrupt_frac=args.aug_edge_corrupt_frac))
+
+    # for i, (path, g) in enumerate(test_graphs):
+    #     if args.use_augmentation:
+    #         g = augment_graph_noise(g,
+    #                                 n_categorical=NUM_CATEGORICAL,
+    #                                 gate_flip_frac=args.aug_gate_flip_frac,
+    #                                 edge_corrupt_frac=args.aug_edge_corrupt_frac,
+    #                                 feat_noise_frac=args.aug_feat_noise_frac)
+    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
+    #     test_graphs[i] = (path, g)
 
 
     print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())

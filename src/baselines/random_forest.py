@@ -100,7 +100,7 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
             continue
 
         feat = list(attr.get("features", []))
-        feat = feat[:14] # skipping distance io feature (feature 43)
+        feat = feat[:42] # skipping distance io feature (feature 43)
         # if args.use_partition_features:
         #     partition_feat = attr.get("partition_features", [0.0, 0.0, 0.0])
         #     partition_feat = partition_feat[2:3]
@@ -130,6 +130,17 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
           f"boundary={y.sum()}  non-boundary={(y == 0).sum()}")
     return X, y
 
+def load_graph_features_cached(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
+    cache_path = Path(gml_path).with_suffix(".npz")
+    if cache_path.exists():
+        data = np.load(cache_path)
+        print(f"  [CACHE HIT] {Path(gml_path).name}")
+        return data["X"], data["y"]
+    X, y = load_graph_features(gml_path, args)
+    np.savez(cache_path, X=X, y=y)
+    print(f"  [CACHE SAVED] {Path(gml_path).name}")
+    return X, y
+    
 
 def pr_auc(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     if y_true.min() == y_true.max():
@@ -150,6 +161,46 @@ def macro_avg(results: list[dict]) -> dict:
     keys = results[0].keys()
     return {k: float(np.mean([r[k] for r in results])) for k in keys}
 
+def save_predictions_to_gml(gml_path: str, y_true: np.ndarray, y_pred: np.ndarray, y_prob: np.ndarray, out_dir: Path):
+    from sklearn.metrics import precision_recall_curve
+    G = nx.read_gml(gml_path)
+    labeled_nodes = [n for n in G.nodes() if "boundary" in G.nodes[n]]
+
+    # best threshold
+    precision, recall, thresholds = precision_recall_curve(y_true, y_prob)
+    f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
+    best_thresh = float(thresholds[np.argmax(f1_scores[:-1])])
+    pred_best = (y_prob >= best_thresh).astype(int)
+
+    # top-k ratio
+    k = max(1, int(np.ceil(float((y_true == 1).mean()) * len(y_prob))))
+    pred_ratio = np.zeros(len(y_prob), dtype=int)
+    pred_ratio[np.argsort(-y_prob)[:k]] = 1
+
+    def cls(yt, yp):
+        if yt == 1 and yp == 1: return "TP"
+        if yt == 0 and yp == 1: return "FP"
+        if yt == 1 and yp == 0: return "FN"
+        return "TN"
+
+    for i, node in enumerate(labeled_nodes):
+        G.nodes[node]["prob"]               = float(y_prob[i])
+        G.nodes[node]["pred_default"]       = int(y_pred[i])
+        G.nodes[node]["pred_best"]          = int(pred_best[i])
+        G.nodes[node]["pred_ratio"]         = int(pred_ratio[i])
+        G.nodes[node]["pred_class_default"] = cls(y_true[i], y_pred[i])
+        G.nodes[node]["pred_class_best"]    = cls(y_true[i], pred_best[i])
+        G.nodes[node]["pred_class_ratio"]   = cls(y_true[i], pred_ratio[i])
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    parts = Path(gml_path).parts  # e.g. ('graphs_final', 'crypto_graphs_final', 'aes_core', 'nangate', 'aes_key_expand_128_combined_m1.gml')
+    design = parts[-3]   # e.g. aes_core
+    library = parts[-2]  # e.g. nangate
+    stem = Path(gml_path).stem  # e.g. aes_key_expand_128_combined_m1
+    out_path = out_dir / f"{design}__{library}__{stem}.gml"
+
+    nx.write_gml(G, out_path)
+    print(f"  [GML SAVED] {out_path}")
 
 
 ID2LABEL = {0: "not_boundary", 1: "boundary"}
@@ -172,6 +223,8 @@ def evaluate_splits(clf, tag, val_data, test_data, args, feature_mask=None):
         y_pred = clf.predict(_slice(X_test))
         y_prob = clf.predict_proba(_slice(X_test))[:, 1]
         test_results.append(evaluate(name, f"{tag} TEST", y_test, y_pred, y_prob))
+        save_predictions_to_gml(path, y_test, y_pred, y_prob, Path("results") / args.mode / "predictions")  # <-- add this
+
     print(f" MACRO (TEST): {macro_avg(test_results)}")
 
     return test_results
@@ -250,8 +303,12 @@ def run_tabicl(X_train, y_train, val_data, test_data, args):
 def run_rf(X_train, y_train, val_data, test_data, args):
     # on all features
     rf_all = RandomForestClassifier( n_estimators=args.n_estimators, max_depth=None, class_weight="balanced", n_jobs=-1, random_state=args.seed)
+    t0 = time.time()
     rf_all.fit(X_train, y_train)
-    print("rf training done complete")
+    train_time = time.time() - t0
+    print(f"rf training done | Train time: {train_time:.2f}s ({train_time/60:.2f} min)")
+    # rf_all.fit(X_train, y_train)
+    # print("rf training done complete")
     test_results_all = evaluate_splits(rf_all, "RF-ALL", val_data, test_data, args)
 
     # # taking top k 
@@ -272,14 +329,23 @@ def run_rf(X_train, y_train, val_data, test_data, args):
     # print("Training complete.")
     # test_results_sel = evaluate_splits( rf_sel, f"RF-TOP{args.top_k}", val_data, test_data, args, feature_mask=top_features)
 
-    return {
-        # "val_macro_all":      macro_avg(val_results_all),
-        # "val_macro_selected": macro_avg(val_results_sel),
-        "test_macro_all":     macro_avg(test_results_all),
-        # "test_macro_selected":macro_avg(test_results_sel),
-        # "top_features":       top_features.tolist(),
-    }
+    # for tabpfn, tabical and rf
+    # return {
+    #     # "val_macro_all":      macro_avg(val_results_all),
+    #     # "val_macro_selected": macro_avg(val_results_sel),
+    #     "test_macro_all":     macro_avg(test_results_all),
+    #     # "test_macro_selected":macro_avg(test_results_sel),
+    #     # "top_features":       top_features.tolist(),
+    # }
 
+    # onlt for rf
+    return {
+        "test_macro_all": macro_avg(test_results_all),
+        "test_per_graph": [
+            {"name": name, **r}
+            for (name, path, X, y), r in zip(test_data, test_results_all)
+        ],
+    }
 
 def main():
     args = parse_args()
@@ -288,7 +354,7 @@ def main():
     print("train graphs:::")
     X_parts, y_parts = [], []
     for path in args.train_gml:
-        X, y = load_graph_features(path, args)
+        X, y = load_graph_features_cached(path, args)
         X_parts.append(X)
         y_parts.append(y)
     X_train = np.vstack(X_parts)
@@ -298,13 +364,13 @@ def main():
     print("validation graphs:::")
     val_data = []
     for path in args.val_gml:
-        X, y = load_graph_features(path, args)
+        X, y = load_graph_features_cached(path, args)
         val_data.append((Path(path).stem, path, X, y))
 
     print("test graphs:::")
     test_data = []
     for path in args.test_gml:
-        X, y = load_graph_features(path, args)
+        X, y = load_graph_features_cached(path, args)
         test_data.append((Path(path).stem, path, X, y))
    
     # scaling - for tabpfn and tabicl 
@@ -315,6 +381,7 @@ def main():
     test_data_scaled = [(name, path, scaler.transform(X), y) for name, path, X, y in test_data]
 
     if args.mode == "rf":
+        
         results_summary = run_rf(X_train, y_train, val_data, test_data, args)
     elif args.mode == "tabpfn":
         # results_summary = run_tabpfn(X_train, y_train, val_data, test_data, args)
@@ -323,6 +390,17 @@ def main():
         results_summary = run_tabicl(X_train_scaled, y_train, val_data_scaled, test_data_scaled, args)
 
     print("completed")
+
+    # --- save results ---
+    config_stem = Path(args.config).stem if args.config else "no_config"
+    out_dir = Path("results") / args.mode
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{config_stem}.json"
+
+    with open(out_path, "w") as f:
+        json.dump(results_summary, f, indent=4)
+
+    print(f"[INFO] Results saved to: {out_path}")
 
 
 if __name__ == "__main__":

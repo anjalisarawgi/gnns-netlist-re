@@ -1,6 +1,6 @@
 import json
 
-with open("final_graph_stats_m1.json", "r") as f:
+with open("final_graph_stats_m1_apr18.json", "r") as f:
     data = json.load(f)
 
 simple_graph = {}
@@ -12,10 +12,10 @@ for key, value in data.items():
     else:
         complex_graph[key] = value
 
-with open("simple_graph.json", "w") as f:
+with open("simple_graph_new.json", "w") as f:
     json.dump(simple_graph, f, indent=2)
 
-with open("complex_graph.json", "w") as f:
+with open("complex_graph_new.json", "w") as f:
     json.dump(complex_graph, f, indent=2)
 
 print("Split complete ✅")

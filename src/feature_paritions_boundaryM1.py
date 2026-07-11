@@ -45,10 +45,6 @@ def encode_gate(gate_type: str):
 
 
 def count_1hop_gate_types(node, G_und, G_dir):
-    """
-    Returns a vector of length |GATE_TYPES|
-    where each entry counts 1-hop neighbors of that gate type.
-    """
     counts = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
 
     for nb in G_und.neighbors(node):
@@ -68,9 +64,6 @@ def normalize_counts(counts: torch.Tensor):
     
 
 def count_2hop_gate_types(node, G_und, G_dir):
-    """
-    Returns counts of gate types exactly 2 hops away.
-    """
     counts = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
 
     neighbors_1 = set(G_und.neighbors(node))
@@ -245,29 +238,16 @@ def fraction_same_partition_2hop(node, G_und, G_dir):
     return same / len(nodes_2hop)
 
 def compute_structural_edge_features(G_dir, edge_index_list):
-    """
-    Generates features for every wire (edge) in the circuit.
-    """
     edge_attrs = []
     
-    # Pre-calculate node degrees for speed
     in_degrees = dict(G_dir.in_degree())
     out_degrees = dict(G_dir.out_degree())
     
     for u, v in edge_index_list:
-        # Feature 1: Fan-out of the source (How many gates does this signal feed?)
         src_fan_out = float(out_degrees.get(u, 1))
-        
-        # Feature 2: Fan-in of the destination (How many signals feed this gate?)
         dst_fan_in = float(in_degrees.get(v, 1))
-        
-        # Feature 3: Leverage Ratio (Does a big driver feed a small gate?)
         leverage = src_fan_out / (dst_fan_in + 1e-6)
-        
-        # Feature 4: Is it a "Feedback" edge? (Heuristic: u has higher index than v)
-        # This can help find loops in sequential logic.
         is_feedback = 1.0 if str(u) > str(v) else 0.0
-
         edge_feat = [src_fan_out, dst_fan_in, leverage, is_feedback]
         edge_attrs.append(edge_feat)
         
@@ -275,13 +255,14 @@ def compute_structural_edge_features(G_dir, edge_index_list):
 
 def get_unique_partition_count(G_dir):
     partitions = set()
-
     for _, data in G_dir.nodes(data=True):
         p = _clean_partition(data.get("partition"))
         if p is not None:
             partitions.add(p)
 
     return float(len(partitions))
+
+
 
 def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
     print("Processing:", input_gml)
@@ -425,7 +406,7 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
             float(ego_density),
             kcore, pager, 
             f_reach, b_reach, reach_asym, deg_contrast, 
-            # d_io, # input output infoa
+            d_io, # input output infoa
         ], dtype=torch.float32)
 
         x = torch.cat([gate_feats, struct_feats])
@@ -532,8 +513,13 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
 # ROOT_RAW = "crypto_graphs_final/raw_final/rawv4"
 # ROOT_OUT = "crypto_graphs_final/processed_final/"
-ROOT_RAW = "other_graphs_final/raw_final/rawv4"
-ROOT_OUT = "other_graphs_final/processed_final/"
+# ROOT_RAW = "other_graphs_final/raw_final/rawv4"
+# ROOT_OUT = "other_graphs_final/processed_final/"
+ROOT_RAW = "new_designs/tum_risc/"
+ROOT_OUT = "new_designs/tum_risc_processed/"
+
+
+
 
 processed_dirs = {}
 usable_graphs = []
@@ -552,7 +538,7 @@ for design in os.listdir(ROOT_RAW):
         if not os.path.isdir(tech_path):
             continue
 
-        print(f"\n=== Processing design: {design} | tech: {tech} ===\n")
+        print(f"Processing design: {design} | tech: {tech}")
 
         out_dir = os.path.join(ROOT_OUT, design, tech)
         os.makedirs(out_dir, exist_ok=True)

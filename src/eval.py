@@ -11,12 +11,13 @@ from gnn.gcn import GCN
 from gnn.gat import gat
 from gnn.graphTransformer import GraphTransformer
 from torch_geometric.data import Data
+import argparse
+import json
+import torch
+import os
 
 
-
-# ---------------------------------------------------------------------
-# Load GML → Data object (same logic as your training script)
-# ---------------------------------------------------------------------
+# same function as in train
 def load_aisec_single_gml(gml_path, binary_label=True, label_mode="subcircuit_name"):
     G = nx.read_gml(gml_path, label="id")
     nodes = list(G.nodes())
@@ -35,18 +36,14 @@ def load_aisec_single_gml(gml_path, binary_label=True, label_mode="subcircuit_na
 
         if binary_label:
             if label_mode == "boundary":
-                # numeric boundary 0/1
                 boundary = attr.get("boundary", 0)
                 try:
                     labels.append(int(boundary))
                 except:
                     labels.append(0)
             else:
-                # sbox vs not_sbox
                 label_name = attr.get("subcircuit_name", "unknown")
                 labels.append(1 if label_name == "sbox" else 0)
-        else:
-            raise ValueError("Only binary mode supported in evaluation script.")
 
     features = normalize_features(np.array(features, dtype=np.float32))
     labels = torch.tensor(labels, dtype=torch.long)
@@ -58,7 +55,6 @@ def load_aisec_single_gml(gml_path, binary_label=True, label_mode="subcircuit_na
 
     edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
 
-    # masks = all nodes are test nodes
     num_nodes = len(nodes)
     mask = torch.ones(num_nodes, dtype=torch.bool)
 
@@ -80,9 +76,7 @@ def load_aisec_single_gml(gml_path, binary_label=True, label_mode="subcircuit_na
 
 
 
-# ---------------------------------------------------------------------
-# Load trained model
-# ---------------------------------------------------------------------
+
 def load_model(model_type, in_dim, out_dim, model_path):
     if model_type == "graphsage":
         model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
@@ -108,9 +102,8 @@ def load_model(model_type, in_dim, out_dim, model_path):
     model.eval()
 
     return model
-# ---------------------------------------------------------------------
-# Evaluate
-# ---------------------------------------------------------------------
+
+
 @torch.no_grad()
 def evaluate(model, data):
     out = model(data.x, data.edge_index)
@@ -140,9 +133,7 @@ def evaluate(model, data):
 
 
 
-# ---------------------------------------------------------------------
-# Save predictions back into GML
-# ---------------------------------------------------------------------
+#saving
 def save_predictions_to_gml(original_gml_path, id2name, preds, out_path):
     G = nx.read_gml(original_gml_path, label="id")
     nodes = list(G.nodes())
@@ -154,13 +145,6 @@ def save_predictions_to_gml(original_gml_path, id2name, preds, out_path):
     nx.write_gml(G, out_path)
     print(f"[INFO] Saved prediction GML → {out_path}")
 
-
-import argparse
-import json
-import torch
-import os
-
-# ... your existing imports and functions above ...
 
 
 if __name__ == "__main__":
@@ -191,11 +175,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # ------------------------------------------------------------
-    # Prepare results directory
-    # ------------------------------------------------------------
 
-    # Use the model_path EXACTLY as the folder name
+    #  folder name = model_path
     model_name = args.model_path
 
     results_dir = os.path.join("results", model_name)
@@ -207,29 +188,24 @@ if __name__ == "__main__":
         with open(csv_path, "w") as f:
             f.write("graph,num_nodes,num_edges,f1,precision,recall,total_acc,class1_acc,class0_acc\n")
 
-    # ------------------------------------------------------------
-    # Load test graphs either from JSON or from command line
-    # ------------------------------------------------------------
+    # text graphs segment
     test_graphs = []
-
     if args.test_files:
         with open(args.test_files, "r") as f:
             config = json.load(f)
         if "test_graphs" not in config:
-            raise ValueError("JSON missing required key: test_graphs")
+            raise ValueError("missing test_graphs")
         test_graphs = config["test_graphs"]
 
     if args.test_gml:
         test_graphs.extend(args.test_gml)
 
     if len(test_graphs) == 0:
-        raise ValueError("No test graphs provided via --test_files or --test_gml.")
+        raise ValueError("missing test graphs")
 
-    # ------------------------------------------------------------
-    # Evaluate each GML graph
-    # ------------------------------------------------------------
+    # evaluate one graph at a time
     for gml_path in test_graphs:
-        print(f"\n=== Evaluating {gml_path} ===")
+        print(f"Evaluating {gml_path}")
 
         data, id2label, num_nodes, num_edges = load_aisec_single_gml(
             gml_path,
@@ -250,9 +226,6 @@ if __name__ == "__main__":
         metrics = evaluate(model, data)
         print(metrics)
 
-        # ------------------------------------------------------------
-        # Append metrics to global CSV
-        # ------------------------------------------------------------
         with open(csv_path, "a") as f:
             f.write(
                 f"{gml_path},"
@@ -266,9 +239,7 @@ if __name__ == "__main__":
                 f"{metrics['class0_acc']}\n"
             )
 
-        # ------------------------------------------------------------
-        # Save prediction GML into results/<model_name>/
-        # ------------------------------------------------------------
+        # saves to  results/model_name
         base = os.path.splitext(os.path.basename(gml_path))[0]
         out_file = os.path.join(results_dir, f"{base}_predictions.gml")
 

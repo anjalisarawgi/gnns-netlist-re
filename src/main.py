@@ -162,12 +162,6 @@ def log_class_distribution(y, name=""):
 def run_training(train_data, val_data, test_data, train_loader,
                  in_dim, out_dim, id2name=None,
                  model_name="graphsage", use_weighted_loss=False):
-    """
-    Three fully separate graphs:
-      train_data  — train_mask is all-True  (training circuit)
-      val_data    — val_mask   is all-True  (validation circuit)
-      test_data   — test_mask  is all-True  (test circuit)
-    """
     if model_name == "graphsage":
         model = graphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
     elif model_name == "gcn":
@@ -210,7 +204,7 @@ def run_training(train_data, val_data, test_data, train_loader,
                     print(f"    {cls}: {acc:.4f}")
 
     # --- Final test evaluation on held-out test circuit ---
-    print("\n=== Final Test Evaluation ===")
+    print("\n Final Test Evaluation ")
     test_acc = evaluate(model, test_data, test_data.test_mask)
     print(f"Test accuracy: {test_acc:.4f}")
 
@@ -260,7 +254,7 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 
 
 def run_phase1(args):
-    print("=== Phase 1: Fine-grained subcircuit classification ===")
+    print(" Phase 1: Fine-grained subcircuit classification ")
 
     if not args.train_gmls or not args.val_gmls or not args.test_gmls:
         raise ValueError("You must specify --train_gmls, --val_gmls, and --test_gmls")
@@ -339,7 +333,7 @@ def run_phase1(args):
 
 
 def run_phase2(data, model, args, id2name):
-    print("=== Phase 2: Zoom-in on target subcircuit class ===")
+    print(" Phase 2: Zoom-in on target subcircuit class ")
     with open("results/aes_cipher_top_gephi/subcircuit_map.json", "r") as f:
         subcircuit_map = json.load(f)
     print(f"Loaded subcircuit map from JSON.")

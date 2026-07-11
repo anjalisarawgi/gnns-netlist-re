@@ -32,7 +32,6 @@ torch.set_num_interop_threads(2)     # pytorch - helper threads
 os.environ["OMP_NUM_THREADS"] = "20" # max 20 cores (pytorch)
 os.environ["MKL_NUM_THREADS"] = "20" # max 20 cores (intel math libr)
 os.environ["NUMEXPR_NUM_THREADS"] = "20"    # 20 threads max
-# --- optimization - 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
