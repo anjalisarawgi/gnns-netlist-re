@@ -444,53 +444,6 @@ def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=N
     return total_loss
 
 
-## this function takes a .gml graph --> changes to PyTorch Geometric Dataset
-## note:
-# a) x = node features (matrix)
-# b) y = node labels 
-# c) edge_index = edges (2xE tensor)
-# def augment_graph_noise(data: Data,
-#                         n_categorical: int = 14,
-#                         gate_flip_frac: float = 0.10,
-#                         edge_corrupt_frac: float = 0.10) -> Data:
-#     """
-#     Simulates real-world circuit noise:
-#       1) Gate mislabelling  — randomly swap one-hot gate type for gate_flip_frac of nodes
-#       2) Wrong wires        — randomly drop + add edges for edge_corrupt_frac of edges
-#     Continuous features (indeg, outdeg, ratio) are left alone — in a real
-#     corrupted netlist these would change too, but recomputing them is expensive.
-#     """
-#     data = data.clone()
-#     N = data.x.size(0)
-#     E = data.edge_index.size(1)
-
-#     # --- 1. gate label corruption (one-hot swap) ---
-#     n_flip = max(1, int(gate_flip_frac * N))
-#     flip_idx = torch.randperm(N)[:n_flip]
-#     # pick a random different gate type for each flipped node
-#     random_gates = torch.randint(0, n_categorical, (n_flip,))
-#     new_onehot = torch.zeros(n_flip, n_categorical)
-#     new_onehot[torch.arange(n_flip), random_gates] = 1.0
-#     data.x[flip_idx, :n_categorical] = new_onehot
-
-#     # --- 2. edge corruption (drop + add random edges) ---
-#     n_corrupt = max(1, int(edge_corrupt_frac * E))
-
-#     # drop n_corrupt random existing edges
-#     keep_mask = torch.ones(E, dtype=torch.bool)
-#     drop_idx = torch.randperm(E)[:n_corrupt]
-#     keep_mask[drop_idx] = False
-#     kept_edges = data.edge_index[:, keep_mask]
-
-#     # add n_corrupt random new edges to replace them
-#     rand_src = torch.randint(0, N, (n_corrupt,))
-#     rand_dst = torch.randint(0, N, (n_corrupt,))
-#     new_edges = torch.stack([rand_src, rand_dst], dim=0)
-
-#     data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
-
-#     return data
-
 
 def augment_graph_noise(data: Data,
                         n_categorical: int = 14,
