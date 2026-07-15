@@ -228,11 +228,11 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     features = normalize_features(np.array(features, dtype=np.float32))
         
     ### DEBUG >>> Label distribution
-    print("\n[DEBUG] Label summary for:", gml_path)
+    print("[DEBUG] Label summary for:", gml_path)
     unique, counts = np.unique(labels.cpu().numpy(), return_counts=True)
     for u, c in zip(unique, counts):
         print(f"  Class {u} ({id2label.get(int(u), '?')}): {c} samples")
-    print(f"  → Total: {len(labels)} nodes")
+    print(f"  Total: {len(labels)} nodes")
     print(f"  Labels tensor shape: {labels.shape}, dtype: {labels.dtype}\n")
 
     print(f"Total labels: {len(labels)}")   
@@ -259,7 +259,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     val_mask[indices[train_cutoff:val_cutoff]] = True 
     test_mask[indices[val_cutoff:]] = True
 
-    # === Optionally remove cross-split edges ===
+    #  Optionally remove cross-split edges 
     if remove_edges:
         print("Removing cross-split edges for inductive setup")
         train_nodes = set(torch.where(train_mask)[0].tolist())
@@ -277,7 +277,7 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
     else:
         print("Keeping all edges")
 
-    # === Final Data object ===
+    #  Final Data object 
     data = Data(
         # x=torch.tensor(features, dtype=torch.float),
         x=torch.as_tensor(features, dtype=torch.float32),
@@ -478,19 +478,14 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         class_weights = None
         print("Using standard cross entropy loss.")
     
-    ### DEBUG >>> Class weights
-    # print("\n[DEBUG] Class weighting info:")
-    # for cls, w in zip(classes, weights):
-    #     label_name = id2name.get(int(cls), f"Class {cls}") if id2name else f"Class {cls}"
-    #     print(f"  {label_name}: weight = {w:.4f}")
-    # print("  → Higher weight means rarer class\n")
+
     last_train_acc = None
     last_val_acc = None
     epochs = args.epochs
     for epoch in range(1, epochs + 1):
         epoch_start = time.perf_counter()
 
-        # === regenerate new k-hop subgraphs every epoch ===
+        #  regenerate new k-hop subgraphs every epoch 
         if args.sampling_method == "khop":
             subgraph_list = ego_subgraphs_from_data(
                 data,
@@ -540,7 +535,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
             pos_acc_key = f"{pos_label}_acc"
             neg_acc_key = f"{neg_label}_acc"
             print(
-                f"[EPOCH {epoch}] testgml → "
+                f"[EPOCH {epoch}] testgml "
                 f"F1={testgml_metrics['f1']:.4f}, "
                 f"precision = {testgml_metrics['precision']:.4f}, "
                 f"recall = {testgml_metrics['recall']:.4f}, "
@@ -649,11 +644,11 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     print("ratio:", ratio)
 
 
-    # === Sampling frequency analysis ===
+    #  Sampling frequency analysis 
     num_nodes = data.num_nodes
     freqs = np.array([appeared_counter.get(i, 0) for i in range(num_nodes)])
 
-    # ---- Effective Sample Size (ESS) ----
+    # ess (effective sample size)
     ess = compute_effective_sample_size(freqs)
     ess_ratio = ess / num_nodes
 
@@ -697,7 +692,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         writer.writerow(["testgml", f"{pos_label}_acc", testgml_pos_acc])
         writer.writerow(["testgml", f"{neg_label}_acc", testgml_neg_acc])
         
-        # === Save coverage statistics ===
+        #  Save coverage statistics 
         writer.writerow(["coverage", "total_nodes", total_nodes])
         writer.writerow(["coverage", "covered_nodes", covered])
         writer.writerow(["coverage", "cumulative_coverage_ratio", ratio])
@@ -722,11 +717,11 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
 
 
-    print("\n=== EFFECTIVE SAMPLE SIZE (ESS) ===")
+    print("EFFECTIVE SAMPLE SIZE (ESS) ")
     print(f"ESS: {ess:.2f}")
     print(f"ESS Ratio: {ess_ratio:.4f}  (ESS / total_nodes)")
 
-    print("\n=== SAMPLING FREQUENCY SUMMARY ===")
+    print("SAMPLING FREQUENCY SUMMARY ")
     print("Min appearances:", freqs.min())
     print("Max appearances:", freqs.max())
     print("Mean appearances:", freqs.mean())
@@ -915,7 +910,7 @@ if __name__ == "__main__":
     # mask = torch.ones_like(testgml_data.y, dtype=torch.bool)
     # f1, precision, recall = evaluate_binary(model, testgml_data, mask)
 
-    print(f"\n=== Cross-graph test (AES→testgml) ===")
+    print(f"Cross-graph test (AES to testgml) ")
     metrics = evaluate_on_dataset(model, testgml_data)
     print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")
     print(f"Total Accuracy   : {metrics['total_acc']:.4f}")

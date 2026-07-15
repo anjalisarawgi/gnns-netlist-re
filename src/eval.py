@@ -101,6 +101,8 @@ def load_model(model_type, in_dim, out_dim, model_path):
     model.load_state_dict(fixed_state)
     model.eval()
 
+    
+
     return model
 
 

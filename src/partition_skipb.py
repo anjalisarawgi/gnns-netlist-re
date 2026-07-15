@@ -42,6 +42,8 @@ import os
 from datetime import datetime
 import joblib
 import copy
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
@@ -66,38 +68,32 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 
     model.eval()
     data = data.to(next(model.parameters()).device)
-
-    # --- forward pass ---
     out = model(data.x, data.edge_index)
     probs_all = torch.softmax(out, dim=1)[:, 1].cpu().numpy()  # all nodes, for GML writing
     labels_all = data.y.cpu().numpy()                           # all nodes, includes -1
 
-    # filter to labeled nodes only for all sklearn calls
     labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (labels_all >= 0)
     probs  = probs_all[labeled_mask]
     labels = labels_all[labeled_mask]
 
-    # --- default prediction (labeled only) ---
     pred_default = (probs >= 0.5).astype(int)
 
-    # --- BEST threshold (F1-based, labeled only) ---
-    from sklearn.metrics import precision_recall_curve
+    #  best threhsolds
     precision, recall, thresholds = precision_recall_curve(labels, probs)
     f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
     best_idx   = np.argmax(f1_scores[:-1])
     best_thresh = thresholds[best_idx]
     pred_best  = (probs >= best_thresh).astype(int)
 
-    # --- RATIO-BASED prediction (top-k, labeled only) ---
-    N          = len(probs)
+    # top-k f1 prediction method
+    N = len(probs)
     true_ratio = float((labels == 1).mean())
-    k          = max(1, int(np.ceil(true_ratio * N)))
+    k = max(1, int(np.ceil(true_ratio * N)))
     idx_sorted = np.argsort(-probs)
     topk_idx   = idx_sorted[:k]
     pred_ratio = np.zeros(N, dtype=int)
     pred_ratio[topk_idx] = 1
 
-    # --- TP / FP / FN / TN (labeled only) ---
     def compute_classes(y_true, y_pred):
         classes = []
         for yt, yp in zip(y_true, y_pred):
@@ -111,8 +107,8 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
     classes_best    = compute_classes(labels, pred_best)
     classes_ratio   = compute_classes(labels, pred_ratio)
 
-    # --- metrics printout ---
-    from sklearn.metrics import f1_score, precision_score, recall_score
+
+
 
     def compute_metrics(y_true, y_pred, name):
         f1 = f1_score(y_true, y_pred, zero_division=0)
@@ -122,17 +118,17 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
         return f1, p, r
 
     print(f"[INFO] Best threshold: {best_thresh:.4f}")
-    print("\n[THRESHOLD COMPARISON]")
+    print("[THRESHOLD COMPARISON]")
     compute_metrics(labels, pred_default, "Default@0.5")
     compute_metrics(labels, pred_best,    f"Best@{best_thresh:.3f}")
     compute_metrics(labels, pred_ratio,   "Top-K (ratio)")
 
-    print("\n[PREDICTED POSITIVE COUNTS]")
+    print("[PREDICTED POSITIVE COUNTS]")
     print(f"Default@0.5        → {pred_default.sum()} nodes")
     print(f"Best@{best_thresh:.3f} → {pred_best.sum()} nodes")
     print(f"Top-K (ratio)      → {pred_ratio.sum()} nodes (target={k})")
 
-    # --- expand predictions back to ALL nodes for GML writing ---
+    # for gml saving
     labeled_indices = np.where(labeled_mask)[0]
 
     pred_default_all   = np.full(len(labels_all), -1, dtype=int)
@@ -150,7 +146,7 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
         classes_best_all[i]    = classes_best[j]
         classes_ratio_all[i]   = classes_ratio[j]
 
-    # --- write to GML ---
+    #for  gml
     G     = nx.read_gml(original_gml_path)
     nodes = list(G.nodes())
 
@@ -186,7 +182,6 @@ class Tee(object):
     def isatty(self):
         return any(getattr(f, 'isatty', lambda: False)() for f in self.files)
 
-# Create logs directory
 os.makedirs("logs", exist_ok=True)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 log_file = open(f"logs/run_{timestamp}.log", "w")
@@ -200,7 +195,7 @@ torch.set_num_interop_threads(2)     # pytorch - helper threads
 os.environ["OMP_NUM_THREADS"] = "10" # max 20 cores (pytorch)
 os.environ["MKL_NUM_THREADS"] = "10" # max 20 cores (intel math libr)
 os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
-# --- optimization - 
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
@@ -515,7 +510,7 @@ def augment_graph_noise(data: Data,
     E = data.edge_index.size(1)
     n_cont = data.x.size(1) - n_categorical
 
-    # --- 1. gate label corruption (one-hot swap) ---
+    # gate label corruption - noise type 1
     n_flip = max(1, int(gate_flip_frac * N))
     flip_idx = torch.randperm(N)[:n_flip]
     random_gates = torch.randint(0, n_categorical, (n_flip,))
@@ -523,7 +518,7 @@ def augment_graph_noise(data: Data,
     new_onehot[torch.arange(n_flip), random_gates] = 1.0
     data.x[flip_idx, :n_categorical] = new_onehot
 
-    # --- 2. edge corruption (drop + add random edges) ---
+    # - noise type 2 -  edge corruption (drop + add random edges)
     if edge_corrupt_frac > 0:
         n_corrupt = max(1, int(edge_corrupt_frac * E))
 
@@ -551,7 +546,7 @@ def augment_graph_noise(data: Data,
         new_edges = torch.stack([rand_src, rand_dst], dim=0)
         data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
 
-    # --- 3. continuous feature scaling ---
+    # noise 3 -  continuous feature scaling
     if n_cont > 0:
         n_noisy_nodes = max(1, int(feat_noise_frac * N))
         noisy_node_idx = torch.randperm(N)[:n_noisy_nodes]
@@ -632,7 +627,6 @@ def load_single_gml(gml_path, remove_edges = False):
             feat = list(feat) + lib_oh.tolist()
 
         if args.use_design_id:
-            # I’d recommend using design_family here, NOT instance, to reduce leakage.
             fam_oh = np.zeros(len(family2id) + 1, dtype=np.float32)  # +1 unknown
             idx = family2id.get(fam, len(family2id))
             fam_oh[idx] = 1.0
@@ -773,11 +767,9 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
 
         total_loss += loss.item()
 
-        # ADD THESE TWO LINES:
         del out, loss
         torch.cuda.empty_cache()
-        # optionally move graph back to CPU to free VRAM between designs
-        g = g.to("cpu")
+        g = g.to("cpu") # moving to cpu for mem 
 
     if args.set_gradient_clipping:
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
@@ -792,7 +784,7 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
     data = data.to(device)
     out = model(data.x, data.edge_index)
 
-     # Compute loss only on labeled nodes
+    # Compute loss only on labeled nodes
     labeled_mask = data.label_mask if hasattr(data, 'label_mask') else (data.y >= 0)
     effective_mask = labeled_mask & data.train_mask
 
@@ -813,9 +805,7 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
     else:
         loss_per_node = F.cross_entropy(out[effective_mask], data.y[effective_mask], reduction="none")
 
-    # train_mask lets you keep future flexibility
     loss = loss_per_node.mean()
-
     loss.backward()
 
 
@@ -1366,7 +1356,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='max', factor=0.5, patience=5, min_lr=1e-6 )
 
-    # ---- coverage tracking ----
+    #  coverage tracking (not needed tbh)
     ever_seen_nodes = set()
     num_nodes = train_data.num_nodes
 
@@ -1571,7 +1561,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
             # wandb.log(wandb_log)
 
-            # ---- VAL GRAPHS ----
+            # val graph ####
             eval_start = time.perf_counter()
 
             val_metrics = defaultdict(list)  # collects lists of per-graph metrics
@@ -1696,10 +1686,9 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 "time/val_eval_sec": time.perf_counter() - eval_start,
             })
 
-            # ---- EARLY STOPPING ----
+            # for early stopping
             current_score = val_macro.get("pr_auc", 0.0)
 
-            # add these lines:
             if args.use_scheduler:
                 scheduler.step(current_score)
                 current_lr = optimizer.param_groups[0]['lr']
@@ -1725,7 +1714,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
 
         if epoch % 20 == 0:
-            print(f"\n[TEST PEEK][Epoch {epoch:03d}]")
+            print(f"[TEST PEEK][Epoch {epoch:03d}]")
             for path, g in test_graphs:
                 name = os.path.splitext(os.path.basename(path))[0]
                 n = evaluate_test(g, model)
