@@ -40,8 +40,8 @@ def parse_args():
     p.add_argument("--n_estimators", type=int, default=100)
 
     # TabICL
-    p.add_argument("--tabicl_n_estimators", type=int, default=8, help="Number of ensemble estimators for TabICL")
-    p.add_argument("--tabicl_batch_size", type=int, default=8, help="Batch size for TabICL inference")
+    p.add_argument("--tabicl_n_estimators", type=int, default=8, help="no. of ensemble estimators for TabICL")
+    p.add_argument("--tabicl_batch_size", type=int, default=8, help="batch size for TabICL inference")
 
     # feature flags
     p.add_argument("--use_partition_features", action="store_true", default=False)

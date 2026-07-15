@@ -58,9 +58,9 @@ print("DATASET SUMMARY")
 for k,v in summary.items():
     print(k, ":", v)
 
-print("\nDesign counts")
+print("Design counts")
 print(df["design"].value_counts())
-print("\nLibrary counts")
+print("Library counts")
 print(df["library"].value_counts())
 
 
@@ -155,8 +155,8 @@ plt.savefig(
 # plt.tight_layout()
 
 # plt.savefig(
-#     "data_statistics/graph_stats_m1/boundary_ratio_per_design.png",
-#     dpi=300
+#   "data_statistics/graph_stats_m1/boundary_ratio_per_design.png",
+#   dpi=300
 # )
 
 # test
@@ -353,8 +353,8 @@ plt.savefig(
 # plt.tight_layout()
 
 # plt.savefig(
-#     "data_statistics/graph_stats_m1/boundary_nodes_vs_modules.png",
-#     dpi=300
+#   "data_statistics/graph_stats_m1/boundary_nodes_vs_modules.png",
+#   dpi=300
 # )
 
 
@@ -477,7 +477,7 @@ print(design_full_stats)
 import matplotlib.pyplot as plt
 import numpy as np
 
-# --- Aggregate per design ---
+#Aggregate per design 
 design_stats = df.groupby("design").agg({
     "boundary_ratio": "mean",
     "nodes": "mean"
@@ -492,11 +492,11 @@ design_stats = design_stats.sort_values("boundary_ratio")
 means = design_stats["boundary_ratio"]
 sizes = design_stats["nodes"]
 
-# --- Normalize sizes for color mapping ---
+#Normalize sizes for color mapping 
 norm = plt.Normalize(sizes.min(), sizes.max())
 colors = plt.cm.viridis(norm(sizes))
 
-# --- Create plot ---
+#Create plot 
 fig, ax = plt.subplots(figsize=(12,6))
 
 bars = ax.bar(
@@ -505,22 +505,22 @@ bars = ax.bar(
     color=colors
 )
 
-# --- Labels & title ---
+#Labels & title 
 ax.set_ylabel("Average boundary ratio")
 ax.set_title("Boundary ratio per design (colored by graph size)")
 
-# --- X ticks ---
+#X ticks 
 ax.set_xticks(range(len(means)))
 ax.set_xticklabels(means.index, rotation=90, fontsize=6)
 
-# --- Colorbar ---
+#Colorbar 
 sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
 sm.set_array([])
 
 cbar = fig.colorbar(sm, ax=ax)
 cbar.set_label("Average number of nodes (graph size)")
 
-# --- Layout ---
+#Layout 
 plt.tight_layout()
 plt.savefig("data_statistics/graph_stats_m1/boundary_ratio_colored.png", dpi=300)
 plt.close()
@@ -531,7 +531,7 @@ plt.close()
 import matplotlib.pyplot as plt
 import numpy as np
 
-# --- compute stats ---
+#compute stats 
 size_stats = df.groupby("design")["nodes"].agg(["mean", "std"]).sort_values("mean")
 
 means = size_stats["mean"]
@@ -539,11 +539,11 @@ stds = size_stats["std"]
 stds = stds.fillna(0)
 x = np.arange(len(means))
 
-# --- normalize colors based on std ---
+#normalize colors based on std 
 norm = plt.Normalize(stds.min(), stds.max())
 colors = plt.cm.viridis(norm(stds))
 
-# --- plot ---
+#plot 
 fig, ax = plt.subplots(figsize=(12,6))
 
 bars = ax.bar(
@@ -552,25 +552,25 @@ bars = ax.bar(
     color=colors
 )
 
-# --- labels ---
+#labels 
 ax.set_ylabel("Number of nodes (graph size)")
 ax.set_title("Mean graph size per design (colored by standard deviation)")
 
-# --- x ticks ---
+#x ticks 
 ax.set_xticks(x)
 ax.set_xticklabels(means.index, rotation=90, fontsize=6)
 
-# --- optional: log scale (recommended) ---
+#optional: log scale (recommended) 
 # ax.set_yscale("log")
 
-# --- colorbar ---
+#colorbar 
 sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
 sm.set_array([])
 
 cbar = fig.colorbar(sm, ax=ax)
 cbar.set_label("Standard deviation of graph size")
 
-# --- layout ---
+#layout 
 plt.tight_layout()
 plt.savefig("data_statistics/graph_stats_m1/nodes_per_design_std_colored.png", dpi=300)
 plt.close()

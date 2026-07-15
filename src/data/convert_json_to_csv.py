@@ -74,5 +74,5 @@ with open(avg_output_path, "w", newline="") as f:
     writer.writeheader()
     writer.writerows(avg_rows)
 
-print(f"\nsaved {len(rows)} rows to {output_path}")
+print(f"saved {len(rows)} rows to {output_path}")
 print(f"saved {len(avg_rows)} family averages to {avg_output_path}")

@@ -18,4 +18,4 @@ with open("simple_graph_new.json", "w") as f:
 with open("complex_graph_new.json", "w") as f:
     json.dump(complex_graph, f, indent=2)
 
-print("Split complete ✅")
+print("Split complete")
