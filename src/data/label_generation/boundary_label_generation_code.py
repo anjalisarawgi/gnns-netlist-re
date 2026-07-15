@@ -203,7 +203,7 @@ def merge_partition_and_boundary(gml_partition, gml_boundary, out_gml):
     os.makedirs(os.path.dirname(out_gml), exist_ok=True)
     nx.write_gml(Gm, out_gml)
 
-    print(f"[MERGE] Saved merged graph → {out_gml}")
+    print(f"[MERGE] Saved merged graph : {out_gml}")
 
 
 
@@ -324,7 +324,7 @@ def process_verilog(verilog_file):
     print("[DEBUG] Checking AFTER merge...")
     analyze_missing_boundary(combined_m1, tag="AFTER MERGE (Combined GML)", G=Gm)
 
-    print(f"Combined M1: {Gm.number_of_nodes():,} nodes, {Gm.number_of_edges():,} edges  →  {combined_m1}")
+    print(f"Combined M1: {Gm.number_of_nodes():,} nodes, {Gm.number_of_edges():,} edges  :  {combined_m1}")
 
     check_fully_connected(combined_m1, "Combined M1", G=Gm)
 
@@ -403,7 +403,7 @@ def process_verilog(verilog_file):
     meta_path = combined_m1.with_suffix(".meta.json")
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
-    print(f"[INFO] Saved metadata → {meta_path}")
+    print(f"[INFO] Saved metadata : {meta_path}")
 
     
 
