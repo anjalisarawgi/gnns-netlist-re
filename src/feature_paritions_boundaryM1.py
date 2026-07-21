@@ -9,6 +9,23 @@ import torch
 import igraph as ig
 import leidenalg
 
+
+# debugging functions as checks
+def is_graph_connected(G):
+    if G.is_directed():
+        return nx.is_weakly_connected(G)
+    return nx.is_connected(G)
+
+def has_boundary_labels(G):
+    for _, data in G.nodes(data=True):
+        try:
+            if int(data.get("boundary", 0)) == 1:
+                return True
+        except Exception:
+            pass
+    return False
+
+## gates features
 GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
 gate2id = {g: i for i, g in enumerate(GATE_TYPES)}
 
@@ -35,18 +52,14 @@ def parse_gate_from_label(label_copy: str):
 
 def encode_gate(gate_type: str):
     gate_onehot = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
-
     if gate_type in gate2id:
         gate_onehot[gate2id[gate_type]] = 1.0
     else:
         gate_onehot[gate2id["UNKNOWN"]] = 1.0
-
     return gate_onehot
-
 
 def count_1hop_gate_types(node, G_und, G_dir):
     counts = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
-
     for nb in G_und.neighbors(node):
         nb_data = G_dir.nodes[nb]
         nb_label = nb_data.get("label_copy", "")
@@ -54,8 +67,9 @@ def count_1hop_gate_types(node, G_und, G_dir):
 
         idx = gate2id.get(nb_gate, gate2id["UNKNOWN"])
         counts[idx] += 1.0
-
     return counts
+
+
 def normalize_counts(counts: torch.Tensor):
     total = counts.sum()
     if total > 0:
@@ -63,67 +77,15 @@ def normalize_counts(counts: torch.Tensor):
     return counts  # stays zero if no neighbors
     
 
-def count_2hop_gate_types(node, G_und, G_dir):
-    counts = torch.zeros(len(GATE_TYPES), dtype=torch.float32)
-
-    neighbors_1 = set(G_und.neighbors(node))
-
-    neighbors_2 = set()
-    for nb in neighbors_1:
-        neighbors_2.update(G_und.neighbors(nb))
-
-    # remove 1-hop neighbors and the node itself
-    neighbors_2 = neighbors_2 - neighbors_1
-    neighbors_2.discard(node)
-
-    for nb in neighbors_2:
-        nb_data = G_dir.nodes[nb]
-        nb_label = nb_data.get("label_copy", "")
-        nb_gate = parse_gate_from_label(nb_label)
-
-        idx = gate2id.get(nb_gate, gate2id["UNKNOWN"])
-        counts[idx] += 1.0
-
-    return counts
-
-# def count_pi_po_connections(node, G_dir):
-#     pi_connections = 0
-#     po_connections = 0
-
-#     for nb in G_dir.predecessors(node):
-#         label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
-#         if "INPUT" in label:
-#             pi_connections += 1
-
-#     for nb in G_dir.successors(node):
-#         label = str(G_dir.nodes[nb].get("label_copy", "")).upper()
-#         if "OUTPUT" in label:
-#             po_connections += 1
-
-#     return float(pi_connections), float(po_connections)
-
-def is_graph_connected(G):
-    if G.is_directed():
-        return nx.is_weakly_connected(G)
-    return nx.is_connected(G)
-
-def has_boundary_labels(G):
-    for _, data in G.nodes(data=True):
-        try:
-            if int(data.get("boundary", 0)) == 1:
-                return True
-        except Exception:
-            pass
-    return False
-
 def _safe_mean_std(values):
     if len(values) == 0:
         return 0.0, 0.0
     arr = np.asarray(values, dtype=np.float32)
     return float(arr.mean()), float(arr.std())
 
+# BFS for depth k ( undirected graph)
 def _ego_nodes_khop_undirected(G_und, start, k=2):
-    # BFS up to depth k in undirected graph
+    
     visited = {start}
     q = deque([(start, 0)])
     while q:
@@ -158,8 +120,8 @@ def _multi_source_bfs_undirected(G_und, sources):
                 q.append(nb)
     return dist
 
+# feature: forward reach
 def _forward_reach_within_k(G_dir, start, k=3):
-    # directed forward BFS up to k hops, count unique reached excluding start
     visited = {start}
     q = deque([(start, 0)])
     while q:
@@ -172,6 +134,7 @@ def _forward_reach_within_k(G_dir, start, k=3):
                 q.append((nb, d + 1))
     return len(visited) - 1
 
+# feature: backward reach
 def _backward_reach_within_k(G_dir, start, k=3):
     visited = {start}
     q = deque([(start, 0)])
@@ -222,36 +185,18 @@ def fraction_same_partition_2hop(node, G_und, G_dir):
     if p0 is None:
         return 0.0
 
-    # reuse your ego function
     nodes_2hop = _ego_nodes_khop_undirected(G_und, node, k=2)
     nodes_2hop.discard(node)
 
     if len(nodes_2hop) == 0:
         return 0.0
-
     same = 0
     for nb in nodes_2hop:
         p_nb = _clean_partition(G_dir.nodes[nb].get("partition"))
         if p_nb == p0:
             same += 1
-
     return same / len(nodes_2hop)
 
-def compute_structural_edge_features(G_dir, edge_index_list):
-    edge_attrs = []
-    
-    in_degrees = dict(G_dir.in_degree())
-    out_degrees = dict(G_dir.out_degree())
-    
-    for u, v in edge_index_list:
-        src_fan_out = float(out_degrees.get(u, 1))
-        dst_fan_in = float(in_degrees.get(v, 1))
-        leverage = src_fan_out / (dst_fan_in + 1e-6)
-        is_feedback = 1.0 if str(u) > str(v) else 0.0
-        edge_feat = [src_fan_out, dst_fan_in, leverage, is_feedback]
-        edge_attrs.append(edge_feat)
-        
-    return edge_attrs
 
 def get_unique_partition_count(G_dir):
     partitions = set()
@@ -259,7 +204,6 @@ def get_unique_partition_count(G_dir):
         p = _clean_partition(data.get("partition"))
         if p is not None:
             partitions.add(p)
-
     return float(len(partitions))
 
 
@@ -278,7 +222,7 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
     outdeg = dict(G_dir.out_degree())
     deg_und = dict(G_und.degree())
 
-    # unsuerpvised - features test:
+    # unsupervised - features test:
     partition_map = community_louvain.best_partition(G_und)
     print(f"[INFO] Louvain found {len(set(partition_map.values()))} clusters")
 
@@ -520,7 +464,7 @@ ROOT_OUT = "new_designs/tum_risc_processed/"
 
 
 
-
+### just to make sure!
 processed_dirs = {}
 usable_graphs = []
 unusable_graphs_connectivity = []
