@@ -58,7 +58,7 @@ plt.savefig("analysis/crypto_16/error_boxplots.png", dpi=150, bbox_inches="tight
 # structural features plots 
 
 # 1: reach asymmetry (boundary vs internal)
-df = pd.read_csv("error_analysis/table1.csv")
+df = pd.read_csv("analysis/crypto_16/results_2.csv")
 df.columns = df.columns.str.strip()
 df["Design"] = df["Design"].str.replace("Design: ", "", regex=False)
 df["lift"] = df["PR_AUC"] - df["BR"]
