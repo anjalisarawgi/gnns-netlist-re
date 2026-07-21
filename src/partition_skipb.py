@@ -7,21 +7,9 @@ import wandb
 import random
 import networkx as nx
 import numpy as np
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, deque
 from torch_geometric.data import Data
-from gnn.graphSAGE import graphSAGE
-from gnn.sage_bidirected import BiDirectedGraphSAGE
-from gnn.sage_jk import JK_GraphSAGE
-from gnn.sage_jk_bi import BiDirectedJK_GraphSAGE
-from gnn.gcn import GCN
-from gnn.gat import gat, MLP, gatv2, GAAN
-from gnn.gin import GIN
-from gnn.bi_and_hi_GAT import DirectedOnlyGAT, HierarchicalOnlyGAT4,  HierarchicalOnlyGAT6, HierarchicalDirectedGAT_v2, DirectedOnlyGATWithGlobal
-from gnn.graphTransformer import GraphTransformer 
-from gnn.new_gnn import DirectedGAT, HierarchicalGAT, HierarchicalDirectedGAT
 from sklearn.utils.class_weight import compute_class_weight
-# from gnn.abgnn import AsyncDirectedGAT
-# from gnn.daggnn import BIGAT
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score, recall_score
 from torch_geometric.utils import subgraph
@@ -35,17 +23,19 @@ from sklearn.preprocessing import StandardScaler
 import csv
 from functools import reduce
 from pathlib import Path
-from sklearn.metrics import average_precision_score, precision_recall_curve
+from sklearn.metrics import average_precision_score, precision_recall_curve,  f1_score, precision_score, recall_score
 from sklearn.ensemble import RandomForestClassifier
 import sys
-import os
 from datetime import datetime
 import joblib
 import copy
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import f1_score, precision_score, recall_score
-from collections import deque
-from pathlib import Path
+from gnn.graphSAGE import graphSAGE
+from gnn.sage_bidirected import BiDirectedGraphSAGE
+from gnn.sage_jk import JK_GraphSAGE
+from gnn.sage_jk_bi import BiDirectedJK_GraphSAGE
+from gnn.gcn import GCN
+from gnn.gat import gat, MLP, gatv2, GAAN
+from gnn.gin import GIN
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
@@ -777,52 +767,6 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
     return average_loss, epoch_nodes
 
 
-
-
-
-##### [analysis block  ] #####
-# creating function to find - nearest boundary nodes: i.e.
-# eg how many steps / hops away is the nearest boudnary from a node
-# we can consider shortest path to reach = number of hops
-def multi_source_bfs(G, sources):
-    visited ={} # storing distances
-    queue = deque() # the nodes we still need to explore 
-
-    for s in sources:
-        visited[s] = 0 
-        queue.append(s)
-
-    while queue:
-        node = queue.popleft() # if starting from node C , we remvoe c
-        for nbr in G.neighbors(node):
-            if nbr not in visited:
-                visited[nbr] = visited[node] + 1
-                queue.append(nbr)
-        
-    return visited
-
-
-def compute_region_iou(G, true_boundary_set, pred_boundary_set, k_hop):
-        if len(pred_boundary_set) == 0:
-            return 0.0
-
-        # distance from all nodes to nearest TRUE boundary
-        dist_true = multi_source_bfs(G, list(true_boundary_set))
-        true_region = set(n for n, d in dist_true.items() if d <= k_hop)
-
-        # distance from all nodes to nearest PREDICTED boundary
-        dist_pred = multi_source_bfs(G, list(pred_boundary_set))
-        pred_region = set(n for n, d in dist_pred.items() if d <= k_hop)
-
-        intersection = len(true_region & pred_region)
-        union = len(true_region | pred_region)
-
-        if union == 0:
-            return 0.0
-
-        return intersection / union
-
-
 # test file acc only
 @torch.no_grad()
 def evaluate_test(data, model):
@@ -864,104 +808,6 @@ def evaluate_test(data, model):
         "total_acc": total_acc,
         "boundary_1_acc": positive_acc,
         "boundary_0_acc": negative_acc
-    }
-
-
-@torch.no_grad()
-def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, prob_mass=0.5):
-    model.eval()
-    data = data.to(device)
-    out = model(data.x, data.edge_index)
-    probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy() # callingsoftmax predictions
-
-    # labels
-    labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (data.y.cpu().numpy() >= 0)
-    y_true = data.y.cpu().numpy()
-    true_boundary = set(np.where((y_true == 1) & labeled_mask)[0].tolist())
-
-    if len(true_boundary) == 0: # gives indices
-        return {}
-
-    N = len(probs)
-
-    # considering top highest prob nodes (eg 2% most confident)
-    k = max(1, int(np.ceil((k_percent / 100.0) * N)))
-    idx_sorted = np.argsort(-probs)
-    topk_nodes = idx_sorted[:k]
-    topk_set = set(topk_nodes.tolist())
-
-    # building undirectred graph to convert format to network x for multi_source_bfs
-    G = nx.Graph()
-    edge_index = data.edge_index.cpu().numpy()
-    edges = list(zip(edge_index[0], edge_index[1]))
-    G.add_nodes_from(range(data.num_nodes)) # not sure
-    G.add_edges_from(edges)
-
-    # a) Q1 - distance to the nearest boundary
-    ## this part does this: for every node in the graph, it searches for the nearest TRUE boundary node  --> and then the mean of this
-    dist_to_true = multi_source_bfs(G, list(true_boundary))
-    dists_topk = np.array([dist_to_true.get(n, np.inf) for n in topk_nodes])
-    mean_dist = float(np.mean(dists_topk[np.isfinite(dists_topk)])) if np.any(np.isfinite(dists_topk)) else float("inf")
-    pct_within_2 = float(np.mean(dists_topk <= 2)) # the fraction of the nodes that is <= 2 hops away from the boundayr nodes
-
-    # b) Q2: are our predicted ndoes atleast in the boundary region?
-    ## so for eveyr node - we predict the distance to the nearest predicted node
-    def boundary_covered(pred_set, k_hop):
-        if len(pred_set) == 0:
-            return 0.0
-        dist_to_pred = multi_source_bfs(G, list(pred_set))
-        covered = sum(1 for b in true_boundary if dist_to_pred.get(b, np.inf) <= k_hop) # count it if its within the hops
-        return covered / len(true_boundary)
-
-    boundary_coverage_topk_2hop = boundary_covered(topk_set, 2)
-    boundary_coverage_topk_1hop = boundary_covered(topk_set, 1)
-
-
-    # in this part i want to try for the normal threshold we are using for our trianing now: i.e. argmax 0.5
-    threshold = 0.5
-
-    thresh_set = set(np.where(probs >= threshold)[0].tolist())
-    boundary_coverage_thresh_2 = boundary_covered(thresh_set, 2) # q2 - 2 hops
-    boundary_coverage_thresh_1 = boundary_covered(thresh_set, 1) # q2 - 1 hop
-    boundary_coverage_thresh_0 = boundary_covered(thresh_set, 0)
-
-    # iou 
-    region_iou_k1 = compute_region_iou(G, true_boundary, thresh_set, k_hop=1)
-    region_iou_k2 = compute_region_iou(G, true_boundary, thresh_set, k_hop=2)
-
-
-    #a) Q1 - distance to the nearest boundary
-    # mean dist and p
-    if len(thresh_set) > 0:
-        dists_thresh = np.array([dist_to_true.get(n, np.inf) for n in thresh_set])
-
-        finite_mask = np.isfinite(dists_thresh)
-        if np.any(finite_mask):
-            mean_dist_thresh = float(np.mean(dists_thresh[finite_mask]))
-        else:
-            mean_dist_thresh = float("inf")
-
-        pct_thresh_within_2 = float(np.mean(dists_thresh <= 2))
-        pct_thresh_within_1 = float(np.mean(dists_thresh <= 1))
-    else:
-        mean_dist_thresh = float("inf")
-        pct_thresh_within_2 = 0.0
-        pct_thresh_within_1 = 0.0
-
-    return {
-        "mean_dist_topk": mean_dist,
-        "pct_within_2_topk": pct_within_2,
-        "boundary_coverage_topk_1hop": boundary_coverage_topk_1hop,
-        "boundary_coverage_topk_2hop": boundary_coverage_topk_2hop,
-        "mean_dist_thresh": mean_dist_thresh,
-        "pct_thresh_within_1": pct_thresh_within_1,
-        "pct_thresh_within_2": pct_thresh_within_2,
-        "boundary_coverage_thresh_0": boundary_coverage_thresh_0,
-        "boundary_coverage_thresh_1": boundary_coverage_thresh_1,
-        "boundary_coverage_thresh_2": boundary_coverage_thresh_2,
-        "region_iou_k1": region_iou_k1,
-        "region_iou_k2": region_iou_k2,
-
     }
 
 
@@ -1267,27 +1113,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                     f"val_density/{name}/argmax_ratio_0.5": density_stats["argmax_ratio_0.5"],
                 })
 
-                region_metrics = evaluate_region_metrics(g, model, k_percent=2.0, r=2)
-
-                if region_metrics:
-                    print(
-                        f"[REGION] {name} | "
-                        f"mean_dist={region_metrics['mean_dist_topk']:.2f}, "
-                        f"pct_within_2={region_metrics['pct_within_2_topk']:.4f}, "
-                        f"boundary_coverage_topk_1hop={region_metrics['boundary_coverage_topk_1hop']:.4f}, "
-                        f"boundary_coverage_topk_2hop={region_metrics['boundary_coverage_topk_2hop']:.4f}, "
-                        f"boundary_coverage_thresh_0={region_metrics['boundary_coverage_thresh_0']:.4f}, "
-                        f"boundary_coverage_thresh_1={region_metrics['boundary_coverage_thresh_1']:.4f}, "
-                        f"boundary_coverage_thresh_2={region_metrics['boundary_coverage_thresh_2']:.4f}, "
-                        f"mean_dist_thresh={region_metrics['mean_dist_thresh']:.4f}, "
-                        f"pct_thresh_within_1={region_metrics['pct_thresh_within_1']:.4f}, "
-                        f"pct_thresh_within_2={region_metrics['pct_thresh_within_2']:.4f}, "
-                        f"region_iou_k1={region_metrics['region_iou_k1']:.4f}, "
-                        f"region_iou_k2={region_metrics['region_iou_k2']:.4f}, "
-                    )
-                else: 
-                    print(f"[REGION] {name} | Skipped (no boundary nodes)")
-
             # macro avg over val designs
             val_macro = {k: float(np.mean(v)) for k, v in val_metrics.items()} if len(val_graphs) else {}
             print(
@@ -1563,24 +1388,6 @@ if __name__ == "__main__":
             f"test/{name}/mean_prob_boundary": mean_prob_pos,
             f"test/{name}/mean_prob_not_boundary": mean_prob_neg,
         })
-
-        region_metrics = evaluate_region_metrics(g, model, k_percent=2.0, r=2)
-        if region_metrics:
-            print(
-                f"[REGION] {name} | "
-                f"mean_dist_topk={region_metrics['mean_dist_topk']:.2f}, "
-                f"pct_within_2_topk={region_metrics['pct_within_2_topk']:.4f}, "
-                f"boundary_coverage_topk_1hop={region_metrics['boundary_coverage_topk_1hop']:.4f}, "
-                f"boundary_coverage_topk_2hop={region_metrics['boundary_coverage_topk_2hop']:.4f}, "
-                f"boundary_coverage_thresh_0={region_metrics['boundary_coverage_thresh_0']:.4f}, "
-                f"boundary_coverage_thresh_1={region_metrics['boundary_coverage_thresh_1']:.4f}, "
-                f"boundary_coverage_thresh_2={region_metrics['boundary_coverage_thresh_2']:.4f}, "
-                f"mean_dist_thresh={region_metrics['mean_dist_thresh']:.4f}, "
-                f"pct_thresh_within_1={region_metrics['pct_thresh_within_1']:.4f}, "
-                f"pct_thresh_within_2={region_metrics['pct_thresh_within_2']:.4f}, "
-            )
-        else:
-            print(f"[REGION] {name} | skipped (no boundary nodes)")
 
 
     test_macro = {k: float(np.mean(v)) for k, v in test_metrics.items()} if len(test_graphs) else {}
