@@ -131,3 +131,36 @@ plt.savefig("analysis/crypto_16/all_3_features_b_i.png", dpi=150, bbox_inches="t
 #     print(f"  Success cases::: Boundary: {success_df[col_b].mean():.3f}, Internal: {success_df[col_i].mean():.3f}")
 #     print(f"  Failure cases::: Boundary: {failure_df[col_b].mean():.3f}, Internal: {failure_df[col_i].mean():.3f}")
   
+
+
+
+###  PR_AUC lift vs modularity 
+slope, intercept, r, p, _ = stats.linregress(df["Mod"], df["lift"])
+x_line = np.linspace(df["Mod"].min(), df["Mod"].max(), 200)
+y_line = slope * x_line + intercept
+
+fig, ax = plt.subplots(figsize=(8, 6))
+# ax.plot(x_line, y_line, color="#aaaaaa", linewidth=1.2,
+#         linestyle="--", alpha=0.8, zorder=1, label=f"trend  r = {r:.2f}")
+
+high_lift = df[df["success"]]
+low_lift  = df[~df["success"]]
+ax.scatter(low_lift["Mod"], low_lift["lift"],
+           color="#E15759", s=70, alpha=0.88,
+           edgecolors="white", linewidths=0.8, zorder=3, label="Lift < 0.20")
+
+ax.scatter(high_lift["Mod"], high_lift["lift"],
+           color="#76B7B2", s=70, alpha=0.88,
+           edgecolors="white", linewidths=0.8, zorder=3, label="Lift ≥ 0.20")
+
+ax.axhline(y=0, color="#aaaaaa", linewidth=0.9, linestyle="--", zorder=1)
+ax.set_xlabel("Modularity ($Q$)", fontsize=12, labelpad=8)
+ax.set_ylabel("PR-AUC lift (PR-AUC − BR)", fontsize=12, labelpad=8)
+ax.tick_params(labelsize=9)
+ax.grid(color="#eeeeee", linewidth=0.6)
+ax.legend(fontsize=9, frameon=True, edgecolor="#cccccc", facecolor="white", framealpha=1, loc="lower center", bbox_to_anchor=(0.5, 1.01), ncols=3)
+ax.set_title("Modularity ($Q$) vs PR-AUC lift across crypto design families", fontsize=13, pad=40)
+plt.tight_layout()
+plt.savefig("analysis/crypto_16/prauc_lift_scatter.png", dpi=150, bbox_inches="tight")
+print(f"[Plot 4] Pearson r = {r:.3f}  |  p = {p:.4f}")
+plt.close()
