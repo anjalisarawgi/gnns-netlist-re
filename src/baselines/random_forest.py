@@ -25,6 +25,8 @@ from tabicl import TabICLClassifier
 from sklearn.preprocessing import StandardScaler
 
 
+NUM_CATEGORICAL = 14
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="Baseline models for boundary node detection")
@@ -66,7 +68,7 @@ def set_seed(seed: int):
     np.random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
 
-NUM_CATEGORICAL = 14
+
 class SelectiveScaler:
     def __init__(self, n_categorical):
         self.n_cat = n_categorical
@@ -85,7 +87,7 @@ class SelectiveScaler:
         return X
 
         
-def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
+def load_graph_features(gml_path: str, args):
     G = nx.read_gml(gml_path)
     nodes = list(G.nodes())
 
@@ -112,7 +114,6 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
         #     feat = list(feat) + list(graph_feat_subset)
 
         features.append(feat)
-
         boundary_value = attr.get("boundary", 0)
         try:
             label = int(boundary_value)
@@ -130,6 +131,7 @@ def load_graph_features(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
           f"boundary={y.sum()}  non-boundary={(y == 0).sum()}")
     return X, y
 
+# for faster process because loading graphs for every run takes alot of time 
 def load_graph_features_cached(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
     cache_path = Path(gml_path).with_suffix(".npz")
     if cache_path.exists():
@@ -193,10 +195,10 @@ def save_predictions_to_gml(gml_path: str, y_true: np.ndarray, y_pred: np.ndarra
         G.nodes[node]["pred_class_ratio"]   = cls(y_true[i], pred_ratio[i])
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    parts = Path(gml_path).parts  # e.g. ('graphs_final', 'crypto_graphs_final', 'aes_core', 'nangate', 'aes_key_expand_128_combined_m1.gml')
-    design = parts[-3]   # e.g. aes_core
-    library = parts[-2]  # e.g. nangate
-    stem = Path(gml_path).stem  # e.g. aes_key_expand_128_combined_m1
+    parts = Path(gml_path).parts  # for eg  ('graphs_final', 'crypto_graphs_final', 'aes_core', 'nangate', 'aes_key_expand_128_combined_m1.gml')
+    design = parts[-3]   # for eg aes_core
+    library = parts[-2]  # for eg . nangate
+    stem = Path(gml_path).stem  # for eg  aes_key_expand_128_combined_m1
     out_path = out_dir / f"{design}__{library}__{stem}.gml"
 
     nx.write_gml(G, out_path)
@@ -208,49 +210,20 @@ def evaluate_splits(clf, tag, val_data, test_data, args, feature_mask=None):
     def _slice(X):
         return X[:, feature_mask] if feature_mask is not None else X
 
-    # val
-    # val_results = []
-    # for name, path, X_val, y_val in val_data:
-    #     y_pred = clf.predict(_slice(X_val))
-    #     y_prob = clf.predict_proba(_slice(X_val))[:, 1]
-    #     val_results.append(evaluate(name, f"{tag} VAL", y_val, y_pred, y_prob))
-    # print(f"  VAL MACRO: {macro_avg(val_results)}")
-
-    # test
-    print(f"\ntest - results")
+    # test results only - no val for baselines though the splits remaini the same
+    print(f"test: results")
     test_results = []
     for name, path, X_test, y_test in test_data:
         y_pred = clf.predict(_slice(X_test))
         y_prob = clf.predict_proba(_slice(X_test))[:, 1]
         test_results.append(evaluate(name, f"{tag} TEST", y_test, y_pred, y_prob))
-        save_predictions_to_gml(path, y_test, y_pred, y_prob, Path("results") / args.mode / "predictions")  # <-- add this
+        save_predictions_to_gml(path, y_test, y_pred, y_prob, Path("results") / args.mode / "predictions") 
 
     print(f" MACRO (TEST): {macro_avg(test_results)}")
 
     return test_results
 
-# all models
-def run_tabpfn(X_train, y_train, val_data, test_data, args):
-    print("[TabPFN] using TabPFN v2.5")
 
-    # subsampling
-    print(f"  total rows: {len(X_train)} before subsamples …")
-    if len(X_train) > 50_000:
-        print(f"  Subsampling train rows: {len(X_train)} → {50_000}")
-        X_train, y_train = stratified_subsample(X_train, y_train, 50_000, args.seed)
-    print(f"  total rows: {len(X_train)} after subsamples …")
-
-    classifier = TabPFNClassifier.create_default_for_version(ModelVersion.V2_5, device = "cuda")
-    classifier.fit(X_train, y_train)
-    print("  Training complete.")
-
-    test_results = evaluate_splits(classifier, "TabPFN", val_data, test_data, args)
-    return {
-        # "val_macro":  macro_avg(val_results),
-        "test_macro": macro_avg(test_results),
-    }
-
-# subsampling ad maintining the ratios
 def stratified_subsample(X, y, max_n, seed):
     rng = np.random.RandomState(seed)
     classes, counts = np.unique(y, return_counts=True)
@@ -273,16 +246,37 @@ def stratified_subsample(X, y, max_n, seed):
     rng.shuffle(indices)
     return X[indices], y[indices]
 
+# all models
+# 1. tabpfn
+def run_tabpfn(X_train, y_train, val_data, test_data, args):
+    print("Using TabPFN v2.5")
 
+    # subsampling
+    print("Total rows before:", {len(X_train)}")
+    if len(X_train) > 50_000:
+        X_train, y_train = stratified_subsample(X_train, y_train, 50_000, args.seed)
+    print("Total rows after:", {len(X_train)}")
+
+    # tabpfn on the subsamples
+    classifier = TabPFNClassifier.create_default_for_version(ModelVersion.V2_5, device = "cuda")
+    classifier.fit(X_train, y_train)
+    print("  Training complete.")
+
+    test_results = evaluate_splits(classifier, "TabPFN", val_data, test_data, args)
+    return {"test_macro": macro_avg(test_results)}
+
+
+## tabicl
 def run_tabicl(X_train, y_train, val_data, test_data, args):
-    print("tabicl:")
-    print(f"  total rows: {len(X_train)} before subsamples …")
+    print("Using tabicl:")
+
+    # subsampling again
+    print("Total rows before:", {len(X_train)}")
     if len(X_train) > 200_000:
         print(f"  Subsampling train rows: {len(X_train)} → {200_000}")
         X_train, y_train = stratified_subsample(X_train, y_train, 200_000, args.seed)
-    print(f"  total rows: {len(X_train)} after subsamples …")
+    print("Total rows after:", {len(X_train)}")
     
-
     classifier = TabICLClassifier( 
         n_estimators=args.tabicl_n_estimators,
         batch_size=args.tabicl_batch_size,
@@ -291,14 +285,9 @@ def run_tabicl(X_train, y_train, val_data, test_data, args):
         random_state=42,
     )
     classifier.fit(X_train, y_train)
-    print("[TABICL] tabical fitted on training data")
-    
     test_results = evaluate_splits( classifier, "TabICL", val_data, test_data, args)
 
-    return {
-        # "val_macro":  macro_avg(val_results),
-        "test_macro": macro_avg(test_results),
-    }
+    return {"test_macro": macro_avg(test_results)}
 
 def run_rf(X_train, y_train, val_data, test_data, args):
     # on all features
@@ -315,10 +304,7 @@ def run_rf(X_train, y_train, val_data, test_data, args):
     # only for rf
     return {
         "test_macro_all": macro_avg(test_results_all),
-        "test_per_graph": [
-            {"name": name, **r}
-            for (name, path, X, y), r in zip(test_data, test_results_all)
-        ],
+        "test_per_graph": [ {"name": name, **r} for (name, path, X, y), r in zip(test_data, test_results_all)]
     }
 
 def main():
@@ -335,11 +321,11 @@ def main():
     y_train = np.concatenate(y_parts)
     print(f"  Total train  nodes={len(y_train)}  boundary={y_train.sum()}")
 
-    print("validation graphs:::")
-    val_data = []
-    for path in args.val_gml:
-        X, y = load_graph_features_cached(path, args)
-        val_data.append((Path(path).stem, path, X, y))
+    # print("validation graphs:::")
+    # val_data = []
+    # for path in args.val_gml:
+    #     X, y = load_graph_features_cached(path, args)
+    #     val_data.append((Path(path).stem, path, X, y))
 
     print("test graphs:::")
     test_data = []
@@ -373,7 +359,7 @@ def main():
     with open(out_path, "w") as f:
         json.dump(results_summary, f, indent=4)
 
-    print(f"[INFO] Results saved to: {out_path}")
+    print(f"[INFO] Results saved to:", out_path)
 
 
 if __name__ == "__main__":
