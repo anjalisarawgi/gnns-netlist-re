@@ -65,7 +65,7 @@ os.makedirs("logs", exist_ok=True)
 # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
-# could increase to 24 -- 
+# could increase to 24 -- for (TUM CPU machine)
 torch.set_num_threads(10)        # for math mult (pytorch)    
 torch.set_num_interop_threads(2)     # pytorch - helper threads
 os.environ["OMP_NUM_THREADS"] = "10" # max 20 cores (pytorch)
@@ -74,8 +74,7 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
-                    help="Sampling method: 'graphsaint' or 'khop'")
+parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "khop"], default="graphsaint", help="Sampling method: 'graphsaint' or 'khop'")
 parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", 
                     "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal",
                      "GAAN", "GraphSAGE_ResNorm", "BiDirectedGraphSAGE","JK_GraphSAGE", "BiDirectedJK_GraphSAGE"])
@@ -218,7 +217,7 @@ print("[DOMAIN] family2id size:", len(family2id))
 ################
 # all functions 
 ################
-# each graph is getting its own scaler - dangerus
+
 def pr_auc_from_probs(y_true, y_prob):
     y_true = np.asarray(y_true).astype(int)
     y_prob = np.asarray(y_prob).astype(float)
@@ -257,54 +256,8 @@ def merge_data(gml_1, gml_2):
     return merged_data
 
 
-def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=None, soft_class_weights=None):
-    model.train()
-    optimizer.zero_grad()
-
-    # group graph indices by family
-    family_to_indices = defaultdict(list)
-    for i, path in enumerate(graph_paths):
-        fam, _ = parse_lib_design(path)
-        family_to_indices[fam].append(i)
-
-    num_families = len(family_to_indices)
-    total_loss = 0.0
-
-    for fam, indices in family_to_indices.items():
-        num_families = len(family_to_indices)
-        
-        for i in indices:
-            g = graphs[i].to(device)
-            out = model(g.x, g.edge_index)
-            labeled_mask = g.label_mask if hasattr(g, 'label_mask') else (g.y >= 0)
-
-            if args.loss_type == "focal":
-                loss_per_node = focal_loss(out[labeled_mask], g.y[labeled_mask])
-            elif args.loss_type == "ce_weighted":
-                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=class_weights.to(out.device), reduction="none")
-            elif args.loss_type == "ce_soft":
-                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=soft_class_weights.to(out.device), reduction="none")
-            else:
-                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], reduction="none")
-
-            # divide by both len(indices) and num_families so each family contributes equally
-            loss = loss_per_node.mean() / (len(indices) * num_families)
-            loss.backward()          # ← backward while computation graph still alive
-            total_loss += loss.item()
-
-            del out, loss_per_node, loss
-            g = g.to("cpu")
-
-    if args.set_gradient_clipping:
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-
-    optimizer.step()
-    return total_loss
-
-
 
 def augment_graph_noise(data: Data, n_categorical: int = 14, gate_flip_frac: float = 0.10, edge_corrupt_frac: float = 0.10, feat_noise_frac: float = 0.10, feat_scale_half_frac: float = 0.5, feat_scale_min: float = 0.80, feat_scale_max: float = 1.20):
-
     torch.manual_seed(42)
     np.random.seed(42)
     random.seed(42)
@@ -1115,9 +1068,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     elif model_name == "gcn":
         model = GCN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         print("[INFO] using GCN model")
-    elif model_name == "graphTransformer":
-        model = GraphTransformer(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-        print("[INFO] using GraphTransformer model")
     elif model_name =="mlp":
         model = MLP(in_dim, 256, out_dim)
         print("[INFO] using MLP model")
@@ -1126,43 +1076,10 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         print("[INFO] using gatv2")
     elif model_name =="gin":
         model = GIN(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-        print("[INFO] using gatv2")
-    elif model_name == 'dGNN':
-        model = DirectedGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-        print("[INFO] using DirectedGAT")
-    elif model_name == 'hGNN':
-        model = HierarchicalGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
-        print("[INFO] using HierarchicalGAT")
-    elif model_name == 'hdGNN':
-        model = HierarchicalDirectedGAT(in_channels = in_dim, hidden_channels = 512, out_channels = out_dim, dropout=0.1).to(device)
-        print("[INFO] using HierarchicalDirectedGAT")
-    elif model_name =="FlatDirectedGAT":
-        model = FlatDirectedGAT(in_channels = in_dim, hidden_channels = 256,num_layers=6,  out_channels = out_dim, dropout=0.1)
-        print("[INFO] using FlatDirectedGAT")
-    elif model_name =="DirectedOnlyGAT":
-        model = DirectedOnlyGAT(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1).to(device)
-        print("[INFO] using DirectedOnlyGAT")
-    elif model_name =="HierarchicalOnlyGAT4":
-        model = HierarchicalOnlyGAT4(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim, dropout=0.1)
-        print("[INFO] using HierarchicalOnlyGAT4")
-    elif model_name =="HierarchicalOnlyGAT6":
-        model = HierarchicalOnlyGAT6(in_channels = in_dim, hidden_channels = 256,  out_channels = out_dim, dropout=0.1)
-        print("[INFO] using HierarchicalOnlyGAT6")
-    elif model_name =="HierarchicalDirectedGAT_v2":
-        model = HierarchicalDirectedGAT_v2(in_channels = in_dim, hidden_channels = 256,  out_channels = out_dim, dropout=0.1)
-        print("[INFO] using HierarchicalDirectedGAT_v2")
-    elif model_name == "DirectedOnlyGATWithGlobal":
-        model = DirectedOnlyGATWithGlobal(
-            in_channels=in_dim, hidden_channels=256, out_channels=out_dim, dropout=0.1
-        )
+        print("[INFO] using gin")
     elif model_name =="GAAN":
         model = GAAN( in_channels=in_dim, hidden_channels=256, out_channels=out_dim, heads=6)
         print("[INFO] using GaAN")
-    elif model_name =="GraphSAGE_ResNorm":
-        model = GraphSAGE_ResNorm(in_channels=in_dim, hidden_channels=256, out_channels=out_dim, num_layers=2)
-        print("[INFO] using GraphSAGE_ResNorm ")
-
-
     elif model_name =="BiDirectedGraphSAGE":
         model = BiDirectedGraphSAGE(in_channels=in_dim, hidden_channels=256, out_channels=out_dim)
         print("[INFO] using BiDirectedGraphSAGE ")
@@ -1178,27 +1095,13 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     # base_lr = 0.01 
     # optimizer = torch.optim.Adam(model.parameters(), lr = args.lr, weight_decay = 1e-4)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
-
-    # if args.use_scheduler:
-    #     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=200, gamma=0.5 )  
     if args.use_scheduler:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='max', factor=0.5, patience=5, min_lr=1e-6 )
 
-    #  coverage tracking (not needed tbh)
-    ever_seen_nodes = set()
-    num_nodes = train_data.num_nodes
-
-    boundary_nodes = set(
-        torch.where(train_data.y == 1)[0].cpu().tolist()
-    )
-    num_boundary = len(boundary_nodes)
-
-
-
+    # loss functions
     class_weights = None
     soft_class_weights = None
-
     if args.loss_type in ["ce_weighted", "ce_soft"]:
         print("[INFO] Computing per-design averaged class weights")
 
@@ -1208,18 +1111,8 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
             # Only use labeled nodes for computing class weights
             labeled_mask = g.label_mask if hasattr(g, 'label_mask') else (g.y >= 0)
             y = g.y[labeled_mask].cpu().numpy()  # Filter to labeled only
-            
             classes = np.unique(y)
-
-            # safety: skip degenerate graphs (need both class 0 and 1)
-            if len(classes) < 2 or not (0 in classes and 1 in classes):
-                continue
-
-            w = compute_class_weight(
-                class_weight="balanced",
-                classes=np.array([0, 1]),  # Explicitly specify the two classes
-                y=y
-            )
+            w = compute_class_weight( class_weight="balanced", classes=np.array([0, 1]),  y=y)
             w = w / np.mean(w)   # normalize per graph
             per_graph_weights.append(w)
 
@@ -1260,39 +1153,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 class_weights=class_weights if args.loss_type == "ce_weighted" else None,
                 soft_class_weights=soft_class_weights if args.loss_type == "ce_soft" else None,
             )
-            # coverage stats (optional)
-            epoch_seen = len(epoch_nodes)
-            ever_seen_nodes.update(epoch_nodes)
-            cumulative_seen = len(ever_seen_nodes)
-
-            epoch_coverage = epoch_seen / num_nodes
-            cumulative_coverage = cumulative_seen / num_nodes
-
-            epoch_boundary_seen = len(epoch_nodes & boundary_nodes)
-            cumulative_boundary_seen = len(ever_seen_nodes & boundary_nodes)
-            boundary_coverage = (
-                cumulative_boundary_seen / num_boundary if num_boundary > 0 else 0.0
-            )
-
-            print(
-                f"[COVERAGE] epoch={epoch:03d} | "
-                f"epoch_seen={epoch_seen}/{num_nodes} ({epoch_coverage:.3f}) | "
-                f"cumulative_seen={cumulative_seen}/{num_nodes} ({cumulative_coverage:.3f})"
-            )
-
-            print(
-                f"[BOUNDARY] epoch={epoch:03d} | "
-                f"epoch_seen={epoch_boundary_seen}/{num_boundary} | "
-                f"cumulative_seen={cumulative_boundary_seen}/{num_boundary} "
-                f"({boundary_coverage:.3f})"
-            )
-
-            # wandb.log({
-            #     "coverage/epoch_ratio": epoch_coverage,
-            #     "coverage/cumulative_ratio": cumulative_coverage,
-            #     "coverage_boundary/cumulative_ratio": boundary_coverage,
-            #     "epoch": epoch,
-            # })
 
         elif args.training_mode == "fullgraph":
             if args.fullgraph_mode == "merged":
@@ -1312,16 +1172,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                     class_weights=class_weights if args.loss_type == "ce_weighted" else None,
                     soft_class_weights=soft_class_weights  if args.loss_type == "ce_soft" else None,
                 )
-
-            elif args.fullgraph_mode == "per_family":
-                loss = train_family_weighted(
-                    model, train_graphs, args.train_gml, optimizer,
-                    class_weights=class_weights if args.loss_type == "ce_weighted" else None,
-                    soft_class_weights=soft_class_weights  if args.loss_type == "ce_soft" else None,
-                )
-
-            else:
-                raise ValueError(f"Unknown fullgraph_mode: {args.fullgraph_mode}")
 
         # loss, epoch_nodes = train(model, train_loader, optimizer, class_weights=class_weights if args.loss_type== "ce_weighted" else None, soft_class_weights=soft_class_weights if args.loss_type=="ce_soft" else None)
         train_time = time.perf_counter() - train_start
@@ -1575,13 +1425,13 @@ if __name__ == "__main__":
     
     
     
-    # debug statements 
-    print("----- [DEBUG] -------")
-    print(graph_data)
-    print("x:", graph_data.x.shape, graph_data.x.dtype)
-    print("y:", graph_data.y.shape, graph_data.y.dtype)
-    print("edge_index:", graph_data.edge_index.shape, graph_data.edge_index.dtype)
-    print("id2label:", label_map)
+    # # debug statements 
+    # print("----- [DEBUG] -------")
+    # print(graph_data)
+    # print("x:", graph_data.x.shape, graph_data.x.dtype)
+    # print("y:", graph_data.y.shape, graph_data.y.dtype)
+    # print("edge_index:", graph_data.edge_index.shape, graph_data.edge_index.dtype)
+    # print("id2label:", label_map)
 
 
     print("[INFO] Loading validation graphs:")
@@ -1617,10 +1467,7 @@ if __name__ == "__main__":
 
     # train has the scaler and its fit here
     scaler = SelectiveScaler(NUM_CATEGORICAL)
-    combined_data.x = torch.tensor(
-        scaler.fit_transform(combined_data.x.cpu().numpy()),
-        dtype=torch.float32
-    )
+    combined_data.x = torch.tensor( scaler.fit_transform(combined_data.x.cpu().numpy()), dtype=torch.float32 )
 
     # block added to save the scaler
     run_dir = os.path.join("models", "gnns", wandb.run.name)
@@ -1666,25 +1513,7 @@ if __name__ == "__main__":
                 combined_data, 
                 batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
                 walk_length = args.walk_length, 
-                sample_coverage = args.sample_coverage
-            )
-        elif args.sampling_method ==  "graphsaint_edge":
-            training_data_loader = GraphSAINTEdgeSampler(
-                combined_data, 
-                batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
-                num_steps = args.num_steps, 
-                sample_coverage = args.sample_coverage
-            )
-        elif args.sampling_method ==  "graphsaint_node":
-            training_data_loader = GraphSAINTNodeSampler(
-                combined_data, 
-                batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
-                num_steps = args.num_steps, 
-                sample_coverage = args.sample_coverage
-            )
-        else: 
-            raise ValueError(f"Unsupported sampling_method: {args.sampling_method}")
-
+                sample_coverage = args.sample_coverage )
 
     model = run_training(
         train_graphs=train_graphs,
