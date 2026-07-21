@@ -19,7 +19,7 @@ class JK_GraphSAGE(nn.Module):
 
         self.jk = JumpingKnowledge(mode=jk_mode, channels=hidden_channels, num_layers=6)
 
-        # JK 'cat' concatenates all 6 layer outputs → hidden_channels * 6
+        #  concatenates all the 6 layer outputs so it becomes of dimension hidden_din * 6
         jk_out_channels = hidden_channels * 6 if jk_mode == 'cat' else hidden_channels
         self.lin = nn.Linear(jk_out_channels, out_channels)
 
@@ -35,6 +35,6 @@ class JK_GraphSAGE(nn.Module):
             x = F.dropout(x, p=self.dropout, training=self.training)
             layer_outs.append(x)
 
-        x = self.jk(layer_outs)   # aggregate all layer representations
-        x = self.lin(x)           # project to output dimension
+        x = self.jk(layer_outs)   # aggregates all layer representations
+        x = self.lin(x)           # project it to output dimension
         return x
