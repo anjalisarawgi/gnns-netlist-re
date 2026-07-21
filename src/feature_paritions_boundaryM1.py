@@ -10,6 +10,21 @@ import igraph as ig
 import leidenalg
 
 
+# ROOT_RAW = "graphs/raw_v2/raw"
+# ROOT_OUT = "graphs/processed_boundaryDetection_march23"
+# ROOT_RAW = "new_graphs_crypto/raw/raw/"
+# ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_march23"
+
+
+# ROOT_RAW = "crypto_graphs_final/raw_final/rawv4"
+# ROOT_OUT = "crypto_graphs_final/processed_final/"
+# ROOT_RAW = "other_graphs_final/raw_final/rawv4"
+# ROOT_OUT = "other_graphs_final/processed_final/"
+ROOT_RAW = "new_designs/tum_risc/"
+ROOT_OUT = "new_designs/tum_risc_processed/"
+
+
+
 # debugging functions as checks
 def is_graph_connected(G):
     if G.is_directed():
@@ -148,14 +163,6 @@ def _backward_reach_within_k(G_dir, start, k=3):
                 q.append((nb, d + 1))
     return len(visited) - 1
 
-def _mean_neighbor_ego_density(G_und, node, k=2):
-    densities = []
-    for nb in G_und.neighbors(node):
-        nb_ego = _ego_nodes_khop_undirected(G_und, nb, k=k)
-        densities.append(_ego_density_undirected(G_und, nb_ego))
-    if len(densities) == 0:
-        return 0.0
-    return float(np.mean(densities))
 
 def _clean_partition(p):
     if p is None:
@@ -207,7 +214,7 @@ def get_unique_partition_count(G_dir):
     return float(len(partitions))
 
 
-
+## main function
 def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
     print("Processing:", input_gml)
 
@@ -449,44 +456,25 @@ def process_single_gml(input_gml, output_gml, tech,  reach_k=3, ego_k=2):
 
 
 
-# ROOT_RAW = "graphs/raw_v2/raw"
-# ROOT_OUT = "graphs/processed_boundaryDetection_march23"
-# ROOT_RAW = "new_graphs_crypto/raw/raw/"
-# ROOT_OUT = "new_graphs_crypto/processed_boundaryDetection_march23"
 
-
-# ROOT_RAW = "crypto_graphs_final/raw_final/rawv4"
-# ROOT_OUT = "crypto_graphs_final/processed_final/"
-# ROOT_RAW = "other_graphs_final/raw_final/rawv4"
-# ROOT_OUT = "other_graphs_final/processed_final/"
-ROOT_RAW = "new_designs/tum_risc/"
-ROOT_OUT = "new_designs/tum_risc_processed/"
-
-
-
-### just to make sure!
-processed_dirs = {}
+# checking which graphs are usable eg has boundary and is fullly connected and if not it saves it 
 usable_graphs = []
 unusable_graphs_connectivity = []
 unusable_graphs_no_boundary = []
-missing_boundary_graphs = {} 
+missing_boundary_graphs = {}
 for design in os.listdir(ROOT_RAW):
     design_path = os.path.join(ROOT_RAW, design)
     if not os.path.isdir(design_path):
         continue
-
-    processed_dirs[design] = {}
 
     for tech in os.listdir(design_path):
         tech_path = os.path.join(design_path, tech)
         if not os.path.isdir(tech_path):
             continue
 
-        print(f"Processing design: {design} | tech: {tech}")
-
         out_dir = os.path.join(ROOT_OUT, design, tech)
         os.makedirs(out_dir, exist_ok=True)
-        processed_dirs[design][tech] = out_dir
+        print(f"Processing: {design} | {tech}")
 
         for fname in os.listdir(tech_path):
             if not fname.endswith(".gml"):
@@ -494,16 +482,13 @@ for design in os.listdir(ROOT_RAW):
 
             input_gml = os.path.join(tech_path, fname)
             output_gml = os.path.join(out_dir, fname)
-
             G = nx.read_gml(input_gml)
 
             if not is_graph_connected(G):
-                print(f"[SKIP] Not connected → {input_gml}")
                 unusable_graphs_connectivity.append(input_gml)
                 continue
 
             if not has_boundary_labels(G):
-                print(f"[SKIP] No boundary → {input_gml}")
                 unusable_graphs_no_boundary.append(input_gml)
                 continue
 
@@ -511,32 +496,13 @@ for design in os.listdir(ROOT_RAW):
                 process_single_gml(input_gml, output_gml, tech, reach_k=3, ego_k=2)
                 usable_graphs.append(output_gml)
 
-                # Check for nodes with missing boundary labels
                 G_out = nx.read_gml(output_gml)
-                any_node = next(iter(G_out.nodes()))
-                print("Feature dim:", len(G_out.nodes[any_node]["features"]))
-
-                missing_boundary = []
-                for node in G_out.nodes():
-                    val = G_out.nodes[node].get("boundary", "MISSING")
-                    if val == "MISSING":
-                        missing_boundary.append(node)
-
-                if missing_boundary:
-                    print(f"[WARN] {len(missing_boundary)} nodes with NO boundary label in {output_gml}")
-                    print(f"       Example nodes: {missing_boundary[:5]}")
-
-                    # store full info
-                    missing_boundary_graphs[output_gml] = {
-                        "num_missing": len(missing_boundary),
-                        "nodes": missing_boundary
-                    }
-
-                else:
-                    print(f"[OK] All nodes have boundary labels in {output_gml}")
-
+                missing = [n for n in G_out.nodes() if G_out.nodes[n].get("boundary", "MISSING") == "MISSING"]
+                if missing:
+                    missing_boundary_graphs[output_gml] = {"num_missing": len(missing), "nodes": missing}
             except Exception as e:
                 print(f"[CRASH] {input_gml}: {e}")
+
 
 
 os.makedirs(ROOT_OUT, exist_ok=True)
