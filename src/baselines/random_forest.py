@@ -1,31 +1,30 @@
 import argparse
 import os
-import sys
 import json
 import random
-import inspect
 import time
 from pathlib import Path
-
-import joblib
 import networkx as nx
 import numpy as np
-import pandas as pd
 import yaml
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (
-    average_precision_score,
-    f1_score,
-    precision_score,
-    recall_score,
-)
-from tabpfn import TabPFNClassifier, TabPFNRegressor
+from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score
+from tabpfn import TabPFNClassifier
 from tabpfn.constants import ModelVersion
 from tabicl import TabICLClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 
 
 NUM_CATEGORICAL = 14
+ID2LABEL = {0: "not_boundary", 1: "boundary"}
+
+def set_seed(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+
 
 
 def parse_args():
@@ -63,12 +62,12 @@ def parse_args():
 
 
 
-def set_seed(seed: int):
-    random.seed(seed)
-    np.random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-
-
+def stratified_subsample(X, y, max_n, seed):
+    if len(X) <= max_n:
+        return X, y
+    _, X_sub, _, y_sub = train_test_split( X, y, test_size=max_n, stratify=y, random_state=seed)
+    return X_sub, y_sub
+    
 class SelectiveScaler:
     def __init__(self, n_categorical):
         self.n_cat = n_categorical
@@ -85,6 +84,7 @@ class SelectiveScaler:
         if self.n_cat < X.shape[1]:
             X[:, self.n_cat:] = self.scaler.transform(X[:, self.n_cat:])
         return X
+
 
         
 def load_graph_features(gml_path: str, args):
@@ -131,6 +131,8 @@ def load_graph_features(gml_path: str, args):
           f"boundary={y.sum()}  non-boundary={(y == 0).sum()}")
     return X, y
 
+
+
 # for faster process because loading graphs for every run takes alot of time 
 def load_graph_features_cached(gml_path: str, args) -> tuple[np.ndarray, np.ndarray]:
     cache_path = Path(gml_path).with_suffix(".npz")
@@ -144,6 +146,8 @@ def load_graph_features_cached(gml_path: str, args) -> tuple[np.ndarray, np.ndar
     return X, y
     
 
+
+# evals
 def pr_auc(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     if y_true.min() == y_true.max():
         return float("nan")
@@ -205,8 +209,8 @@ def save_predictions_to_gml(gml_path: str, y_true: np.ndarray, y_pred: np.ndarra
     print(f"  [GML SAVED] {out_path}")
 
 
-ID2LABEL = {0: "not_boundary", 1: "boundary"}
-def evaluate_splits(clf, tag, val_data, test_data, args, feature_mask=None):
+
+def evaluate_splits(clf, tag, test_data, args, feature_mask=None):
     def _slice(X):
         return X[:, feature_mask] if feature_mask is not None else X
 
@@ -224,31 +228,9 @@ def evaluate_splits(clf, tag, val_data, test_data, args, feature_mask=None):
     return test_results
 
 
-def stratified_subsample(X, y, max_n, seed):
-    rng = np.random.RandomState(seed)
-    classes, counts = np.unique(y, return_counts=True)
-    ratios = counts / counts.sum()
-    per_class = np.maximum((ratios * max_n).astype(int), 1)
-
-    diff = max_n - per_class.sum()
-    if diff > 0:
-        per_class[np.argmax(counts)] += diff
-    elif diff < 0:
-        per_class[np.argmax(per_class)] += diff  # diff is negative
-
-    indices = []
-    for cls, n in zip(classes, per_class):
-        cls_idx = np.where(y == cls)[0]
-        chosen = rng.choice(cls_idx, size=min(n, len(cls_idx)), replace=False)
-        indices.append(chosen)
-
-    indices = np.concatenate(indices)
-    rng.shuffle(indices)
-    return X[indices], y[indices]
-
 # all models
 # 1. tabpfn
-def run_tabpfn(X_train, y_train, val_data, test_data, args):
+def run_tabpfn(X_train, y_train, test_data, args):
     print("Using TabPFN v2.5")
 
     # subsampling
@@ -262,20 +244,19 @@ def run_tabpfn(X_train, y_train, val_data, test_data, args):
     classifier.fit(X_train, y_train)
     print("  Training complete.")
 
-    test_results = evaluate_splits(classifier, "TabPFN", val_data, test_data, args)
+    test_results = evaluate_splits(classifier, "TabPFN", test_data, args)
     return {"test_macro": macro_avg(test_results)}
 
 
 ## tabicl
-def run_tabicl(X_train, y_train, val_data, test_data, args):
+def run_tabicl(X_train, y_train, test_data, args):
     print("Using tabicl:")
 
     # subsampling again
-    print("Total rows before:", {len(X_train)}")
+    print("Total rows before:", {len(X_train)})
     if len(X_train) > 200_000:
-        print(f"  Subsampling train rows: {len(X_train)} → {200_000}")
         X_train, y_train = stratified_subsample(X_train, y_train, 200_000, args.seed)
-    print("Total rows after:", {len(X_train)}")
+    print("Total rows after:", {len(X_train)})
     
     classifier = TabICLClassifier( 
         n_estimators=args.tabicl_n_estimators,
@@ -285,11 +266,11 @@ def run_tabicl(X_train, y_train, val_data, test_data, args):
         random_state=42,
     )
     classifier.fit(X_train, y_train)
-    test_results = evaluate_splits( classifier, "TabICL", val_data, test_data, args)
+    test_results = evaluate_splits( classifier, "TabICL", test_data, args)
 
     return {"test_macro": macro_avg(test_results)}
 
-def run_rf(X_train, y_train, val_data, test_data, args):
+def run_rf(X_train, y_train, test_data, args):
     # on all features
     rf_all = RandomForestClassifier( n_estimators=args.n_estimators, max_depth=None, class_weight="balanced", n_jobs=-1, random_state=args.seed)
     t0 = time.time()
@@ -298,7 +279,7 @@ def run_rf(X_train, y_train, val_data, test_data, args):
     print(f"rf training done | Train time: {train_time:.2f}s ({train_time/60:.2f} min)")
     # rf_all.fit(X_train, y_train)
     # print("rf training done complete")
-    test_results_all = evaluate_splits(rf_all, "RF-ALL", val_data, test_data, args)
+    test_results_all = evaluate_splits(rf_all, "RF-ALL", test_data, args)
 
 
     # only for rf
@@ -321,11 +302,6 @@ def main():
     y_train = np.concatenate(y_parts)
     print(f"  Total train  nodes={len(y_train)}  boundary={y_train.sum()}")
 
-    # print("validation graphs:::")
-    # val_data = []
-    # for path in args.val_gml:
-    #     X, y = load_graph_features_cached(path, args)
-    #     val_data.append((Path(path).stem, path, X, y))
 
     print("test graphs:::")
     test_data = []
@@ -336,17 +312,15 @@ def main():
     # scaling - only for tabpfn and tabicl 
     scaler = SelectiveScaler(NUM_CATEGORICAL)
     X_train_scaled = scaler.fit_transform(X_train)
-    val_data_scaled = [ (name, path, scaler.transform(X), y)for name, path, X, y in val_data]     # scaler fit on the trian and tested on val and test respectively
     test_data_scaled = [(name, path, scaler.transform(X), y) for name, path, X, y in test_data]
 
     
     if args.mode == "rf":
-        results_summary = run_rf(X_train, y_train, val_data, test_data, args)
+        results_summary = run_rf(X_train, y_train,  test_data, args)
     elif args.mode == "tabpfn":
-        # results_summary = run_tabpfn(X_train, y_train, val_data, test_data, args)
-        results_summary = run_tabpfn(X_train_scaled, y_train, val_data_scaled, test_data_scaled, args)
+        results_summary = run_tabpfn(X_train_scaled, y_train, test_data_scaled, args)
     elif args.mode == "tabicl":
-        results_summary = run_tabicl(X_train_scaled, y_train, val_data_scaled, test_data_scaled, args)
+        results_summary = run_tabicl(X_train_scaled, y_train, test_data_scaled, args)
 
     print("completed")
 
