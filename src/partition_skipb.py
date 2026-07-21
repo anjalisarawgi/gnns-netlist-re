@@ -1384,6 +1384,9 @@ if __name__ == "__main__":
     output_dir = make_result_dir("gnns")
     print("[INFO] GNN results will be saved to:", output_dir)
 
+    output_labels = {0: "not_boundary", 1: "boundary"}
+    print("[INFO] Output Labels:", output_labels)
+
     for path, g in test_graphs:
         p = Path(path)
         test_graph_name = p.stem
