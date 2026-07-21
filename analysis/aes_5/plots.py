@@ -37,4 +37,4 @@ ax.set_title("Effect of designs from two libraries and testing it on the third l
 ax.legend(fontsize=9, framealpha=0.4)
 ax.spines[["top", "right"]].set_visible(False)
 plt.tight_layout()
-plt.savefig("ablation_lodo_crypto.png", dpi=150, bbox_inches="tight")
+plt.savefig("analysis/aes_5/ablation_lodo_crypto.png", dpi=150, bbox_inches="tight")
