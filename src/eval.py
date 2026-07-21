@@ -159,7 +159,7 @@ if __name__ == "__main__":
         choices=["graphsage", "gcn", "gat", "graphTransformer"]
     )
 
-    # Not needed anymore if using JSON, but keep it optional
+    # this can be optional 
     parser.add_argument("--test_gml", nargs="+", default=None)
 
     parser.add_argument(
