@@ -106,5 +106,5 @@ ax.spines['right'].set_visible(False)
 # ax.grid(axis='y', alpha=0.3, linewidth=0.5)
 
 plt.tight_layout()
-plt.savefig('results_final/training_crypto/final_plots/gnn_vs_rf.png', dpi=150, bbox_inches='tight')
+plt.savefig('results_final/training_crypto/rf_vs_gnns.png', dpi=150, bbox_inches='tight')
 plt.show()
