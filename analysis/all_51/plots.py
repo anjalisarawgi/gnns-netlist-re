@@ -140,3 +140,18 @@ print(f"Spearman correlation (PR-AUC vs Num Subcircuits): {corr_subcircuits:.4f}
 # print correlation between prauc and num_nodes - spearman
 corr_nodes = df['prauc'].corr(df['num_nodes'], method='spearman')
 print(f"Spearman correlation (PR-AUC vs Num Nodes): {corr_nodes:.4f}")
+
+
+#### prauc lift hist 
+# print pr-auc lift distribution stats as a histogram
+plt.figure(figsize=(8, 5))
+plt.hist(df["lift"], bins=10, color="#76B7B2", edgecolor="white", linewidth=0.8, alpha=0.88)
+plt.axvline(x=0, color="#aaaaaa", linewidth=0.9, linestyle="--")
+plt.xlabel("PR-AUC Lift (PR-AUC_GNN − BR)", fontsize=12, labelpad=8)
+plt.ylabel("Number of designs", fontsize=12, labelpad=8)
+plt.title("Distribution of PR-AUC Lift across crypto design families", fontsize=13, pad=30)
+plt.grid(color="#eeeeee", linewidth=0.6)
+plt.tight_layout()
+plt.savefig("analysis/all_51/prauc_lift_histogram.png", dpi=150, bbox_inches="tight")
+plt.close()
+
