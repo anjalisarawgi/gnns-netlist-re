@@ -44,6 +44,8 @@ import joblib
 import copy
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import f1_score, precision_score, recall_score
+from collections import deque
+from pathlib import Path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # device = torch.device("cpu")
@@ -57,6 +59,310 @@ def set_seed(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     os.environ['PYTHONHASHSEED'] = str(seed)
+
+
+os.makedirs("logs", exist_ok=True)
+# timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+# could increase to 24 -- 
+torch.set_num_threads(10)        # for math mult (pytorch)    
+torch.set_num_interop_threads(2)     # pytorch - helper threads
+os.environ["OMP_NUM_THREADS"] = "10" # max 20 cores (pytorch)
+os.environ["MKL_NUM_THREADS"] = "10" # max 20 cores (intel math libr)
+os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
+                    help="Sampling method: 'graphsaint' or 'khop'")
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", 
+                    "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal",
+                     "GAAN", "GraphSAGE_ResNorm", "BiDirectedGraphSAGE","JK_GraphSAGE", "BiDirectedJK_GraphSAGE"])
+parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
+parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
+parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
+parser.add_argument("--epochs", type = int, default=250)
+parser.add_argument("--lr", type = float, default=0.01, help = "learaning rate for main trianing")
+# parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
+# graphsaint
+parser.add_argument("--sample_coverage", type=int, default=50, help="how many times a node can be seen (sampled as a subgraph/node) for each epoch?") # for others
+parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method") # for random walk sampling only
+parser.add_argument("--num_steps", type=int, default=5, help="how many iterations per epoch do you want?") 
+parser.add_argument("--perc_batchsize", type=float, default = 0.01, help="this is for the size of the batch size")
+
+# khop
+parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
+parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
+
+# # khop v2  - neighbourLoader ( + radius)
+# parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
+# parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
+# ml args 
+parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
+parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
+parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
+parser.add_argument("--training_mode",type=str, choices=["fullgraph", "graphsaint"],  default="graphsaint",    help="Train on full graph or sampled subgraphs")
+parser.add_argument("--use_scheduler", action="store_true", help="do you want to use the learning rate scheduler?")
+# features 
+parser.add_argument("--use_partition_features", action="store_true", help="if you want to concatenate partition_features to node features")
+parser.add_argument("--use_graph_features", action="store_true", help="if you want to concatenate partition_features to node features")
+parser.add_argument("--fullgraph_mode", type=str, choices=["merged", "per_design"], default="merged", help="How to train in fullgraph mode")
+parser.add_argument("--use_unsupervised_features", action="store_true")
+parser.add_argument("--use_unsupervised_features_louvian", action="store_true")
+
+## test block
+parser.add_argument("--use_lib_id", action="store_true", help="append library one-hot to node features")
+parser.add_argument("--use_design_id", action="store_true", help="append design one-hot to node features (leaky if testing unseen designs!)")
+##### test block end
+parser.add_argument("--use_augmentation",      action="store_true")
+parser.add_argument("--aug_gate_flip_frac",    type=float, default=0.05)
+parser.add_argument("--aug_edge_corrupt_frac", type=float, default=0.025)
+parser.add_argument("--aug_feat_noise_frac", type=float, default=0.05, help="fraction of nodes to apply continuous feature scaling to")
+# cofnig 
+parser.add_argument("--config", type=str, help="Path to YAML config file")
+args = parser.parse_args()
+
+
+GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
+GATE2ID = {g: i for i, g in enumerate(GATE_TYPES)}
+NUM_GATE_TYPES = len(GATE_TYPES)  # 14
+
+
+# yaml 
+config_tag = None
+if args.config:
+    config_tag = os.path.splitext(os.path.basename(args.config))[0]
+    with open(args.config, "r") as f:
+        cfg = yaml.safe_load(f)
+
+    for key, value in cfg.items():
+        setattr(args, key, value)
+
+def get_config_prefix():
+    return config_tag if config_tag is not None else "no_config"
+
+def make_result_dir(model_family: str):
+    prefix = get_config_prefix()
+    out_dir = os.path.join("results", model_family, wandb.run.name)
+    os.makedirs(out_dir, exist_ok=True)
+    return out_dir
+
+# wandb setup 
+# test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
+test_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.test_gml]
+test_name = "+".join(test_roots[:2]) + ("+more" if len(test_roots) > 2 else "")
+
+train_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.train_gml]
+train_name = "+".join(train_roots[:2]) + ("+test" if len(train_roots) > 2 else "")
+
+if args.sampling_method == "graphsaint_rw":
+    sampling_suffix = f"graphsaint_walk{args.walk_length}"
+elif args.sampling_method == "khop":
+    sampling_suffix = f"khop_r{args.radius}_n{args.num_subgraphs}"
+else:
+    sampling_suffix = args.sampling_method
+
+config_prefix = config_tag if config_tag is not None else "no_config"
+
+if args.training_mode == "fullgraph":
+    run_name = (
+        # f"aesEVAL_{args.model}_{args.loss_type}_"
+        # f"trainingAEs_{args.model}_{args.loss_type}_"
+        # f"NOISE_crypto_{args.model}_{args.loss_type}_"
+        # f"NEWDESIGNS_crypto_{args.model}_{args.loss_type}_"
+        f"LIB_ablation_51_{args.model}_{args.loss_type}_"
+        f"fullgraph_{args.fullgraph_mode}_"
+        f"{config_prefix}"
+    )
+else:
+    run_name = "gnnsampling"
+
+wandb.init(project="gnn-parition-detection", name=run_name)
+wandb.config.update(vars(args))
+wandb.config.update({"loss_type": args.loss_type})
+
+# # setting label names 
+# if args.label_mode == "subcircuit_name":
+#     pos_label = "is_sbox"
+#     neg_label = "is_not_sbox"
+# elif args.label_mode == "boundary":
+#     pos_label = "is_boundary"
+#     neg_label = "is_not_boundary"
+
+# set seed
+set_seed(42)
+
+
+##### test block for graph encoding:
+def parse_lib_design(gml_path: str):
+    p = Path(gml_path)
+    design_family = p.parts[-3]
+    lib = p.parts[-2]
+    return design_family, lib
+
+train_families, train_libs = [], []
+for p in args.train_gml:
+    fam, lib = parse_lib_design(p)
+    train_families.append(fam)
+    train_libs.append(lib)
+
+family2id = {f: i for i, f in enumerate(sorted(set(train_families)))}
+lib2id    = {l: i for i, l in enumerate(sorted(set(train_libs)))}
+
+print("[DOMAIN] lib2id:", lib2id)
+print("[DOMAIN] family2id size:", len(family2id))
+##########
+############################################################
+
+################
+# all functions 
+################
+# each graph is getting its own scaler - dangerus
+def pr_auc_from_probs(y_true, y_prob):
+    y_true = np.asarray(y_true).astype(int)
+    y_prob = np.asarray(y_prob).astype(float)
+    if y_true.min() == y_true.max():
+        return float("nan")
+    return float(average_precision_score(y_true, y_prob))
+
+#### merge_data
+def merge_data(gml_1, gml_2):
+    # note here we make offsets so we dont have overlapping edge indexes 
+    offset = gml_1.num_nodes
+    gml_2_edgeIndex = gml_2.edge_index + offset
+
+    # concat 
+    x = torch.cat([gml_1.x, gml_2.x], dim=0)
+    edge_index = torch.cat([gml_1.edge_index, gml_2_edgeIndex], dim=1)
+    y = torch.cat([gml_1.y, gml_2.y], dim=0)
+
+    train_mask = torch.cat([gml_1.train_mask, gml_2.train_mask], dim = 0)
+    val_mask = torch.cat([gml_1.val_mask, gml_2.val_mask], dim = 0)
+    test_mask = torch.cat([gml_1.test_mask, gml_2.test_mask], dim = 0)
+
+    label_mask = torch.cat([gml_1.label_mask, gml_2.label_mask], dim=0)
+
+    # data obj
+    merged_data = Data(
+        x = x, 
+        edge_index=edge_index,
+        y = y, 
+        label_mask = label_mask,
+        train_mask = train_mask, 
+        val_mask = val_mask, 
+        test_mask = test_mask
+    )
+
+    return merged_data
+
+
+def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=None, soft_class_weights=None):
+    model.train()
+    optimizer.zero_grad()
+
+    # group graph indices by family
+    family_to_indices = defaultdict(list)
+    for i, path in enumerate(graph_paths):
+        fam, _ = parse_lib_design(path)
+        family_to_indices[fam].append(i)
+
+    num_families = len(family_to_indices)
+    total_loss = 0.0
+
+    for fam, indices in family_to_indices.items():
+        num_families = len(family_to_indices)
+        
+        for i in indices:
+            g = graphs[i].to(device)
+            out = model(g.x, g.edge_index)
+            labeled_mask = g.label_mask if hasattr(g, 'label_mask') else (g.y >= 0)
+
+            if args.loss_type == "focal":
+                loss_per_node = focal_loss(out[labeled_mask], g.y[labeled_mask])
+            elif args.loss_type == "ce_weighted":
+                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=class_weights.to(out.device), reduction="none")
+            elif args.loss_type == "ce_soft":
+                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=soft_class_weights.to(out.device), reduction="none")
+            else:
+                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], reduction="none")
+
+            # divide by both len(indices) and num_families so each family contributes equally
+            loss = loss_per_node.mean() / (len(indices) * num_families)
+            loss.backward()          # ← backward while computation graph still alive
+            total_loss += loss.item()
+
+            del out, loss_per_node, loss
+            g = g.to("cpu")
+
+    if args.set_gradient_clipping:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+
+    optimizer.step()
+    return total_loss
+
+
+
+def augment_graph_noise(data: Data, n_categorical: int = 14, gate_flip_frac: float = 0.10, edge_corrupt_frac: float = 0.10, feat_noise_frac: float = 0.10, feat_scale_half_frac: float = 0.5, feat_scale_min: float = 0.80, feat_scale_max: float = 1.20):
+
+    torch.manual_seed(42)
+    np.random.seed(42)
+    random.seed(42)
+
+    data = data.clone()
+    N = data.x.size(0)
+    E = data.edge_index.size(1)
+    n_cont = data.x.size(1) - n_categorical
+
+    # gate label corruption - noise type 1
+    n_flip = max(1, int(gate_flip_frac * N))
+    flip_idx = torch.randperm(N)[:n_flip]
+    random_gates = torch.randint(0, n_categorical, (n_flip,))
+    new_onehot = torch.zeros(n_flip, n_categorical)
+    new_onehot[torch.arange(n_flip), random_gates] = 1.0
+    data.x[flip_idx, :n_categorical] = new_onehot
+
+    # - noise type 2 -  edge corruption (drop + add random edges)
+    if edge_corrupt_frac > 0:
+        n_corrupt = max(1, int(edge_corrupt_frac * E))
+
+        src_nodes = data.edge_index[0]
+        dst_nodes = data.edge_index[1]
+        degree = torch.zeros(N, dtype=torch.long)
+        degree.scatter_add_(0, src_nodes, torch.ones(E, dtype=torch.long))
+
+        safe_to_drop = (degree[src_nodes] > 1) & (degree[dst_nodes] > 1)
+        candidate_idx = torch.where(safe_to_drop)[0]
+
+        if len(candidate_idx) >= n_corrupt:
+            perm = torch.randperm(len(candidate_idx))[:n_corrupt]
+            drop_idx = candidate_idx[perm]
+        else:
+            drop_idx = candidate_idx
+
+        keep_mask = torch.ones(E, dtype=torch.bool)
+        keep_mask[drop_idx] = False
+        kept_edges = data.edge_index[:, keep_mask]
+
+        n_actually_dropped = keep_mask.logical_not().sum().item()
+        rand_src = torch.randint(0, N, (n_actually_dropped,))
+        rand_dst = torch.randint(0, N, (n_actually_dropped,))
+        new_edges = torch.stack([rand_src, rand_dst], dim=0)
+        data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
+
+    # noise 3 -  continuous feature scaling
+    if n_cont > 0:
+        n_noisy_nodes = max(1, int(feat_noise_frac * N))
+        noisy_node_idx = torch.randperm(N)[:n_noisy_nodes]
+
+        n_feats_to_perturb = max(1, int(feat_scale_half_frac * n_cont))
+
+        for node_i in noisy_node_idx:
+            feat_subset = torch.randperm(n_cont)[:n_feats_to_perturb]
+            scales = torch.empty(n_feats_to_perturb).uniform_(feat_scale_min, feat_scale_max)
+            data.x[node_i, n_categorical + feat_subset] *= scales
+
+    return data
 
 
 
@@ -164,355 +470,6 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
 
     nx.write_gml(G, output_gml_path)
     print(f"[INFO] Saved GML with predictions → {output_gml_path}")
-
-
-class Tee(object):
-    def __init__(self, *files):
-        self.files = files
-
-    def write(self, obj):
-        for f in self.files:
-            f.write(obj)
-            f.flush()
-
-    def flush(self):
-        for f in self.files:
-            f.flush()
-
-    def isatty(self):
-        return any(getattr(f, 'isatty', lambda: False)() for f in self.files)
-
-os.makedirs("logs", exist_ok=True)
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_file = open(f"logs/run_{timestamp}.log", "w")
-sys.stdout = Tee(sys.__stdout__, log_file)
-sys.stderr = Tee(sys.__stderr__, log_file)
-
-
-# could increase to 24 -- 
-torch.set_num_threads(10)        # for math mult (pytorch)    
-torch.set_num_interop_threads(2)     # pytorch - helper threads
-os.environ["OMP_NUM_THREADS"] = "10" # max 20 cores (pytorch)
-os.environ["MKL_NUM_THREADS"] = "10" # max 20 cores (intel math libr)
-os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "graphsaint_node", "graphsaint_edge", "khop"], default="graphsaint",
-                    help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", 
-                    "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal",
-                     "GAAN", "GraphSAGE_ResNorm", "BiDirectedGraphSAGE","JK_GraphSAGE", "BiDirectedJK_GraphSAGE"])
-parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
-parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
-parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
-parser.add_argument("--epochs", type = int, default=250)
-parser.add_argument("--lr", type = float, default=0.01, help = "learaning rate for main trianing")
-# parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
-# graphsaint
-parser.add_argument("--sample_coverage", type=int, default=50, help="how many times a node can be seen (sampled as a subgraph/node) for each epoch?") # for others
-parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method") # for random walk sampling only
-parser.add_argument("--num_steps", type=int, default=5, help="how many iterations per epoch do you want?") 
-parser.add_argument("--perc_batchsize", type=float, default = 0.01, help="this is for the size of the batch size")
-
-# khop
-parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
-parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
-
-# # khop v2  - neighbourLoader ( + radius)
-# parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
-# parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
-# ml args 
-parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
-parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
-parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
-parser.add_argument(
-    "--training_mode",type=str, choices=["fullgraph", "graphsaint"],  default="graphsaint",    help="Train on full graph or sampled subgraphs")
-parser.add_argument("--use_scheduler", action="store_true", help="do you want to use the learning rate scheduler?")
-# features 
-parser.add_argument("--use_partition_features", action="store_true", help="if you want to concatenate partition_features to node features")
-parser.add_argument("--use_graph_features", action="store_true", help="if you want to concatenate partition_features to node features")
-parser.add_argument(
-    "--fullgraph_mode",
-    type=str,
-    choices=["merged", "per_design"],
-    default="merged",
-    help="How to train in fullgraph mode"
-)
-parser.add_argument("--use_unsupervised_features", action="store_true")
-parser.add_argument("--use_unsupervised_features_louvian", action="store_true")
-
-## test block
-parser.add_argument("--use_lib_id", action="store_true", help="append library one-hot to node features")
-parser.add_argument("--use_design_id", action="store_true", help="append design one-hot to node features (leaky if testing unseen designs!)")
-##### test block end
-parser.add_argument("--use_augmentation",      action="store_true")
-parser.add_argument("--aug_gate_flip_frac",    type=float, default=0.05)
-parser.add_argument("--aug_edge_corrupt_frac", type=float, default=0.025)
-parser.add_argument("--aug_feat_noise_frac", type=float, default=0.05, help="fraction of nodes to apply continuous feature scaling to")
-# cofnig 
-parser.add_argument("--config", type=str, help="Path to YAML config file")
-args = parser.parse_args()
-
-
-GATE_TYPES = ["INPUT", "OUTPUT", "AND", "OR", "NAND", "NOR", "XOR", "XNOR", "INV", "AOI", "OAI", "MUX", "DFF", "UNKNOWN"]
-GATE2ID = {g: i for i, g in enumerate(GATE_TYPES)}
-NUM_GATE_TYPES = len(GATE_TYPES)  # 14
-
-
-# yaml 
-config_tag = None
-if args.config:
-    config_tag = os.path.splitext(os.path.basename(args.config))[0]
-    with open(args.config, "r") as f:
-        cfg = yaml.safe_load(f)
-
-    for key, value in cfg.items():
-        setattr(args, key, value)
-
-def get_config_prefix():
-    return config_tag if config_tag is not None else "no_config"
-
-def make_result_dir(model_family: str):
-    prefix = get_config_prefix()
-    out_dir = os.path.join("results", model_family, wandb.run.name)
-    os.makedirs(out_dir, exist_ok=True)
-    return out_dir
-
-# wandb setup 
-# test_name = os.path.splitext(os.path.basename(args.test_gml))[0]
-test_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.test_gml]
-test_name = "+".join(test_roots[:2]) + ("+more" if len(test_roots) > 2 else "")
-
-train_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.train_gml]
-train_name = "+".join(train_roots[:2]) + ("+test" if len(train_roots) > 2 else "")
-
-if args.sampling_method == "graphsaint_rw":
-    sampling_suffix = f"graphsaint_walk{args.walk_length}"
-elif args.sampling_method == "khop":
-    sampling_suffix = f"khop_r{args.radius}_n{args.num_subgraphs}"
-else:
-    sampling_suffix = args.sampling_method
-
-config_prefix = config_tag if config_tag is not None else "no_config"
-
-if args.training_mode == "fullgraph":
-    run_name = (
-        # f"aesEVAL_{args.model}_{args.loss_type}_"
-        # f"trainingAEs_{args.model}_{args.loss_type}_"
-        # f"NOISE_crypto_{args.model}_{args.loss_type}_"
-        # f"NEWDESIGNS_crypto_{args.model}_{args.loss_type}_"
-        f"LIB_ablation_51_{args.model}_{args.loss_type}_"
-        f"fullgraph_{args.fullgraph_mode}_"
-        f"{config_prefix}"
-    )
-else:
-    run_name = "gnnsampling"
-
-wandb.init(project="gnn-parition-detection", name=run_name)
-wandb.config.update(vars(args))
-wandb.config.update({"loss_type": args.loss_type})
-
-# # setting label names 
-# if args.label_mode == "subcircuit_name":
-#     pos_label = "is_sbox"
-#     neg_label = "is_not_sbox"
-# elif args.label_mode == "boundary":
-#     pos_label = "is_boundary"
-#     neg_label = "is_not_boundary"
-
-# set seed
-set_seed(42)
-
-
-##### test block for graph encoding:
-from pathlib import Path
-
-def parse_lib_design(gml_path: str):
-    p = Path(gml_path)
-    design_family = p.parts[-3]
-    lib = p.parts[-2]
-    return design_family, lib
-
-train_families, train_libs = [], []
-for p in args.train_gml:
-    fam, lib = parse_lib_design(p)
-    train_families.append(fam)
-    train_libs.append(lib)
-
-family2id = {f: i for i, f in enumerate(sorted(set(train_families)))}
-lib2id    = {l: i for i, l in enumerate(sorted(set(train_libs)))}
-
-print("[DOMAIN] lib2id:", lib2id)
-print("[DOMAIN] family2id size:", len(family2id))
-##########
-############################################################
-
-################
-# all functions 
-################
-# possible probelms 
-
-# each graph is getting its own scaler - dangerus
-# normalize (mean = 0, sd = 1)
-def normalize_features(features):
-    scaler = StandardScaler()
-    features = scaler.fit_transform(features)
-    features_tensor = torch.tensor(features, dtype=torch.float)
-    return features_tensor
-
-def pr_auc_from_probs(y_true, y_prob):
-    y_true = np.asarray(y_true).astype(int)
-    y_prob = np.asarray(y_prob).astype(float)
-    if y_true.min() == y_true.max():
-        return float("nan")
-    return float(average_precision_score(y_true, y_prob))
-
-#### merge_data
-def merge_data(gml_1, gml_2):
-    # note here we make offsets so we dont have overlapping edge indexes 
-    offset = gml_1.num_nodes
-    gml_2_edgeIndex = gml_2.edge_index + offset
-
-    # concat 
-    x = torch.cat([gml_1.x, gml_2.x], dim=0)
-    edge_index = torch.cat([gml_1.edge_index, gml_2_edgeIndex], dim=1)
-    y = torch.cat([gml_1.y, gml_2.y], dim=0)
-
-    train_mask = torch.cat([gml_1.train_mask, gml_2.train_mask], dim = 0)
-    val_mask = torch.cat([gml_1.val_mask, gml_2.val_mask], dim = 0)
-    test_mask = torch.cat([gml_1.test_mask, gml_2.test_mask], dim = 0)
-
-    label_mask = torch.cat([gml_1.label_mask, gml_2.label_mask], dim=0)
-
-    # data obj
-    merged_data = Data(
-        x = x, 
-        edge_index=edge_index,
-        y = y, 
-        label_mask = label_mask,
-        train_mask = train_mask, 
-        val_mask = val_mask, 
-        test_mask = test_mask
-    )
-
-    return merged_data
-
-
-def train_family_weighted(model, graphs, graph_paths, optimizer, class_weights=None, soft_class_weights=None):
-    model.train()
-    optimizer.zero_grad()
-
-    # group graph indices by family
-    family_to_indices = defaultdict(list)
-    for i, path in enumerate(graph_paths):
-        fam, _ = parse_lib_design(path)
-        family_to_indices[fam].append(i)
-
-    num_families = len(family_to_indices)
-    total_loss = 0.0
-
-    for fam, indices in family_to_indices.items():
-        num_families = len(family_to_indices)
-        
-        for i in indices:
-            g = graphs[i].to(device)
-            out = model(g.x, g.edge_index)
-            labeled_mask = g.label_mask if hasattr(g, 'label_mask') else (g.y >= 0)
-
-            if args.loss_type == "focal":
-                loss_per_node = focal_loss(out[labeled_mask], g.y[labeled_mask])
-            elif args.loss_type == "ce_weighted":
-                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=class_weights.to(out.device), reduction="none")
-            elif args.loss_type == "ce_soft":
-                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], weight=soft_class_weights.to(out.device), reduction="none")
-            else:
-                loss_per_node = F.cross_entropy(out[labeled_mask], g.y[labeled_mask], reduction="none")
-
-            # divide by both len(indices) and num_families so each family contributes equally
-            loss = loss_per_node.mean() / (len(indices) * num_families)
-            loss.backward()          # ← backward while computation graph still alive
-            total_loss += loss.item()
-
-            del out, loss_per_node, loss
-            g = g.to("cpu")
-
-    if args.set_gradient_clipping:
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-
-    optimizer.step()
-    return total_loss
-
-
-
-def augment_graph_noise(data: Data,
-                        n_categorical: int = 14,
-                        gate_flip_frac: float = 0.10,
-                        edge_corrupt_frac: float = 0.10,
-                        feat_noise_frac: float = 0.10,
-                        feat_scale_half_frac: float = 0.5,
-                        feat_scale_min: float = 0.80,
-                        feat_scale_max: float = 1.20) -> Data:
-
-    torch.manual_seed(42)
-    np.random.seed(42)
-    random.seed(42)
-
-    data = data.clone()
-    N = data.x.size(0)
-    E = data.edge_index.size(1)
-    n_cont = data.x.size(1) - n_categorical
-
-    # gate label corruption - noise type 1
-    n_flip = max(1, int(gate_flip_frac * N))
-    flip_idx = torch.randperm(N)[:n_flip]
-    random_gates = torch.randint(0, n_categorical, (n_flip,))
-    new_onehot = torch.zeros(n_flip, n_categorical)
-    new_onehot[torch.arange(n_flip), random_gates] = 1.0
-    data.x[flip_idx, :n_categorical] = new_onehot
-
-    # - noise type 2 -  edge corruption (drop + add random edges)
-    if edge_corrupt_frac > 0:
-        n_corrupt = max(1, int(edge_corrupt_frac * E))
-
-        src_nodes = data.edge_index[0]
-        dst_nodes = data.edge_index[1]
-        degree = torch.zeros(N, dtype=torch.long)
-        degree.scatter_add_(0, src_nodes, torch.ones(E, dtype=torch.long))
-
-        safe_to_drop = (degree[src_nodes] > 1) & (degree[dst_nodes] > 1)
-        candidate_idx = torch.where(safe_to_drop)[0]
-
-        if len(candidate_idx) >= n_corrupt:
-            perm = torch.randperm(len(candidate_idx))[:n_corrupt]
-            drop_idx = candidate_idx[perm]
-        else:
-            drop_idx = candidate_idx
-
-        keep_mask = torch.ones(E, dtype=torch.bool)
-        keep_mask[drop_idx] = False
-        kept_edges = data.edge_index[:, keep_mask]
-
-        n_actually_dropped = keep_mask.logical_not().sum().item()
-        rand_src = torch.randint(0, N, (n_actually_dropped,))
-        rand_dst = torch.randint(0, N, (n_actually_dropped,))
-        new_edges = torch.stack([rand_src, rand_dst], dim=0)
-        data.edge_index = torch.cat([kept_edges, new_edges], dim=1)
-
-    # noise 3 -  continuous feature scaling
-    if n_cont > 0:
-        n_noisy_nodes = max(1, int(feat_noise_frac * N))
-        noisy_node_idx = torch.randperm(N)[:n_noisy_nodes]
-
-        n_feats_to_perturb = max(1, int(feat_scale_half_frac * n_cont))
-
-        for node_i in noisy_node_idx:
-            feat_subset = torch.randperm(n_cont)[:n_feats_to_perturb]
-            scales = torch.empty(n_feats_to_perturb).uniform_(feat_scale_min, feat_scale_max)
-            data.x[node_i, n_categorical + feat_subset] *= scales
-
-    return data
-
 
 
 def load_single_gml(gml_path, remove_edges = False):
@@ -869,76 +826,6 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
 
 
 
-@torch.no_grad()
-def evaluate_train_acc(model, data, mask):
-    model.eval()
-    data = data.to(device)
-    out = model(data.x, data.edge_index)
-    pred = out.argmax(dim=1)
-
-    label_mask = data.label_mask.to(device) if hasattr(data, 'label_mask') else (data.y >= 0)
-    valid_mask = mask.to(device) & label_mask
-    correct = (pred[valid_mask] == data.y[valid_mask]).sum().item()
-    accuracy = correct / valid_mask.sum().item() if valid_mask.sum() > 0 else 0.0
-    return accuracy
-
-
-@torch.no_grad()
-def evaluate_train_fpr(data, model, mask):
-    model.eval()
-    data = data.to(device)
-    out = model(data.x, data.edge_index)
-
-    # another moving part: ???
-    # pred = out.argmax(dim=1) 
-    # probs = torch.softmax(out, dim=1) # not so agressive (1) 
-    # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
-    # pred = predict_with_threshold(out, args.decision_threshold)
-
-    pred = out.argmax(dim=1)
-
-
-    label_mask = data.label_mask.to(device) if hasattr(data, 'label_mask') else (data.y >= 0)
-    valid_mask = mask.to(device) & label_mask
-
-    y_true = data.y[valid_mask].cpu().numpy()
-    y_pred = pred[valid_mask].cpu().numpy()
-
-    f1 = f1_score(y_true, y_pred, zero_division=0)
-    precision = precision_score(y_true, y_pred, zero_division=0)
-    recall = recall_score(y_true, y_pred, zero_division=0)
-    return f1, precision, recall
-
-
-
-@torch.no_grad()
-def eval_class_acc(data, model, mask, id2name=None):
-    model.eval()
-    data = data.to(device)
-    out = model(data.x, data.edge_index)
-    # pred = out.argmax(dim=1)
-    pred = out.argmax(dim=1)
-
-    valid_mask = mask.to(device)
-    y_true = data.y[valid_mask]
-    y_pred = pred[valid_mask]
-
-    unique_classes = torch.unique(y_true).tolist()
-
-
-    acc_per_class = {}
-    for c in unique_classes:
-        mask_c = y_true == c 
-        total_c = mask_c.sum().item()
-        correct_c = (y_pred[mask_c] == c).sum().item()  
-        acc = correct_c / total_c if total_c > 0 else 0
-        # acc_per_class[c] = acc
-        label_name = id2name.get(c, f"Class {c}") if id2name else f"Class {c}"
-        acc_per_class[label_name] = acc
-
-    return acc_per_class
-
-from collections import deque
 
 ##### [analysis block  ] #####
 # creating function to find - nearest boundary nodes: i.e.
@@ -1125,11 +1012,6 @@ def evaluate_region_metrics(data, model, k_percent=2.0, r=2, threshold=None, pro
     }
 
 
-
-def predict_with_threshold(out, threshold):
-    probs = torch.softmax(out, dim=1)
-    return (probs[:, 1] >= threshold).long()
-
 @torch.no_grad()
 def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
     model.eval()
@@ -1187,11 +1069,7 @@ def compute_density_stats(model, data):
     mean_prob = float(probs[labeled_mask].mean())
     argmax_ratio = float((probs[labeled_mask] >= 0.5).mean())
 
-    return {
-        "true_ratio": true_ratio,
-        "mean_pred_prob": mean_prob,
-        "argmax_ratio_0.5": argmax_ratio
-    }
+    return {"true_ratio": true_ratio, "mean_pred_prob": mean_prob, "argmax_ratio_0.5": argmax_ratio}
 
 ### threholding start
 @torch.no_grad()
@@ -1225,9 +1103,7 @@ class SelectiveScaler:
 
 
 ##### training  and eval functions:
-
 def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2name=None, model_name = "gat", use_weighted_loss = False, val_graphs=None, test_graphs=None):
-
     # setting the model
     if model_name == "graphsage":
         model = graphSAGE(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
@@ -1354,10 +1230,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         weights = np.mean(np.stack(per_graph_weights), axis=0)
         class_weights = torch.tensor(weights, dtype=torch.float)
         # class_weights = torch.tensor([0.05, 1000.0], dtype=torch.float)
-
         # class_weights = torch.tensor([0.1, 10.0], dtype=torch.float)
-
-
         # soften (same as before)
         alpha = 0.4 # 0.4, 0.6, 0.8
         soft_weights = weights ** alpha
@@ -1387,7 +1260,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
                 class_weights=class_weights if args.loss_type == "ce_weighted" else None,
                 soft_class_weights=soft_class_weights if args.loss_type == "ce_soft" else None,
             )
-            # ---- coverage stats ----
+            # coverage stats (optional)
             epoch_seen = len(epoch_nodes)
             ever_seen_nodes.update(epoch_nodes)
             cumulative_seen = len(ever_seen_nodes)
@@ -1452,19 +1325,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
         # loss, epoch_nodes = train(model, train_loader, optimizer, class_weights=class_weights if args.loss_type== "ce_weighted" else None, soft_class_weights=soft_class_weights if args.loss_type=="ce_soft" else None)
         train_time = time.perf_counter() - train_start
-
-        # eval_start = time.perf_counter()
-        # eval_time = time.perf_counter() - eval_start
-        
         epoch_time = time.perf_counter() - epoch_start
-        # print("  Test Class-wise Accuracy:")
-        # for cls, acc in classwise_acc.items():
-        #     print(f"    Class {cls}: {acc:.4f}")
-
-        # class_acc_str = " | ".join(
-        #     [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
-        # )
-
 
         print(
             f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
@@ -1481,42 +1342,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         # scheduler.step()
 
         if epoch % 5 == 0 :
-            # ###########
-            # ## train side of eval
-            # ###########
-            # f1, precision, recall = evaluate_train_fpr(train_data, model, train_data.val_mask)
-            # train_acc = evaluate_train_acc(model, train_data, train_data.train_mask)
-            # val_acc   = evaluate_train_acc(model, train_dfata, train_data.val_mask)
-            # classwise_acc = eval_class_acc( train_data, model, train_data.val_mask, id2name)
-            # class_acc_str = " | ".join(
-            #     [f"{cls}:{acc:.3f}" for cls, acc in classwise_acc.items()]
-            # )
-
-            # print(
-            #     f"Epoch: {epoch:03d}, Loss: {loss:.4f}, "
-            #     f"TrainAcc_trainset: {train_acc:.4f}, ValAcc_trainset: {val_acc:.4f}, "
-            #     f"F1_trainset: {f1:.4f}, P_trainset: {precision:.4f}, R_trainset: {recall:.4f}, "
-            #     f"ClassAcc [{class_acc_str}],"
-            # )
-
-            # wandb_log = {
-            #     "epoch": epoch,
-            #     "train_evaluate/train_acc": train_acc,
-            #     "train_evaluate/val_acc": val_acc,
-            #     "train_evaluate/f1": f1,
-            #     "train_evaluate/precision": precision,
-            #     "train_evaluate/recall": recall,
-            # }
-
-            # classwise metrics under the same namespace
-            # for cls, acc in classwise_acc.items():
-            #     wandb_log[f"train_evaluate/class_acc/{cls}"] = acc
-
-            # wandb.log(wandb_log)
-
-            # val graph ####
             eval_start = time.perf_counter()
-
             val_metrics = defaultdict(list)  # collects lists of per-graph metrics
             val_losses = []
             for path, g in val_graphs:
@@ -1728,13 +1554,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
 
 
-        
-
-
-
-
-
-
 ########
 # main #
 ########
@@ -1757,18 +1576,13 @@ if __name__ == "__main__":
     
     
     # debug statements 
-    print("----- [DEBUG] -----")
+    print("----- [DEBUG] -------")
     print(graph_data)
     print("x:", graph_data.x.shape, graph_data.x.dtype)
     print("y:", graph_data.y.shape, graph_data.y.dtype)
     print("edge_index:", graph_data.edge_index.shape, graph_data.edge_index.dtype)
     print("id2label:", label_map)
 
-    #### *** check feature matrix and problem with the length idk 
-
-    ### test gml 
-    # testgml_data, _ = load_single_gml(gml_path = args.test_gml, remove_edges=True)
-    # testgml_data.x= normalize_features(testgml_data.x.cpu().numpy()) # normalize
 
     print("[INFO] Loading validation graphs:")
     val_graphs = []
@@ -1801,28 +1615,6 @@ if __name__ == "__main__":
     ### merges / combines -- using reduce 
     combined_data = reduce(merge_data, train_graphs)
 
-    ### saving also the unscaled features 
-
-    # train unscaled
-    X_train_raw = []
-    y_train_raw = []
-    for g in train_graphs:
-        X_train_raw.append(g.x.cpu().numpy())
-        y_train_raw.append(g.y.cpu().numpy())
-    X_train_raw = np.vstack(X_train_raw)
-    y_train_raw = np.concatenate(y_train_raw)
-
-    # val unscaled
-    val_raw = []
-    for path, g in val_graphs:
-        val_raw.append((path, g.x.cpu().numpy(), g.y.cpu().numpy()))
-        
-    # test unscaled
-    test_raw = []
-    for path, g in test_graphs:
-        test_raw.append((path, g.x.cpu().numpy(), g.y.cpu().numpy()))
-
-
     # train has the scaler and its fit here
     scaler = SelectiveScaler(NUM_CATEGORICAL)
     combined_data.x = torch.tensor(
@@ -1849,48 +1641,10 @@ if __name__ == "__main__":
     for path, g in test_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
 
-    # # train: scale + augment (write back by index)
-    # for i, g in enumerate(train_graphs):
-    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
-    #     if args.use_augmentation:
-    #         train_graphs[i] = augment_graph_noise(g, n_categorical=NUM_CATEGORICAL,
-    #                                                gate_flip_frac=args.aug_gate_flip_frac,
-    #                                                edge_corrupt_frac=args.aug_edge_corrupt_frac)
-
-    # # val: scale only, always clean
-    # for path, g in val_graphs:
-    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
-
-    # # test: scale + augment (write back by index, preserve path)
-    # for i, (path, g) in enumerate(test_graphs):
-    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
-    #     if args.use_augmentation:
-    #         test_graphs[i] = (path, augment_graph_noise(g, n_categorical=NUM_CATEGORICAL,
-    #                                                      gate_flip_frac=args.aug_gate_flip_frac,
-    #                                                      edge_corrupt_frac=args.aug_edge_corrupt_frac))
-
-    # for i, (path, g) in enumerate(test_graphs):
-    #     if args.use_augmentation:
-    #         g = augment_graph_noise(g,
-    #                                 n_categorical=NUM_CATEGORICAL,
-    #                                 gate_flip_frac=args.aug_gate_flip_frac,
-    #                                 edge_corrupt_frac=args.aug_edge_corrupt_frac,
-    #                                 feat_noise_frac=args.aug_feat_noise_frac)
-    #     g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
-    #     test_graphs[i] = (path, g)
-
 
     print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())
     print("Val[0] mean/std:", val_graphs[0][1].x.mean().item(), val_graphs[0][1].x.std().item() if len(val_graphs) else ("NA", "NA"))
     print("Test[0] mean/std:", test_graphs[0][1].x.mean().item(), test_graphs[0][1].x.std().item() if len(test_graphs) else ("NA", "NA"))
-
-    # scaler = StandardScaler()
-    # combined_data.x = torch.tensor(scaler.fit_transform(combined_data.x.cpu().numpy()), dtype=torch.float32)
-    # testgml_data.x  = torch.tensor(scaler.transform(testgml_data.x.cpu().numpy()), dtype=torch.float32)
-
-    # combined_data.x = normalize_features(combined_data.x.cpu().numpy()) # normalize
-    # print("Train mean/std:", combined_data.x.mean().item(), combined_data.x.std().item())
-    # print("Test  mean/std:", testgml_data.x.mean().item(), testgml_data.x.std().item())
 
     combined_data.global_id = torch.arange(combined_data.num_nodes)  # setting global ids now which is permanent 
     print("[INFO] training on:", args.train_gml)
@@ -1930,29 +1684,6 @@ if __name__ == "__main__":
             )
         else: 
             raise ValueError(f"Unsupported sampling_method: {args.sampling_method}")
-    # elif args.sampling_method ==  "graphsaint":
-    #     data_loader = GraphSAINTSampler(
-    #         combined_data, 
-    #         batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
-    #         num_steps = args.num_steps, 
-    #         sample_coverage = args.sample_coverage
-    #     )
-
-    # (b) khop sampler (to do )
-
-
-    ## calling the model 
-    # model = run_training(
-    #     train_data=combined_data,
-    #     train_loader=training_data_loader,
-    #     in_dim=combined_data.num_features,
-    #     out_dim=2,
-    #     id2name=id2label,
-    #     model_name=args.model,
-    #     use_weighted_loss=False,
-    #     val_graphs=val_graphs,
-    #     test_graphs=test_graphs,
-    # )
 
 
     model = run_training(
@@ -1966,19 +1697,7 @@ if __name__ == "__main__":
         val_graphs=val_graphs,
         test_graphs=test_graphs,
     )
-    # metrics = evaluate_test( testgml_data, model)
-
-    # test gml prints
-    # print("[INFO] Test GML results:")
-    # print("Total nodes:", testgml_data.num_nodes)
-    # print(f"Boundary = 1 nodes (+ve):", (testgml_data.y == 1).sum().item())
-    # print(f"Boundary = 0 nodes (-ve):", (testgml_data.y == 0).sum().item())
-
-    # print(f"F1 = {metrics['f1']:.4f}, Precision = {metrics['precision']:.4f}, Recall = {metrics['recall']:.4f}")
-    # print(f"Total Accuracy   : {metrics['total_acc']:.4f}")
-    # print(f"Boundary = 1 Accuracy    : {metrics[f'boundary_1_acc']:.4f}")
-    # print(f"Boundary = 0 Accuracy: {metrics[f'boundary_0_acc']:.4f}")
-
+    
     print("[INFO] Final evaluation on TEST graphs:")
 
     test_metrics = defaultdict(list)
