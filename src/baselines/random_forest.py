@@ -53,7 +53,7 @@ def parse_args():
     if args.config:
         with open(args.config) as f:
             cfg = yaml.safe_load(f)
-        # Override args with config values (only if not already set via CLI)
+        # ofor overiding configs somehow
         for key, val in cfg.items():
             if val is not None:
                 setattr(args, key, val)
@@ -311,34 +311,8 @@ def run_rf(X_train, y_train, val_data, test_data, args):
     # print("rf training done complete")
     test_results_all = evaluate_splits(rf_all, "RF-ALL", val_data, test_data, args)
 
-    # # taking top k 
-    # importances = rf_all.feature_importances_
-    # feat_df = (
-    #     pd.DataFrame({"feature_id": np.arange(len(importances)), "importance": importances})
-    #     .sort_values("importance", ascending=False)
-    #     .reset_index(drop=True)
-    # )
-    # print(f"top {args.top_k} feature importances")
-    # print(feat_df.head(args.top_k).to_string(index=False))
-    # top_features = feat_df["feature_id"].values[: args.top_k]
 
-    # rf now on all the seelcted features only 
-    # print(f"rf on the top k")
-    # rf_sel = RandomForestClassifier( n_estimators=args.n_estimators, max_depth=None, class_weight="balanced", n_jobs=-1, random_state=args.seed)
-    # rf_sel.fit(X_train[:, top_features], y_train)
-    # print("Training complete.")
-    # test_results_sel = evaluate_splits( rf_sel, f"RF-TOP{args.top_k}", val_data, test_data, args, feature_mask=top_features)
-
-    # for tabpfn, tabical and rf
-    # return {
-    #     # "val_macro_all":      macro_avg(val_results_all),
-    #     # "val_macro_selected": macro_avg(val_results_sel),
-    #     "test_macro_all":     macro_avg(test_results_all),
-    #     # "test_macro_selected":macro_avg(test_results_sel),
-    #     # "top_features":       top_features.tolist(),
-    # }
-
-    # onlt for rf
+    # only for rf
     return {
         "test_macro_all": macro_avg(test_results_all),
         "test_per_graph": [
@@ -373,15 +347,14 @@ def main():
         X, y = load_graph_features_cached(path, args)
         test_data.append((Path(path).stem, path, X, y))
    
-    # scaling - for tabpfn and tabicl 
+    # scaling - only for tabpfn and tabicl 
     scaler = SelectiveScaler(NUM_CATEGORICAL)
     X_train_scaled = scaler.fit_transform(X_train)
-    # scaler fit on the trian and tested on val and test respectively
-    val_data_scaled = [ (name, path, scaler.transform(X), y)for name, path, X, y in val_data]
+    val_data_scaled = [ (name, path, scaler.transform(X), y)for name, path, X, y in val_data]     # scaler fit on the trian and tested on val and test respectively
     test_data_scaled = [(name, path, scaler.transform(X), y) for name, path, X, y in test_data]
 
+    
     if args.mode == "rf":
-        
         results_summary = run_rf(X_train, y_train, val_data, test_data, args)
     elif args.mode == "tabpfn":
         # results_summary = run_tabpfn(X_train, y_train, val_data, test_data, args)
@@ -391,7 +364,7 @@ def main():
 
     print("completed")
 
-    # --- save results ---
+    # save based on the model name and path
     config_stem = Path(args.config).stem if args.config else "no_config"
     out_dir = Path("results") / args.mode
     out_dir.mkdir(parents=True, exist_ok=True)
