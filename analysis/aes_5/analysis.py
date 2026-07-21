@@ -27,7 +27,7 @@ part_prauc = (
     df_valid.groupby("partition")
     .apply(lambda s: pd.Series({
         "n_nodes"        : len(s),
-        "n_boundary"     : s["gt"].sum(),
+        # "n_boundary"     : s["gt"].sum(),
         "boundary_ratio" : s["gt"].mean(),
         "pr_auc"         : partition_pr_auc(s),
     }))
