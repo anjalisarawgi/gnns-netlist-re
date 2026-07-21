@@ -577,13 +577,12 @@ def load_single_gml(gml_path, remove_edges = False):
     )
 
     print("[FEATURE DIM CHECK]")
-    print("  base features dim           :", base_feat_dim)
-
+    print("  base features dim :", base_feat_dim)
 
     if args.use_graph_features:
-        print("  after graph features       :", after_graph_dim)
+        print("after graph features:", after_graph_dim)
 
-    print("  final feature dim (tensor) :", data.x.shape[1])
+    print("final feature dim (tensor):", data.x.shape[1])
     return data, id2label
 
 def focal_loss(logits, targets, gamma=2.0, alpha = 0.25): # high alpha, for   more imbalnace, higher gamma = focus on mistakes (0.65 , 0.75, 0.85) (1.0, 2.0, 3.0) so higher gamma downweights easy samples and says it to focus on harder samples
@@ -628,6 +627,7 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
 
     optimizer.step()
+    
     return float(total_loss)
     
     
@@ -644,19 +644,11 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
     if args.loss_type == "focal":
         loss_per_node = focal_loss(out[effective_mask], data.y[effective_mask])
     elif args.loss_type == "ce_weighted":
-        loss_per_node = F.cross_entropy(
-            out[effective_mask], data.y[effective_mask],
-            weight=class_weights.to(out.device),
-            reduction="none"
-        )
+        loss_per_node = F.cross_entropy( out[effective_mask], data.y[effective_mask], weight=class_weights.to(out.device), reduction="none")
     elif args.loss_type == "ce_soft":
-        loss_per_node = F.cross_entropy(
-            out[effective_mask], data.y[effective_mask],
-            weight=soft_class_weights.to(out.device),
-            reduction="none"
-        )
+        loss_per_node = F.cross_entropy( out[effective_mask], data.y[effective_mask], weight=soft_class_weights.to(out.device), reduction="none")
     else:
-        loss_per_node = F.cross_entropy(out[effective_mask], data.y[effective_mask], reduction="none")
+        loss_per_node = F.cross_entropy(out[effective_mask], data.y[effective_mask], reduction="none") # default cross entopy
 
     loss = loss_per_node.mean()
     loss.backward()
@@ -678,13 +670,10 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
 
     for batch in loader: # here, batch is is not the full graph but the sampled subgraph by graphSAINT
         batch = batch.to(device)
-        ###### ?????? - i think this logs the node indexes covered in eahc epoch
+        ###### this logs the node indexes covered in eahc epoch
         if hasattr(batch, "global_id"):
             epoch_nodes.update(batch.global_id.cpu().tolist())
         elif hasattr(batch, "global_node_id"):
-            epoch_nodes.update(batch.global_node_id.cpu().tolist())
-  
-        ###
 
         ### note:
         # a) batch = subgraph
@@ -1224,11 +1213,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
     return model
 
 
-
-
-
-
-
 ########
 # main #
 ########
@@ -1241,24 +1225,10 @@ if __name__ == "__main__":
         sanity_check_masks(graph_data, name=f"TRAIN[{i}] {os.path.basename(gml_path)}")
         print("Label counts:", Counter(graph_data.y.tolist())) # debug for -1  label
         assert (graph_data.y[graph_data.label_mask] < 0).sum().item() == 0, "Labeled nodes have invalid labels!"
-
-
-        if i ==0: ###???
+        if i ==0: ###
             id2label = label_map
-
         train_graphs.append(graph_data)
     
-    
-    
-    # # debug statements 
-    # print("----- [DEBUG] -------")
-    # print(graph_data)
-    # print("x:", graph_data.x.shape, graph_data.x.dtype)
-    # print("y:", graph_data.y.shape, graph_data.y.dtype)
-    # print("edge_index:", graph_data.edge_index.shape, graph_data.edge_index.dtype)
-    # print("id2label:", label_map)
-
-
     print("[INFO] Loading validation graphs:")
     val_graphs = []
     for i, gml_path in enumerate(args.val_gml):
@@ -1301,8 +1271,6 @@ if __name__ == "__main__":
     joblib.dump(scaler, scaler_path)
     print("[INFO] Saved scaler to:", scaler_path)
 
-
-        
     for g in train_graphs:
         g.x = torch.tensor(scaler.transform(g.x.cpu().numpy()), dtype=torch.float32)
         
@@ -1416,24 +1384,12 @@ if __name__ == "__main__":
     output_dir = make_result_dir("gnns")
     print("[INFO] GNN results will be saved to:", output_dir)
 
-    output_labels = {0: "not_boundary", 1: "boundary"}
-    print("[INFO] Output Labels:", output_labels)
-
     for path, g in test_graphs:
         p = Path(path)
         test_graph_name = p.stem
         lib_name = p.parent.name
         design_family = p.parent.parent.name
-
         safe_name = f"{design_family}__{lib_name}__{test_graph_name}"
         output_path = os.path.join(output_dir, f"{safe_name}_predictions.gml")
-
         print("[INFO] Saving predictions to:", output_path)
-
-        save_predictions_to_gml(
-            original_gml_path=path,
-            data=g,
-            model=model,
-            id2name=output_labels,
-            output_gml_path=output_path
-        )
+        save_predictions_to_gml(original_gml_path=path, data=g, model=model, id2name=output_labels, output_gml_path=output_path)
