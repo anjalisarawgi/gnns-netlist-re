@@ -50,7 +50,7 @@ use_partition_features: false
 `gat`, `GAAN`, `gcn`, `gin`, `graphsage`, `BiDirectedGraphSAGE`, `JK_GraphSAGE`, `BiDirectedJK_GraphSAGE`
 
 > **Please note that:** graph paths should follow the directory structure `<design_family>/<library>/<graph>.gml`
-> **To run gnn-re paper method experiments (initial experiments), please use: `python src/gnn_re_paper.py  --config <path_to_config>`
+> **To run gnn-re paper method experiments (initial experiments), please use: `python src/gnn_re_paper_main.py  --config <path_to_config>`. Please use make sure that the .gmls have the partition labels annotated for each node as well, see `config/gnn_re/` for examples.
 
 ---
 
