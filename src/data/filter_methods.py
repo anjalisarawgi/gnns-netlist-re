@@ -15,4 +15,4 @@ with open("graphs/processed_v2/m1.json", "w") as f:
 with open("graphs/processed_v2/m2.json", "w") as f:
     json.dump(m2, f, indent=2)
 
-print("done, it is split")
+print("done, it is split by method 1 and method2 (use method 1)")
