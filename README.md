@@ -51,6 +51,8 @@ use_partition_features: false
 
 > **Please note that:** graph paths should follow the directory structure `<design_family>/<library>/<graph>.gml`
 
+> All analysis plots and results csv's are provided in `analysis/`
+
 ---
 ## GNN-RE base paper for the thesis
 
