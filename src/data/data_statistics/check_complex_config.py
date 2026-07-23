@@ -24,8 +24,7 @@ complex_paths = {os.path.normpath(k) for k in complex_graphs.keys()}
 # check which are missing
 missing = [p for p in all_gml_paths if os.path.normpath(p) not in complex_paths]
 present = [p for p in all_gml_paths if os.path.normpath(p) in complex_paths]
-
-print(f"Present: {len(present)} | Missing: {len(missing)}")
+print("Present:" len(present) ,"Missing:", len(missing)})
 
 if missing:
     for m in missing:
