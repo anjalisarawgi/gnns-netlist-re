@@ -674,6 +674,7 @@ def train(model, loader, optimizer, class_weights=None, soft_class_weights=None)
         if hasattr(batch, "global_id"):
             epoch_nodes.update(batch.global_id.cpu().tolist())
         elif hasattr(batch, "global_node_id"):
+            epoch_nodes.update(batch.global_node_id.cpu().tolist())
 
         ### note:
         # a) batch = subgraph
