@@ -56,7 +56,7 @@ use_partition_features: false
 
 **Reference:** "GNN-RE: Graph Neural Networks for Reverse Engineering of Gate-Level Netlists" (Alrahis et al.) ([paper](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=f8yWvUYAAAAJ&citation_for_view=f8yWvUYAAAAJ:W7OEmFMy1HYC))
 
-To run the GNN-RE replication experiments:
+To run the experiments based on the GNN-RE paper and concepts:
 
 ```bash
 python src/gnn_re_paper_main.py --config <path_to_config>
