@@ -25,6 +25,7 @@ from torch_geometric.loader import NeighborLoader
 import yaml
 from sklearn.preprocessing import StandardScaler
 import csv
+from functools import reduce
 
 # could increase to 24 -- 
 torch.set_num_threads(20)        # for math mult (pytorch)    
@@ -115,15 +116,6 @@ def normalize_features(features):
     scaler = StandardScaler()
     features = scaler.fit_transform(features)
     return torch.tensor(features, dtype=torch.float)
-
-def compute_effective_sample_size(freqs):
-    freqs = np.asarray(freqs, dtype=np.float64)
-    total = freqs.sum()
-    if total == 0:
-        return 0
-    ess = (total * total) / np.sum(freqs * freqs)
-    return ess
-
 
 def ego_subgraphs_from_data(full_data, radius=2, num_subgraphs=10, seed=42):
     random.seed(seed)
@@ -226,19 +218,21 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
         id2label = {int(l): str(l) for l in sorted(set(labels.tolist()))}
 
     features = normalize_features(np.array(features, dtype=np.float32))
-        
-    ### DEBUG >>> Label distribution
-    print("[DEBUG] Label summary for:", gml_path)
+
+    ######### debug block
+    print("[DEBUG] labels summary for:", gml_path)
     unique, counts = np.unique(labels.cpu().numpy(), return_counts=True)
     for u, c in zip(unique, counts):
         print(f"  Class {u} ({id2label.get(int(u), '?')}): {c} samples")
-    print(f"  Total: {len(labels)} nodes")
-    print(f"  Labels tensor shape: {labels.shape}, dtype: {labels.dtype}\n")
-
+    print(f"Total: {len(labels)} nodes")
+    print(f"labels tensor shape: {labels.shape}, dtype: {labels.dtype}\n")
     print(f"Total labels: {len(labels)}")   
     print(f"Unique labels: {sorted(set(labels.tolist()))}")
     label_counts = Counter(labels.tolist())
     print("Label counts:", label_counts)
+    #########
+
+  
 
     node_map = {node: idx for idx, node in enumerate(G.nodes())}
     edges = [(node_map[src], node_map[dst]) for src, dst in G.edges()]
@@ -250,16 +244,14 @@ def load_aisec_single_gml(gml_path, label_type="subcircuit", binary_label=False,
 
     train_cutoff = int(0.90 * num_nodes)
     val_cutoff = train_cutoff + int(0.05 * num_nodes)
-
     train_mask = torch.zeros(num_nodes, dtype=torch.bool)
     val_mask = torch.zeros(num_nodes, dtype=torch.bool)
     test_mask = torch.zeros(num_nodes, dtype=torch.bool)
-
     train_mask[indices[:train_cutoff]] = True
     val_mask[indices[train_cutoff:val_cutoff]] = True 
     test_mask[indices[val_cutoff:]] = True
 
-    #  Optionally remove cross-split edges 
+    #  removing edges as an option - to stop data leakage by not shairing the seen edges either 
     if remove_edges:
         print("Removing cross-split edges for inductive setup")
         train_nodes = set(torch.where(train_mask)[0].tolist())
@@ -427,15 +419,6 @@ def classwise_accuracy(model, data, mask, id2name=None):
 
     return acc_per_class
 
-# des_data, _ = load_aisec_single_gml(
-#     gml_path="graphs/processed/aes_encryption_latest/osu035/aes_key_expand_128_gephi_test6.gml",
-#     binary_label=True
-# )
-# des_data.train_mask[:] = False
-# des_data.val_mask[:] = False
-# des_data.test_mask[:] = False
-# des_mask = torch.ones_like(des_data.y, dtype=torch.bool)
-
 
 def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="gat", use_weighted_loss=False, testgml_data = None):
     if model_name == "graphsage":
@@ -448,9 +431,6 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         model = gat(in_channels = in_dim, hidden_channels = 256, out_channels = out_dim)
         model = torch.compile(model)
         print("[INFO] using gat model")
-    elif model_name == "graphTransformer":
-        model = GraphTransformer(in_channels=in_dim, hidden_channels=256, out_channels = out_dim)
-        print("[INFO] using graphTransformer model")
 
     base_lr = 0.01 
     optimizer = torch.optim.Adam(model.parameters(), lr=base_lr ) # weight_decay=5e-4
@@ -516,10 +496,7 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         cumulative_coverage_ratio = cumulative_coverage / data.num_nodes
 
 
-
-
         ###
-
         # evaluation
         if epoch % 50 == 0:
             train_acc = evaluate(model, data, data.train_mask)
@@ -585,17 +562,18 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
 
         wandb.log(log_data)
 
-    ######### 
 
+  
+    ######### 
     test_acc = evaluate(model, data, data.test_mask)
     print(f"Final test accuracy: {test_acc:.4f}")
 
     if out_dim == 2:  # binary classification
         f1, precision, recall = evaluate_binary(model, data, data.test_mask)
         print(f"Binary classification metrics:")
-        print(f"  F1 Score    : {f1:.4f}")
-        print(f"  Precision   : {precision:.4f}")
-        print(f"  Recall      : {recall:.4f}")
+        print(f"F1: {f1:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
 
         wandb.log({
             "final/test_accuracy": test_acc,
@@ -647,11 +625,6 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     #  Sampling frequency analysis 
     num_nodes = data.num_nodes
     freqs = np.array([appeared_counter.get(i, 0) for i in range(num_nodes)])
-
-    # ess (effective sample size)
-    ess = compute_effective_sample_size(freqs)
-    ess_ratio = ess / num_nodes
-
     never_sampled = np.sum(freqs == 0)
 
     # Simple histogram to see imbalance patterns
@@ -666,8 +639,6 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
     results_csv_path = os.path.join(run_dir, "final_results.csv")
     final_train_acc = last_train_acc
     final_val_acc = last_val_acc
-    
-    
     final_metrics = evaluate_on_dataset(model, testgml_data)
     testgml_f1 = final_metrics["f1"]
     testgml_precision = final_metrics["precision"]
@@ -705,32 +676,14 @@ def run_training(data, train_loader, in_dim, out_dim, id2name=None, model_name="
         writer.writerow(["sampling", "std_appearances", freqs.std()])
         writer.writerow(["sampling", "nodes_never_sampled", int(never_sampled)])
 
-        # Optional: histogram bins
-        for count, left, right in zip(hist, bin_edges[:-1], bin_edges[1:]):
-            writer.writerow([
-                "sampling_histogram",
-                f"{int(left)}-{int(right)}",
-                int(count)
-            ])
-        
     print("[INFO] Saved final results CSV to:", results_csv_path)
-
-
-
-    print("EFFECTIVE SAMPLE SIZE (ESS) ")
-    print(f"ESS: {ess:.2f}")
-    print(f"ESS Ratio: {ess_ratio:.4f}  (ESS / total_nodes)")
-
     print("SAMPLING FREQUENCY SUMMARY ")
     print("Min appearances:", freqs.min())
     print("Max appearances:", freqs.max())
     print("Mean appearances:", freqs.mean())
     print("Median appearances:", np.median(freqs))
     print("Std deviation:", freqs.std())
-
     print("Nodes never sampled:", never_sampled, "/", num_nodes)
-
-
     return model
 
 
@@ -774,16 +727,7 @@ def merge_data(data1, data2):
 
 # ]
 ########################################
-
-
-from functools import reduce
 if __name__ == "__main__":
-    # aes_data, id2label = load_aisec_single_gml(
-    #     # gml_path="graphs/processed/aes_encryption_latest/osu035/aes_cipher_top_gephi_test6.gml",
-    #     gml_path=args.train_gml,
-    #     binary_label=True
-    # )
-
     print("[INFO] loading the following training graphs:")
     train_graphs = []
     for i, gml_path in enumerate(args.train_gml):
@@ -827,7 +771,6 @@ if __name__ == "__main__":
 
     aes_data.global_id = torch.arange(aes_data.num_nodes)
     if args.sampling_method == "graphsaint_rw":
-        sample_start = time.perf_counter()
         aes_loader = GraphSAINTRandomWalkSampler(
             aes_data,
             batch_size= int(args.perc_batchsize * aes_data.num_nodes),
@@ -862,7 +805,6 @@ if __name__ == "__main__":
 
     elif args.sampling_method == "khop":
         print(f"[INFO] Using k-hop sampling...")
-        sample_start = time.perf_counter()
         subgraph_list = ego_subgraphs_from_data(
             aes_data,
             radius=args.radius,
@@ -870,27 +812,13 @@ if __name__ == "__main__":
         )
         aes_loader = DataLoader(subgraph_list, batch_size=32768, shuffle=True)
 
-
-    # elif args.sampling_method == "neighSampler":
-    #     num_neighbors = [args.neighbors_per_hop] * args.radius
-    #     aes_loader = NeighborLoader(
-    #         aes_data,
-    #         num_neighbors=num_neighbors,   
-    #         batch_size=args.batch_size,    
-    #         shuffle=True,                  
-    #         num_workers=12,                
-    #         persistent_workers=True,
-    #         pin_memory=True
-    #     )
-
-    # trying to find coverage ratio
+    # for finding coverage ratio
     covered_nodes_per_epoch = []
     covered_node_ids_per_epoch = []
     ever_covered_nodes = set()
     appeared_counter = {}
 
-    
-
+  
     model = run_training(
         data=aes_data,
         train_loader=aes_loader,
@@ -902,7 +830,7 @@ if __name__ == "__main__":
         testgml_data=testgml_data 
     )
 
-    print("\n[DEBUG] testgml dataset:")
+    print("[DEBUG] testgml dataset:")
     print("Total nodes:", testgml_data.num_nodes)
     print(f"{pos_label} nodes:", (testgml_data.y == 1).sum().item())
     print(f"{neg_label} nodes:", (testgml_data.y == 0).sum().item())
@@ -922,19 +850,12 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     test_graph_name = os.path.splitext(os.path.basename(args.test_gml))[0]
     output_path = os.path.join(output_dir, f"{test_graph_name}_predictions.gml")
-    print("[DEBUG]  Saving predictions to:", output_path)
+    print("[DEBUG] Saving predictions to:", output_path)
 
     if args.label_mode == "boundary":
         output_labels = {0: "not_boundary", 1: "boundary"}
     else:
         output_labels = {0: "not_sbox", 1: "sbox"}
 
-
-    save_predictions_to_gml(
-        original_gml_path = args.test_gml,
-        data=testgml_data,
-        model=model,
-        id2name=output_labels,
-        output_gml_path=output_path
-    )
+    save_predictions_to_gml(original_gml_path = args.test_gml, data=testgml_data, model=model, id2name=output_labels, output_gml_path=output_path)
 
