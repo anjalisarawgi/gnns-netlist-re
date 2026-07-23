@@ -614,7 +614,7 @@ def compute_metrics(y_true, y_pred, name):
 ### runs the model and predicts --- then saves the predictions to the gml file  
 ## note here we save back to the orignal in memory, but the actual predictions are saved in a different file and directory
 @torch.no_grad()
-def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_path):
+def save_predictions_to_gml(orig_gml_path, data, model, id2name, output_gml_path):
     model.eval()
     data = data.to(next(model.parameters()).device)
     out = model(data.x, data.edge_index)
@@ -626,9 +626,10 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
     labels = labels_all[labeled_mask]
     N = len(probs)
 
-    ### we have three prediction strategies:::
+    ### three prediction strategies:::
     # (1) default threshold 
     pred_default = (probs >= 0.5).astype(int)
+    # pred_default = (probs >= 0.7).astype(int) # 
 
     #  (2) best threhsold giving us the highest f1
     precision, recall, thresholds = precision_recall_curve(labels, probs)
@@ -650,18 +651,18 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
     classes_ratio = compute_classes(labels, pred_ratio)
 
 
-    ## printing:::
+    ### 
     print(f"[INFO] Best threshold: {best_thresh:.4f}")
-    print("[THRESHOLD COMPARISON]")
+    print("[THRESHOLD COMPARISON AND CHECKS]")
 
     compute_metrics(labels, pred_default, "Default@0.5")
     compute_metrics(labels, pred_best,    f"Best@{best_thresh:.3f}")
     compute_metrics(labels, pred_ratio,   "Top-K (ratio)")
 
-    print("[PREDICTED POSITIVE COUNTS]")
-    print(f"Default@0.5:  {pred_default.sum()} nodes")
-    print(f"Best@{best_thresh:.3f}:: {pred_best.sum()} nodes")
-    print(f"Top-K (ratio):: {pred_ratio.sum()} nodes (target={k})")
+    # print("[PREDICTED POSITIVE COUNTS]")
+    # print(f"Default@0.5:  {pred_default.sum()} nodes")
+    # print(f"Best@{best_thresh:.3f}:: {pred_best.sum()} nodes")
+    # print(f"Top-K (ratio):: {pred_ratio.sum()} nodes (target={k})")
 
     # map back to all nodes to save
     labeled_indices = np.where(labeled_mask)[0]
@@ -682,7 +683,7 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
         classes_ratio_all[i] = classes_ratio[j]
 
     # and finally write and save to gml 
-    G = nx.read_gml(original_gml_path)
+    G = nx.read_gml(orig_gml_path)
     nodes = list(G.nodes())
 
     for i, node in enumerate(nodes):
@@ -698,7 +699,7 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
         G.nodes[node]["is_correct_ratio"] = int(pred_ratio_all[i] == labels_all[i]) if labeled_mask[i] else -1
 
     nx.write_gml(G, output_gml_path)
-    print(f"[INFO] Saved GML with predictions → {output_gml_path}")
+    print(f"[INFO] Saved GML with predictions", output_gml_path")
 
 
 
@@ -1188,4 +1189,4 @@ if __name__ == "__main__":
         output_path = os.path.join(output_dir, f"{safe_name}_predictions.gml")
         print("[INFO] Saving predictions to:", output_path)
 
-        save_predictions_to_gml(original_gml_path=path, data=g, model=model, id2name=output_labels, output_gml_path=output_path)
+        save_predictions_to_gml(orig_gml_path=path, data=g, model=model, id2name=output_labels, output_gml_path=output_path)
