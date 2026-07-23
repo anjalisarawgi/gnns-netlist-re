@@ -1,6 +1,5 @@
 import torch
 import os
-from torch_geometric.loader import GraphSAINTSampler, GraphSAINTRandomWalkSampler, GraphSAINTNodeSampler,GraphSAINTEdgeSampler
 # from main import save_predictions_to_gml
 # from utils.set_seed import set_seed
 import wandb
@@ -64,34 +63,18 @@ os.environ["NUMEXPR_NUM_THREADS"] = "10"    # 20 threads max
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--sampling_method", type=str, choices=["graphsaint","graphsaint_rw", "khop"], default="graphsaint", help="Sampling method: 'graphsaint' or 'khop'")
-parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "graphTransformer", "gin", "gatv2", "dGNN", 
-                    "hGNN", "hdGNN",  "FlatDirectedGAT", "DirectedOnlyGAT", "HierarchicalOnlyGAT4",  "HierarchicalOnlyGAT6", "HierarchicalDirectedGAT_v2", "DirectedOnlyGATWithGlobal",
-                     "GAAN", "GraphSAGE_ResNorm", "BiDirectedGraphSAGE","JK_GraphSAGE", "BiDirectedJK_GraphSAGE"])
+parser.add_argument("--model", default="gat", choices=["graphsage", "gat", "gcn", "gin", "gatv2", "BiDirectedGraphSAGE","JK_GraphSAGE", "BiDirectedJK_GraphSAGE"])
 parser.add_argument("--train_gml", type = str,  help="which graph (gml_path) do you want to train on?", nargs="+")
 parser.add_argument("--val_gml", type = str, help="which graph (gml_path) do you want to evluate (validation) on?", nargs="+")
 parser.add_argument("--test_gml", type = str, help="which graph (gml_path) do you want to test on?", nargs="+")
 parser.add_argument("--epochs", type = int, default=250)
 parser.add_argument("--lr", type = float, default=0.01, help = "learaning rate for main trianing")
-# parser.add_argument("--label_mode", type=str, choices = ["subcircuit_name", "boundary"], default="subcircuit_name", help="for sbox and key expand, please use subcircuit")
-# graphsaint
-parser.add_argument("--sample_coverage", type=int, default=50, help="how many times a node can be seen (sampled as a subgraph/node) for each epoch?") # for others
-parser.add_argument("--walk_length", type=int, default=5, help="what is the walk length you want to set for graphsaint sampling method") # for random walk sampling only
-parser.add_argument("--num_steps", type=int, default=5, help="how many iterations per epoch do you want?") 
-parser.add_argument("--perc_batchsize", type=float, default = 0.01, help="this is for the size of the batch size")
 
-# khop
-parser.add_argument("--radius", type=int, default=3, help="what is the radius you want to set for khop sampling method")
-parser.add_argument("--num_subgraphs", type=int, default=500, help="what is the number of subgraphs you want to set for khop sampling method")
-
-# # khop v2  - neighbourLoader ( + radius)
-# parser.add_argument("--batch_size", type=int, default=2048, help="for NeighborLoader")
-# parser.add_argument("--neighbors_per_hop", type=int, default=128, help="for NeighborLoader")
 # ml args 
 parser.add_argument("--set_gradient_clipping", action="store_true", help="do you want to enable gradient clipping (for potentially stable training)?")
 parser.add_argument("--reduction_method_cel", type = str, choices=["sum", "mean"])
 parser.add_argument( "--loss_type", type=str, choices=["ce", "ce_weighted", "ce_soft", "focal"], default="focal" )
-parser.add_argument("--training_mode",type=str, choices=["fullgraph", "graphsaint"],  default="graphsaint",    help="Train on full graph or sampled subgraphs")
+parser.add_argument("--training_mode",type=str, choices=["fullgraph"],  default="fullgraph",    help="can also add graphsaint , removed for now")
 parser.add_argument("--use_scheduler", action="store_true", help="do you want to use the learning rate scheduler?")
 # features 
 parser.add_argument("--use_partition_features", action="store_true", help="if you want to concatenate partition_features to node features")
@@ -103,7 +86,8 @@ parser.add_argument("--use_unsupervised_features_louvian", action="store_true")
 ## test block
 parser.add_argument("--use_lib_id", action="store_true", help="append library one-hot to node features")
 parser.add_argument("--use_design_id", action="store_true", help="append design one-hot to node features (leaky if testing unseen designs!)")
-##### test block end
+
+##### augmentations for noise 
 parser.add_argument("--use_augmentation",      action="store_true")
 parser.add_argument("--aug_gate_flip_frac",    type=float, default=0.05)
 parser.add_argument("--aug_edge_corrupt_frac", type=float, default=0.025)
@@ -145,13 +129,6 @@ test_name = "+".join(test_roots[:2]) + ("+more" if len(test_roots) > 2 else "")
 train_roots = [os.path.splitext(os.path.basename(p))[0] for p in args.train_gml]
 train_name = "+".join(train_roots[:2]) + ("+test" if len(train_roots) > 2 else "")
 
-if args.sampling_method == "graphsaint_rw":
-    sampling_suffix = f"graphsaint_walk{args.walk_length}"
-elif args.sampling_method == "khop":
-    sampling_suffix = f"khop_r{args.radius}_n{args.num_subgraphs}"
-else:
-    sampling_suffix = args.sampling_method
-
 config_prefix = config_tag if config_tag is not None else "no_config"
 
 if args.training_mode == "fullgraph":
@@ -171,19 +148,11 @@ wandb.init(project="gnn-parition-detection", name=run_name)
 wandb.config.update(vars(args))
 wandb.config.update({"loss_type": args.loss_type})
 
-# # setting label names 
-# if args.label_mode == "subcircuit_name":
-#     pos_label = "is_sbox"
-#     neg_label = "is_not_sbox"
-# elif args.label_mode == "boundary":
-#     pos_label = "is_boundary"
-#     neg_label = "is_not_boundary"
-
 # set seed
 set_seed(42)
 
 
-##### test block for graph encoding:
+##### for graph level encoding for testin gpurposes 
 def parse_lib_design(gml_path: str):
     p = Path(gml_path)
     design_family = p.parts[-3]
@@ -201,13 +170,11 @@ lib2id    = {l: i for i, l in enumerate(sorted(set(train_libs)))}
 
 print("[DOMAIN] lib2id:", lib2id)
 print("[DOMAIN] family2id size:", len(family2id))
-##########
-############################################################
+
 
 ################
 # all functions 
 ################
-
 def pr_auc_from_probs(y_true, y_prob):
     y_true = np.asarray(y_true).astype(int)
     y_prob = np.asarray(y_prob).astype(float)
@@ -309,6 +276,23 @@ def augment_graph_noise(data: Data, n_categorical: int = 14, gate_flip_frac: flo
 
 
 
+def compute_classes(y_true, y_pred):
+    classes = []
+    for yt, yp in zip(y_true, y_pred):
+        if   yt == 1 and yp == 1: classes.append("TP")
+        elif yt == 0 and yp == 1: classes.append("FP")
+        elif yt == 1 and yp == 0: classes.append("FN")
+        else: classes.append("TN")
+    return classes
+
+
+def compute_metrics(y_true, y_pred, name):
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    p = precision_score(y_true, y_pred, zero_division=0)
+    r = recall_score(y_true, y_pred, zero_division=0)
+    print(f"[{name}] F1={f1:.4f}, P={p:.4f}, R={r:.4f}")
+    return f1, p, r
+    
 @torch.no_grad()
 def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_path):
     import networkx as nx
@@ -343,73 +327,58 @@ def save_predictions_to_gml(original_gml_path, data, model, id2name, output_gml_
     pred_ratio = np.zeros(N, dtype=int)
     pred_ratio[topk_idx] = 1
 
-    def compute_classes(y_true, y_pred):
-        classes = []
-        for yt, yp in zip(y_true, y_pred):
-            if   yt == 1 and yp == 1: classes.append("TP")
-            elif yt == 0 and yp == 1: classes.append("FP")
-            elif yt == 1 and yp == 0: classes.append("FN")
-            else:                     classes.append("TN")
-        return classes
-
     classes_default = compute_classes(labels, pred_default)
-    classes_best    = compute_classes(labels, pred_best)
-    classes_ratio   = compute_classes(labels, pred_ratio)
+    classes_best = compute_classes(labels, pred_best)
+    classes_ratio = compute_classes(labels, pred_ratio)
 
 
-
-
-    def compute_metrics(y_true, y_pred, name):
-        f1 = f1_score(y_true, y_pred, zero_division=0)
-        p  = precision_score(y_true, y_pred, zero_division=0)
-        r  = recall_score(y_true, y_pred, zero_division=0)
-        print(f"[{name}] F1={f1:.4f}, P={p:.4f}, R={r:.4f}")
-        return f1, p, r
-
+    ## best threshold method 
     print(f"[INFO] Best threshold: {best_thresh:.4f}")
     print("[THRESHOLD COMPARISON]")
+
+    ##  print for all 
     compute_metrics(labels, pred_default, "Default@0.5")
     compute_metrics(labels, pred_best,    f"Best@{best_thresh:.3f}")
     compute_metrics(labels, pred_ratio,   "Top-K (ratio)")
 
     print("[PREDICTED POSITIVE COUNTS]")
-    print(f"Default@0.5        → {pred_default.sum()} nodes")
-    print(f"Best@{best_thresh:.3f} → {pred_best.sum()} nodes")
-    print(f"Top-K (ratio)      → {pred_ratio.sum()} nodes (target={k})")
+    print(f"Default@0.5:  {pred_default.sum()} nodes")
+    print(f"Best@{best_thresh:.3f}:: {pred_best.sum()} nodes")
+    print(f"Top-K (ratio):: {pred_ratio.sum()} nodes (target={k})")
 
     # for gml saving
     labeled_indices = np.where(labeled_mask)[0]
 
-    pred_default_all   = np.full(len(labels_all), -1, dtype=int)
-    pred_best_all      = np.full(len(labels_all), -1, dtype=int)
-    pred_ratio_all     = np.full(len(labels_all), -1, dtype=int)
+    pred_default_all = np.full(len(labels_all), -1, dtype=int)
+    pred_best_all = np.full(len(labels_all), -1, dtype=int)
+    pred_ratio_all = np.full(len(labels_all), -1, dtype=int)
     classes_default_all = ["UNLABELED"] * len(labels_all)
-    classes_best_all    = ["UNLABELED"] * len(labels_all)
-    classes_ratio_all   = ["UNLABELED"] * len(labels_all)
+    classes_best_all = ["UNLABELED"] * len(labels_all)
+    classes_ratio_all = ["UNLABELED"] * len(labels_all)
 
     for j, i in enumerate(labeled_indices):
-        pred_default_all[i]    = pred_default[j]
-        pred_best_all[i]       = pred_best[j]
-        pred_ratio_all[i]      = pred_ratio[j]
+        pred_default_all[i] = pred_default[j]
+        pred_best_all[i] = pred_best[j]
+        pred_ratio_all[i] = pred_ratio[j]
         classes_default_all[i] = classes_default[j]
-        classes_best_all[i]    = classes_best[j]
-        classes_ratio_all[i]   = classes_ratio[j]
+        classes_best_all[i] = classes_best[j]
+        classes_ratio_all[i] = classes_ratio[j]
 
     #for  gml
     G     = nx.read_gml(original_gml_path)
     nodes = list(G.nodes())
 
     for i, node in enumerate(nodes):
-        G.nodes[node]["prob"]               = float(probs_all[i])
-        G.nodes[node]["pred_default"]       = int(pred_default_all[i])
-        G.nodes[node]["pred_best"]          = int(pred_best_all[i])
-        G.nodes[node]["pred_ratio"]         = int(pred_ratio_all[i])
+        G.nodes[node]["prob"] = float(probs_all[i])
+        G.nodes[node]["pred_default"] = int(pred_default_all[i])
+        G.nodes[node]["pred_best"] = int(pred_best_all[i])
+        G.nodes[node]["pred_ratio"] = int(pred_ratio_all[i])
         G.nodes[node]["pred_class_default"] = classes_default_all[i]
-        G.nodes[node]["pred_class_best"]    = classes_best_all[i]
-        G.nodes[node]["pred_class_ratio"]   = classes_ratio_all[i]
+        G.nodes[node]["pred_class_best"] = classes_best_all[i]
+        G.nodes[node]["pred_class_ratio"] = classes_ratio_all[i]
         G.nodes[node]["is_correct_default"] = int(pred_default_all[i] == labels_all[i]) if labeled_mask[i] else -1
-        G.nodes[node]["is_correct_best"]    = int(pred_best_all[i]    == labels_all[i]) if labeled_mask[i] else -1
-        G.nodes[node]["is_correct_ratio"]   = int(pred_ratio_all[i]   == labels_all[i]) if labeled_mask[i] else -1
+        G.nodes[node]["is_correct_best"] = int(pred_best_all[i] == labels_all[i]) if labeled_mask[i] else -1
+        G.nodes[node]["is_correct_ratio"] = int(pred_ratio_all[i] == labels_all[i]) if labeled_mask[i] else -1
 
     nx.write_gml(G, output_gml_path)
     print(f"[INFO] Saved GML with predictions → {output_gml_path}")
@@ -470,7 +439,7 @@ def load_single_gml(gml_path, remove_edges = False):
         # feat = feat[:15] + feat[16:] # skip feature at index 15
         # feat = feat[:-3] # skip last 3 features
 
-        #### text block
+        ######### for the graph encoding featrures if set to true
         fam, lib = parse_lib_design(gml_path)
 
         if args.use_lib_id:
@@ -484,20 +453,20 @@ def load_single_gml(gml_path, remove_edges = False):
             idx = family2id.get(fam, len(family2id))
             fam_oh[idx] = 1.0
             feat = list(feat) + fam_oh.tolist()
-        #### text block end
+        #########
 
         features.append(feat)
 
         if "boundary" in attr:
             boundary_value = attr["boundary"]
             try:
-                label = int(boundary_value)
+                label = int(boundary_value) # if boundary attribute exists, covert the value to integer
             except (ValueError, TypeError):
-                label = 0
+                label = 0 # or we default to 0 
             labels.append(label)
             label_mask.append(True)
         else:
-            labels.append(-1)  # Placeholder
+            labels.append(-1)  # if attribute doesnt exist, set it as -1 
             label_mask.append(False)
             nan_boundary_count += 1
             
@@ -530,17 +499,7 @@ def load_single_gml(gml_path, remove_edges = False):
     num_nodes = len(nodes)
     indices = list(range(num_nodes))
     random.shuffle(indices)
-
-    # train_cutoff = int(0.80 * num_nodes) # ***
-    # val_cutoff = train_cutoff + int(0.10 * num_nodes)
     
-    # train_mask = torch.zeros(num_nodes, dtype=torch.bool)
-    # val_mask = torch.zeros(num_nodes, dtype=torch.bool)
-    # test_mask = torch.zeros(num_nodes, dtype=torch.bool)
-
-    # train_mask[indices[:train_cutoff]] = True
-    # val_mask[indices[train_cutoff:val_cutoff]] = True
-    # test_mask[indices[val_cutoff:]] = True
     train_mask = torch.ones(num_nodes, dtype=torch.bool)
     val_mask   = torch.zeros(num_nodes, dtype=torch.bool)
     test_mask  = torch.zeros(num_nodes, dtype=torch.bool)
@@ -616,7 +575,6 @@ def train_equal_design_weight(model, graphs, optimizer, class_weights=None, soft
         # divide by num_graphs here so gradients are equivalent to the mean
         # loss = loss_per_node.mean() / num_graphs
         loss.backward()  # frees this graph's computation graph immediately
-
         total_loss += loss.item()
 
         del out, loss
@@ -660,103 +618,6 @@ def train_fullgraph(model, data, optimizer, class_weights=None, soft_class_weigh
     optimizer.step()
     return loss.item()
 
-def train(model, loader, optimizer, class_weights=None, soft_class_weights=None):
-    model.train()
-    total_loss = 0 
-    batch_count = 0 
-    total_nodes = 0 
-
-    epoch_nodes = set() # for coverage and debugging and analysis
-
-    for batch in loader: # here, batch is is not the full graph but the sampled subgraph by graphSAINT
-        batch = batch.to(device)
-        ###### this logs the node indexes covered in eahc epoch
-        if hasattr(batch, "global_id"):
-            epoch_nodes.update(batch.global_id.cpu().tolist())
-        elif hasattr(batch, "global_node_id"):
-            epoch_nodes.update(batch.global_node_id.cpu().tolist())
-
-        ### note:
-        # a) batch = subgraph
-        # b) batch.x = node features
-        # c) batch.edge_index = edges between those nodes
-        # d) batch.y = node labels
-        optimizer.zero_grad()
-        
-        out = model(batch.x, batch.edge_index) # here the out.shape = [Num_nodes_in_batch, num_classes]
-
-        # loss_per_node = F.cross_entropy(out, batch.y, reduction="sum")
-        # loss_per_node = focal_loss(out, batch.y, gamma = 2.0)
-        labeled_mask = batch.label_mask if hasattr(batch, 'label_mask') else (batch.y >= 0)
-
-        if labeled_mask.sum() == 0:
-            continue
-
-        if args.loss_type == "focal":
-            loss_per_node = focal_loss(out[labeled_mask], batch.y[labeled_mask], gamma=2.0)
-        elif args.loss_type == "ce_weighted":
-            loss_per_node = F.cross_entropy(
-                out[labeled_mask],
-                batch.y[labeled_mask],
-                weight=class_weights.to(out.device),
-                reduction="none"
-            )
-
-        elif args.loss_type == "ce_soft":
-            loss_per_node = F.cross_entropy(
-                out[labeled_mask],
-                batch.y[labeled_mask],
-                weight=soft_class_weights.to(out.device),
-                reduction="none"
-            )
-        elif args.loss_type == "ce":
-            loss_per_node = F.cross_entropy(
-                out[labeled_mask],
-                batch.y[labeled_mask],
-                reduction="none"
-            )
-        else:
-            raise ValueError(f"Unknown loss_type: {args.loss_type}")
-
-        if hasattr(batch, "node_norm"):
-            # print("[INFO] using node_norm for loss calculation")
-            loss = (loss_per_node * batch.node_norm[labeled_mask]).sum()
-        else:
-            loss = loss_per_node.mean()
-
-        # valid_mask = batch.train_mask # disable this later
-        # if class_weights is not None:
-        #     # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask], weight = class_weights, reduction = args.reduction_method_cel)
-        #     loss = F.cross_entropy(out, batch.y, weight=class_weights)
-        # else:
-        #     # loss = F.cross_entropy(out[valid_mask], batch.y[valid_mask])
-        #     loss = F.cross_entropy(out, batch.y)
-        
-        loss.backward()
-        
-        if args.set_gradient_clipping: 
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)
-            # print("[INFO] Using gradient clipping")
-
-        optimizer.step()
-
-        total_loss += loss.item()
-        batch_count += 1
-        
-        # total_nodes += valid_mask.sum().item()
-        total_nodes += batch.num_nodes
-
-
-    if args.reduction_method_cel == "mean": ### ??? not sure if this is the right way to calculate the average loss
-        average_loss = total_loss / batch_count if batch_count > 0 else 0  # average for batch
-    elif  args.reduction_method_cel == "sum":
-        average_loss = total_loss / total_nodes if total_nodes > 0 else 0  # average for nodes
-
-    # average_loss = total_loss
-
-    return average_loss, epoch_nodes
-
-
 # test file acc only
 @torch.no_grad()
 def evaluate_test(data, model):
@@ -769,9 +630,7 @@ def evaluate_test(data, model):
     # probs = torch.softmax(out, dim=1) # not so agressive (1) 
     # pred = (probs[:, 1] > 0.9).long() # not so agressive (2) 
     # pred = predict_with_threshold(out, args.decision_threshold)
-
     pred = out.argmax(dim=1)
-
     labeled_mask = data.label_mask if hasattr(data, 'label_mask') else (data.y >= 0)
 
     # valid_mask = (data.y != -1)
@@ -806,30 +665,16 @@ def evaluate_loss(data, model, class_weights=None, soft_class_weights=None):
     model.eval()
     data = data.to(device)
     out = model(data.x, data.edge_index)
-
     labeled_mask = data.label_mask if hasattr(data, 'label_mask') else (data.y >= 0)
 
-    # loss = F.cross_entropy(out, data.y, reduction="mean")
-    # loss = focal_loss(out, data.y, gamma=2.0).mean()
     if args.loss_type == "focal":
         loss = focal_loss(out[labeled_mask], data.y[labeled_mask], gamma=2.0).mean()
     elif args.loss_type == "ce_weighted":
-        loss = F.cross_entropy(
-            out[labeled_mask],
-            data.y[labeled_mask],
-            weight=class_weights.to(out.device)
-        )
-
+        loss = F.cross_entropy(out[labeled_mask], data.y[labeled_mask], weight=class_weights.to(out.device))
     elif args.loss_type == "ce_soft":
-        loss = F.cross_entropy(
-            out[labeled_mask],
-            data.y[labeled_mask],
-            weight=soft_class_weights.to(out.device)
-        )
+        loss = F.cross_entropy( out[labeled_mask],data.y[labeled_mask], weight=soft_class_weights.to(out.device) )
     elif args.loss_type == "ce":
         loss = F.cross_entropy(out[labeled_mask], data.y[labeled_mask])
-
-
     else:
         raise ValueError(f"Unknown loss_type: {args.loss_type}")
         
@@ -842,7 +687,6 @@ def sanity_check_masks(data, name="graph"):
     unlabeled = (~data.label_mask).sum().item()
     n_boundary = (data.y[data.label_mask] == 1).sum().item()
     n_not_boundary = (data.y[data.label_mask] == 0).sum().item()
-
     print(f"[SANITY] {name} | total={total}, labeled={labeled}, unlabeled={unlabeled}, boundary=1: {n_boundary}, boundary=0: {n_not_boundary}")
 
 @torch.no_grad()
@@ -851,13 +695,11 @@ def compute_density_stats(model, data):
     data = data.to(device)
     out = model(data.x, data.edge_index)
     probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy()
-    
     labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (data.y.cpu().numpy() >= 0)
     y_true = data.y.cpu().numpy()
     true_ratio = float((y_true[labeled_mask] == 1).mean())
     mean_prob = float(probs[labeled_mask].mean())
     argmax_ratio = float((probs[labeled_mask] >= 0.5).mean())
-
     return {"true_ratio": true_ratio, "mean_pred_prob": mean_prob, "argmax_ratio_0.5": argmax_ratio}
 
 ### threholding start
@@ -871,7 +713,6 @@ def get_probs_and_labels(model, data):
     labeled_mask = data.label_mask.cpu().numpy() if hasattr(data, 'label_mask') else (labels >= 0)
     return probs[labeled_mask], labels[labeled_mask]
     
-
 
 ### threholding end
 NUM_CATEGORICAL = 14
@@ -981,16 +822,7 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
 
         train_start = time.perf_counter()
 
-        if args.training_mode == "graphsaint":
-            loss, epoch_nodes = train(
-                model,
-                train_loader,
-                optimizer,
-                class_weights=class_weights if args.loss_type == "ce_weighted" else None,
-                soft_class_weights=soft_class_weights if args.loss_type == "ce_soft" else None,
-            )
-
-        elif args.training_mode == "fullgraph":
+        if args.training_mode == "fullgraph":
             if args.fullgraph_mode == "merged":
                 loss = train_fullgraph(
                     model,
@@ -1201,7 +1033,6 @@ def run_training(train_graphs, train_data, train_loader, in_dim, out_dim, id2nam
         "training_graphs": args.train_gml,
         "test_graph": args.test_gml,
         "model_type": args.model,
-        "sampling_method": args.sampling_method,
         "epochs": args.epochs,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
@@ -1236,7 +1067,7 @@ if __name__ == "__main__":
         print(f"[VAL {i+1}] {gml_path}")
         g, _ = load_single_gml(gml_path=gml_path, remove_edges=False)
 
-        print("[INFO] val graphs -- Label counts:", Counter(g.y.tolist())) # debug
+        print("[INFO] val graphs (label counts):", Counter(g.y.tolist())) # debug
         assert (g.y[g.label_mask] < 0).sum().item() == 0
 
         g.train_mask[:] = False
@@ -1250,7 +1081,7 @@ if __name__ == "__main__":
         print(f"[TEST {i+1}] {gml_path}")
         g, _ = load_single_gml(gml_path=gml_path, remove_edges=False)
 
-        print("[INFO] test graphs -- Label counts:", Counter(g.y.tolist())) # debug
+        print("[INFO] test graphs (label counts):", Counter(g.y.tolist())) # debug
         assert (g.y[g.label_mask] < 0).sum().item() == 0
         g.train_mask[:] = False
         g.val_mask[:] = False
@@ -1298,17 +1129,8 @@ if __name__ == "__main__":
     print("[INFO] (b) Val nodes  :", combined_data.val_mask.sum().item())
     print("[INFO] (c) Test nodes :", combined_data.test_mask.sum().item())
 
-    ### samplers 
-    # (a) graph saint
-    training_data_loader = None
-    if args.training_mode  == "graphsaint":
-        if args.sampling_method ==  "graphsaint_rw":
-            training_data_loader = GraphSAINTRandomWalkSampler(
-                combined_data, 
-                batch_size = int((args.perc_batchsize)*combined_data.num_nodes ), 
-                walk_length = args.walk_length, 
-                sample_coverage = args.sample_coverage )
 
+    training_data_loader = None
     model = run_training(
         train_graphs=train_graphs,
         train_data=combined_data,
@@ -1322,9 +1144,7 @@ if __name__ == "__main__":
     )
     
     print("[INFO] Final evaluation on TEST graphs:")
-
     test_metrics = defaultdict(list)
-
     for path, g in test_graphs:
         name = os.path.splitext(os.path.basename(path))[0]
         n = evaluate_test(g, model)
@@ -1368,8 +1188,7 @@ if __name__ == "__main__":
         f"Acc={test_macro.get('total_acc', 0.0):.4f}, "
         f"b1={test_macro.get('boundary_1_acc', 0.0):.4f}, "
         f"b0={test_macro.get('boundary_0_acc', 0.0):.4f},"
-        f"PR-AUC={test_macro.get('pr_auc', 0.0):.4f}, "
-    )
+        f"PR-AUC={test_macro.get('pr_auc', 0.0):.4f}, ")
 
     wandb.log({
         "test_macro/f1": test_macro.get("f1", 0.0),
@@ -1396,4 +1215,7 @@ if __name__ == "__main__":
         safe_name = f"{design_family}__{lib_name}__{test_graph_name}"
         output_path = os.path.join(output_dir, f"{safe_name}_predictions.gml")
         print("[INFO] Saving predictions to:", output_path)
+
+        
+        # saving
         save_predictions_to_gml(original_gml_path=path, data=g, model=model, id2name=output_labels, output_gml_path=output_path)
