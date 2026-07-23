@@ -381,17 +381,17 @@ def save_outputs(args, model, test_data, id2name, test_m, circuit_label):
 
 def parse_args():
     p = argparse.ArgumentParser(description="GNN-RE (Alrahis et al., TCAD 2021)")
-    p.add_argument("--config",          default=None)
-    p.add_argument("--train_gmls",      nargs="+", default=None)
-    p.add_argument("--val_gml",         default=None)
-    p.add_argument("--test_gml",        default=None)
-    p.add_argument("--mode",            choices=["binary", "multiclass"], default="multiclass")
-    p.add_argument("--positive_class",  default="sbox")
-    p.add_argument("--label_attr",      default="subcircuit_name")
-    p.add_argument("--max_features",    type=int,   default=33) # features also made based on the gnn-re paper 
-    p.add_argument("--model",           choices=["gat", "graphsage"], default="gat")
-    p.add_argument("--epochs",          type=int,   default=2000)
-    p.add_argument("--eval_every",      type=int,   default=50)
+    p.add_argument("--config", default=None)
+    p.add_argument("--train_gmls",nargs="+", default=None)
+    p.add_argument("--val_gml",default=None)
+    p.add_argument("--test_gml", default=None)
+    p.add_argument("--mode", choices=["binary", "multiclass"], default="multiclass")
+    p.add_argument("--positive_class", default="sbox")
+    p.add_argument("--label_attr",default="subcircuit_name")
+    p.add_argument("--max_features", type=int, default=33) # features also made based on the gnn-re paper 
+    p.add_argument("--model", choices=["gat", "graphsage"], default="gat")
+    p.add_argument("--epochs", type=int, default=2000)
+    p.add_argument("--eval_every", type=int, default=50)
     args = p.parse_args()
 
     if args.config:
