@@ -1,0 +1,84 @@
+# Data
+# train_gmls:
+#   - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__gscl45nm__aes_cipher_top_combined_m1_predictions.gml
+#   - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_cipher_top_combined_m1_predictions.gml
+#   - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__gscl45nm__aes_inv_cipher_top_combined_m1_predictions.gml
+#   - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_inv_cipher_top_combined_m1_predictions.gml
+#   - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__osu035__aes_inv_cipher_top_combined_m1_predictions.gml
+#   - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__gscl45nm__aes_key_expand_128_combined_m1_predictions.gml
+#   # - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_key_expand_128_combined_m1_predictions.gml
+#   - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__osu035__aes_key_expand_128_combined_m1_predictions.gml
+
+
+# val_gml:  gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_key_expand_128_combined_m1_predictions.gml
+# test_gml: gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__osu035__aes_cipher_top_combined_m1_predictions.gml
+
+
+train_gmls:
+## aes core 
+- "gnn-re/data/processed_annotated/aes_core/aes_core__gscl45nm__aes_cipher_top_combined_m1_predictions.gml" 
+- "gnn-re/data/processed_annotated/aes_core/aes_core__nangate__aes_cipher_top_combined_m1_predictions.gml" #
+- "gnn-re/data/processed_annotated/aes_core/aes_core__osu035__aes_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/aes_core/aes_core__gscl45nm__aes_inv_cipher_top_combined_m1_predictions.gml" 
+- "gnn-re/data/processed_annotated/aes_core/aes_core__nangate__aes_inv_cipher_top_combined_m1_predictions.gml" #
+- "gnn-re/data/processed_annotated/aes_core/aes_core__osu035__aes_inv_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/aes_core/aes_core__gscl45nm__aes_key_expand_128_combined_m1_predictions.gml" 
+- "gnn-re/data/processed_annotated/aes_core/aes_core__nangate__aes_key_expand_128_combined_m1_predictions.gml" #
+- "gnn-re/data/processed_annotated/aes_core/aes_core__osu035__aes_key_expand_128_combined_m1_predictions.gml"
+
+
+# # # === aes-master ===
+# - "gnn-re/data/processed_annotated/aes_master/aes-master__gscl45nm__aes_core_combined_m1_predictions.gml"
+# - "gnn-re/data/processed_annotated/aes_master/aes-master__osu035__aes_core_combined_m1_predictions.gml"
+# - "gnn-re/data/processed_annotated/aes_master/aes-master__gscl45nm__aes_decipher_block_combined_m1_predictions.gml"
+# - "gnn-re/data/processed_annotated/aes_master/aes-master__osu035__aes_decipher_block_combined_m1_predictions.gml"
+
+# # === aes_enc ===
+- "gnn-re/data/processed_annotated/aes_enc/aes-encryption_latest__gscl45nm__aes_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/aes_enc/aes-encryption_latest__nangate__aes_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/aes_enc/aes-encryption_latest__osu035__aes_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/aes_enc/aes-encryption_latest__gscl45nm__aes_key_expand_128_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/aes_enc/aes-encryption_latest__nangate__aes_key_expand_128_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/aes_enc/aes-encryption_latest__osu035__aes_key_expand_128_combined_m1_predictions.gml"
+
+# # # === apbtoaes ===
+- "gnn-re/data/processed_annotated/apbtoaes/apbtoaes128_latest__gscl45nm__aes_core_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/apbtoaes/apbtoaes128_latest__nangate__aes_core_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/apbtoaes/apbtoaes128_latest__osu035__aes_core_combined_m1_predictions.gml"
+
+# # === gcm_aes ===
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__gscl45nm__aes_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__nangate__aes_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__osu035__aes_cipher_top_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__gscl45nm__aes_key_expand_128_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__nangate__aes_key_expand_128_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__osu035__aes_key_expand_128_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__gscl45nm__gcm_aes_v0_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__nangate__gcm_aes_v0_combined_m1_predictions.gml"
+- "gnn-re/data/processed_annotated/gcm_aes/gcm-aes_latest__osu035__gcm_aes_v0_combined_m1_predictions.gml"
+
+val_gml: "gnn-re/data/processed_annotated/aes_master/aes-master__osu035__aes_core_combined_m1_predictions.gml"
+
+test_gml: "gnn-re/data/processed_annotated/aes_master/aes-master__osu035__aes_decipher_block_combined_m1_predictions.gml"
+
+
+
+# Training
+epochs: 1000
+lr: 0.01
+dropout: 0.1
+eval_every: 50
+
+
+# Task
+mode: multiclass          # binary  OR  multiclass
+# positive_class: sbox      # for binary mode only
+label_attr: partition_label
+max_features: 31  
+# Model
+model: gat                # gat or graphsage  or  gcn (we use gat as the paper default and best method)
+
+# for the graphSAINT sampler
+root_nodes: 3000
+walk_length: 2
+sample_coverage: 50
