@@ -52,7 +52,7 @@ use_partition_features: false
 > **Please note that:** graph paths should follow the directory structure `<design_family>/<library>/<graph>.gml`
 
 
-> **To run gnn-re paper** method experiments (initial experiments), please use: `python src/gnn_re_paper_main.py  --config <path_to_config>`. Please use make sure that the .gmls have the partition labels annotated for each node as well, see `config/gnn_re/` for examples.
+> **To run gnn-re paper using GraphSAINT** method experiments (initial experiments), please use: `python src/gnn_re_paper_main.py  --config <path_to_config>`. Please make sure that the .gmls have the partition labels annotated for each node as well. See `config/gnn_re/` for examples. Additionally, the code performs both multiclass of binary classification (both handled differently)
 
 ---
 
