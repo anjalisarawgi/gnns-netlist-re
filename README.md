@@ -54,7 +54,7 @@ use_partition_features: false
 ---
 ## GNN-RE base paper for the thesis
 
-**Reference: **"GNN-RE: Graph Neural Networks for Reverse Engineering of Gate-Level Netlists" (Alrahis et al.) ([paper](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=f8yWvUYAAAAJ&citation_for_view=f8yWvUYAAAAJ:W7OEmFMy1HYC))
+**Reference:** "GNN-RE: Graph Neural Networks for Reverse Engineering of Gate-Level Netlists" (Alrahis et al.) ([paper](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=f8yWvUYAAAAJ&citation_for_view=f8yWvUYAAAAJ:W7OEmFMy1HYC))
 
 To run the GNN-RE replication experiments:
 
