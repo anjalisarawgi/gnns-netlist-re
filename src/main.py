@@ -48,8 +48,7 @@ def set_seed(seed=42):
     os.environ['PYTHONHASHSEED'] = str(seed)
 
 
-os.makedirs("logs", exist_ok=True)
-
+# os.makedirs("logs", exist_ok=True)
 
 ###### args  ######
 parser = argparse.ArgumentParser()
