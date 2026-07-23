@@ -51,11 +51,24 @@ use_partition_features: false
 
 > **Please note that:** graph paths should follow the directory structure `<design_family>/<library>/<graph>.gml`
 
+---
+## GNN-RE base paper for the thesis
 
-> **To run gnn-re paper using GraphSAINT** method experiments (initial experiments), please use: `python src/gnn_re_paper_main.py  --config <path_to_config>`. Please make sure that the .gmls have the partition labels annotated for each node as well. See `config/gnn_re/` for examples. Additionally, the code performs both multiclass of binary classification (both handled differently)
+**Reference: **"GNN-RE: Graph Neural Networks for Reverse Engineering of Gate-Level Netlists" (Alrahis et al.) ([paper](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=f8yWvUYAAAAJ&citation_for_view=f8yWvUYAAAAJ:W7OEmFMy1HYC))
+
+To run the GNN-RE replication experiments:
+
+```bash
+python src/gnn_re_paper_main.py --config <path_to_config>
+```
+
+Please see `config/gnn_re/` for some example configs. Some notes:
+- GML files must have `partition_label` annotated per node
+- The script supports both **binary** and **multiclass** classification
+- We use the default parameters and the GraphSAINT random-walk sampling (as in the paper)
+
 
 ---
-
 ## Outputs
 
 All results are saved to (after training):
