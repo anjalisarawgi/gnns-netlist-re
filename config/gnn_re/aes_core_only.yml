@@ -1,0 +1,37 @@
+# Data
+train_gmls:
+  - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__gscl45nm__aes_cipher_top_combined_m1_predictions.gml
+  - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_cipher_top_combined_m1_predictions.gml
+  - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__gscl45nm__aes_inv_cipher_top_combined_m1_predictions.gml
+  - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_inv_cipher_top_combined_m1_predictions.gml
+  - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__osu035__aes_inv_cipher_top_combined_m1_predictions.gml
+  - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__gscl45nm__aes_key_expand_128_combined_m1_predictions.gml
+  # - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_key_expand_128_combined_m1_predictions.gml
+  - gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__osu035__aes_key_expand_128_combined_m1_predictions.gml
+
+
+val_gml:  gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__nangate__aes_key_expand_128_combined_m1_predictions.gml
+
+test_gml: gnn-re/data/processed_annotated/aes_core/trainingAEs_graphsage_ce_weighted_fullgraph_per_design_aes_core/aes_core__osu035__aes_cipher_top_combined_m1_predictions.gml
+
+# Training
+epochs: 2000
+lr: 0.01
+dropout: 0.1
+eval_every: 100
+
+
+# Task
+mode: multiclass          # binary or  multiclass
+# positive_class: sbox      # for binary mode only
+label_attr: partition_label
+max_features: 31 
+
+# Model
+model: gat                # gat or graphsage or gcn (we use gat as default because the paper finds this as the best epoch)
+
+# GraphSAINT sampler
+root_nodes: 3000
+walk_length: 2
+sample_coverage: 50
+
