@@ -2,6 +2,8 @@ import json
 import yaml
 import os
 
+# just for checking the configs sanity
+
 YAML_PATH = "config/training_crypto/aes_core.yml"
 COMPLEX_JSON_PATH = "config/file_paths/new/complex_graph.json"
 
@@ -11,12 +13,12 @@ with open(YAML_PATH) as f:
 with open(COMPLEX_JSON_PATH) as f:
     complex_graphs = json.load(f)
 
-# collect all gml paths from yaml
+
 all_gml_paths = []
 for split in ["train_gml", "val_gml", "test_gml"]:
     all_gml_paths.extend(config.get(split, []))
 
-# collect paths from json (keys are paths)
+
 complex_paths = {os.path.normpath(k) for k in complex_graphs.keys()}
 
 # check which are missing
@@ -31,4 +33,4 @@ if missing:
     with open("missing_complex_graphs.txt", "w") as f:
         f.write("\n".join(missing))
 else:
-    print("All files present in complex_graph.json")
+    print("All the files of yml are present in complex_graph.json") 
